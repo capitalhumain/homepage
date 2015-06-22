@@ -1,0 +1,65 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" language="javascript">
+    var addEvent = function( elem, type, fn, isCapture ) {
+        var capture = isCapture || false;
+        if( window.addEventListener ) {
+            // 第三個參數 true: capturing; false: bubbling
+            elem.addEventListener( type, fn, capture );    
+        } // if
+        else {
+            alert( 'This example is not for IE' );
+        } // else if
+    };
+    
+    window.onload = function() {
+        var b = document.getElementById( 'body' );
+        var u = document.getElementById( 'ul' );
+        var l = document.getElementById( 'li' );
+        var a = document.getElementById( 'a' );
+        var result = document.getElementById( 'result' );
+            
+        addEvent( document, 'click', function() {
+            result.innerHTML += 'document click [capturing]<br/>';
+        }, true);
+        addEvent( document, 'click', function() {
+            result.innerHTML += 'document click [bubbling]<br/>';
+        }, false);
+        addEvent( b, 'click', function() {
+            result.innerHTML += 'body click [capturing]<br/>';
+        }, true);
+        addEvent( b, 'click', function() {
+            result.innerHTML += 'body click [bubbling]<br/>';
+        }, false);
+        addEvent( u, 'click', function() {
+            result.innerHTML += 'ul click [capturing]<br/>';
+        }, true);
+        addEvent( u, 'click', function() {
+            result.innerHTML += 'ul click [bubbling]<br/>';
+        }, false);
+        addEvent( l, 'click', function() {
+            result.innerHTML += 'li click [capturing]<br/>';
+        }, true);
+        addEvent( l, 'click', function() {
+            result.innerHTML += 'li click [bubbling]<br/>';
+        }, false);
+        addEvent( a, 'click', function() {
+            result.innerHTML += 'a click [capturing]<br/>';
+        }, true);
+        addEvent( a, 'click', function() {
+            result.innerHTML += 'a click [bubbling]<br/>';
+        }, false);
+    };
+    </script>
+</head>
+<body id="body">
+    <ul id="ul">
+        <li id="li">
+            <a id="a" href="http://www.google.com" target="_blank">Google</a>
+        </li>
+    </ul>
+    <div id="result">
+    </div>
+</body>
+</html>

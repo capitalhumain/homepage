@@ -1,0 +1,81 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Multiple Solution</title>
+<script type="text/javascript" src="core.js"></script>
+<script type="text/javascript" src="depth.js"></script>
+<script type="text/javascript" src="leastcost.js"></script>
+<script type="text/javascript" src="hillclimbing.js"></script>
+<script type="text/javascript">
+var addEvent = function( elem, type, fn ) {
+    if( window.addEventListener ) {
+        elem.addEventListener( type, fn, true );
+    } // if
+    else if( window.attachEvent ) {
+        elem.attachEvent( 'on' + type, fn );
+    } // else if
+};
+
+window.onload = function(){
+    var solveBtn = document.getElementById( 'solve' );
+    addEvent( solveBtn, 'click', function() {
+        var method = document.getElementById( 'method' );
+        var search;
+        var i = 0;
+        var theflights; 
+        var selected = method.options[ method.selectedIndex ].value;
+        if( selected === 'depth' ) {
+            search = new Depth();
+        } else if( selected === 'hillclimbing' ) {
+            search = new HillClimbing();
+        } else {
+            search = new LeastCost();
+        }
+        
+        search.addFlightInfo("New York", "Chicago", 900);
+        search.addFlightInfo("Chicago", "Denver", 1000);
+        search.addFlightInfo("New York", "Toronto", 500);
+        search.addFlightInfo("New York", "Denver", 1800);
+        search.addFlightInfo("Toronto", "Calgary", 1700);
+        search.addFlightInfo("Toronto", "Los Angeles", 2500);
+        search.addFlightInfo("Toronto", "Chicago", 500);
+        search.addFlightInfo("Denver", "Urbana", 1000);
+        search.addFlightInfo("Denver", "Houston", 1000);
+        search.addFlightInfo("Houston", "Los Angeles", 1500);
+        search.addFlightInfo("Denver", "Los Angeles", 1000);
+        
+        solve( search, 'New York', 'Los Angeles' );
+        
+        theflights = '<ol>';
+        with( search ) {
+            while( btStack.length > 0 ) {
+                theflights += '<li>';
+                for( i=0; i<btStack.length; i++ ) {
+                    theflights += ('[' + btStack[i].from + ' to ' + btStack[i].to + ', distance: ' + btStack[i].distance + ']');
+                }
+                theflights += '</li>';
+                resetSolution();
+                solve( search, 'New York', 'Los Angeles' );
+            }
+        }
+        theflights += '</ol>';
+            
+        document.getElementById( 'flight_results' ).innerHTML = theflights;
+    });
+};
+</script>
+</head>
+<body>
+    <img src="flight_schedule.png"/>
+    <h5>Figure. The Art of Java/The Art of C++ 書上的圖</h5>
+    <div>
+    Multiple Solutions: (New York -> Los Angeles) 
+    <select id="method">
+        <option value="depth">Depth-First</option>
+        <option value="hillclimbing">Hill Climbing</option>
+        <option value="leastcost">Least Cost</option>
+    </select>&nbsp;<input type="button" id="solve" value="solve" />
+    </div>
+    <div id="flight_results"></div>
+</body>
+</html>

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content="Terence Chao,學習筆記" />
+    <link href="./css/style.css" type="text/css" rel="stylesheet">
+    <script src="./js/jquery-1.6.2.min.js" type="text/javascript"></script>
+    <title>玩東西、學東西、做東西</title>
+</head>
+<body>
+    <h1 id="header" class="header">玩東西、學東西、做東西</h1>
+    <div id="wrap">
+        <div id="content">
+            <div>
+                <h2>JavaScript學習雜記</h2>
+                <div id="javascript" class="group">
+                    <ul>
+                        <li>
+                        <a href="#" class="category">Basics</a>
+                        <div class="list">
+                        <ul>
+                            <li><a href="javascript/variables.html">Variables</a></li>
+                            <li><a href="javascript/objects.html">Objects</a></li>
+                            <li><a href="javascript/array.html">Array</a></li>
+                            <li><a href="javascript/array.slice.html">Array.prototype.slice</a></li>
+                            <li><a href="javascript/operator_in.html">Operator - in</a></li>
+                            <li><a href="javascript/DontDoThat.html">Don't do that</a></li>
+                        </ul>
+                        </div>
+                        </li>
+                        <li>
+                        <a href="#" class="category">Experiments</a>
+                        <div class="list">
+                        <ul>
+                            <li><a href="javascript/lab.array.01.html">Lab - Array 01 </a></li>
+                            <li><a href="javascript/lab.array.02.html">Lab - Array 02 </a></li>
+                            <li><a href="javascript/lab.array.03.html">Lab - Array 03 - sort </a></li>
+                            <li><a href="javascript/lab.function.01.html">Lab - Function 01 - Function Invocation </a></li>
+                            <li><a href="javascript/lab.function.02.html">Lab - Function 02 - Arguments </a></li>
+                            <li><a href="javascript/lab.function.03.html">Lab - Function 03 - Cascade (Chaining) </a></li>
+                            <li><a href="javascript/lab.function.04.html">Lab - Function 04 - Scope </a></li>
+                            <li><a href="javascript/lab.function.05.html">Lab - Function 05 - Function Constructor </a></li>
+                            <li><a href="javascript/lab.object.01.html"> Lab - Object 01 </a></li>
+                            <li><a href="javascript/lab.with.01.html"> Lab - with statement 01 </a></li>
+                            <li><a href="javascript/lab.void.operator.html"> Lab - void OPERATOR</a></li>
+                            <li><a href="javascript/prototype.01.html">Prototype 01</a></li>
+                            <li><a href="javascript/prototypal.01.html">Prototypal Inheritance 01</a></li>
+                            <li><a href="javascript/lab.NodeList.cycle.html">DOM - NodeList cycle</a></li>
+                            <li><a href="javascript/lab.BOM.DOM.01.html"> Lab - BOM &amp; DOM events 01 - Event Capturing and Bubbling </a></li>
+                            <li><a href="javascript/lab.BOM.DOM.02.html"> Lab - BOM &amp; DOM events 02 - Attribute Changes</a></li>
+                            <li><a href="javascript/lab.problem.solving.01.html"> AI Based Problem Solving JavaScript實作 </a></li>
+                        </ul>
+                        </div>
+                        </li>
+                        <li>
+                        <a href="#" class="category">Miscellaneous</a>
+                        <div class="list">
+                        <ul>
+                            <li><a href="javascript/dp.SyntaxHighlighter.groovy.html">SyntaxHighlighter - Groovy </a></li>
+                            <li><a href="javascript/forfun/ConvertUnicode.html" target="_blank">搞成xxx;這樣numeric character reference的小東西</a></li>
+                            <li><a href="javascript/forfun/ai/multiple.solution.01.html" target="_blank">書上有關AI based problem solving在JavaScript實作</a> (做了Depth-First, Hill-Climbing, Least Cost這三個)</li>
+                            <li><a href="javascript/forfun/needleman/NeedlemanWunsch.html"> Needleman-Wunsch Algorithm的JavaScript實作 </a></li>
+                            <li><a href="javascript/dijkstra.01.html"> Dijkstra's Algorithm的JavaScript實作 </a></li>
+                            <li><a href="javascript/mixin.html">mixin</a></li>
+                        </ul>
+                        </div>
+                        </li>
+                        <li>
+                        <a href="#" class="category">Dissect</a>
+                        <div class="list">
+                        <ul>
+                            <li><a href="#">yui-base.js use function</a></li>
+                            <li><a href="javascript/learning.jquery.init.html">Learning jQuery - init()</a></li>
+                            <li><a href="javascript/learning.jquery.extend.html">Learning jQuery - extend()</a></li>
+                            <li><a href="javascript/learning.jquery.utilities.html">Learning jQuery - Utilities</a></li>
+                            <li><a href="javascript/learning.jquery.plugin.html">Learning jQuery - plug-in 第一步</a></li>
+                        </ul>
+                        </div>
+                        </li>
+                        <li>
+                        <a href="#" class="category">Node</a>
+                        <div class="list">
+                        <ul>
+                            <li><a href="javascript/nodejs_helloworld.html">The "Hello, World"</a></li>
+                            <li><a href="javascript/nodejs_simplechatserver.html">Simple Chat Server</a></li>
+                        </ul>
+                        </div>
+                        </li>
+                        <li>
+                        <a href="#" class="category">Harmony</a>
+                        <div class="list">
+                        <ul>
+                            <li><a href="javascript/harmony/variable_decl.html">Variable Declaration</a></li>
+                        </ul>
+                        </div>
+                        </li>
+                        <li>
+                        <a href="#" class="category">V8 JavaScript Engine</a>
+                        <div class="list">
+                        <ul>
+                            <li><a href="v8/helloworld.html">The "Hello, World"</a></li>
+                        </ul>
+                        </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div>
+                <h2>Groovy學習雜記</h2>
+                <div id="groovy" class="group">
+                <ul>
+                    <li>
+                    <a href="#" class="category">Builder</a>
+                    <div class="list">
+                    <ul>
+                    <li>
+                    <a href="#" class="category">XML</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="groovy/markupbuilder.html">MarkupBuilder</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li>
+                    <a href="#" class="category">Object</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="groovy/ObjectGraphBuilder_1.html">ObjectGraphBuilder</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li>
+                    <a href="#" class="category">SwingBuilder</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="groovy/tabbedPane.html">SwingBuilder - tabbedPane</a></li>
+                        <li><a href="groovy/table.html">SwingBuilder - table</a>&nbsp;(踹renderer and closureColumn)</li>
+                        <li><a href="groovy/ThreadPerMessageHW75.html">Thread Per Message</a>&nbsp;(Homework 7.5)</li>
+                        <li><a href="groovy/progressBar.html">progressBar Demo</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li>
+                    <a href="#" class="category">BuilderSupport</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="groovy/BuilderSupport.01.html">DebugBuilder from Groovy in Action</a></li>
+                        <li><a href="groovy/BuilderSupport.02.html">BuilderSupport and FactoryBuilderSupport</a></li>
+                    </ul>
+                    </div>
+                            </li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li>
+                        <a href="#" class="category">gpars</a>
+                        <div class="list">
+                            <ul>
+                                <li></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li>
+                    <a href="#" class="category">Sql</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="groovy/Sql1.html">第一課</a>&nbsp;About Connection, Basic Query and Metadata</li>
+                        <li><a href="groovy/Sql2.html">第二課</a>&nbsp;About Batch DML</li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li>
+                    <a href="#" class="category">MOP</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="groovy/MOP.1.html">第一課: 基礎</a> (how to intercept method)</li>
+                        <li><a href="groovy/MOP.2.html">第二課: 還是基礎</a> (how to introduce new method)</li>
+                        <li><a href="groovy/MOP.3.html">第三課: 最後一個基礎</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li>
+                    <a href="#" class="category">Grails</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="groovy/memo.grails.domain.class.01.html">Memo: Constraints and Validation</a></li>
+                        <li><a href="groovy/replica.grails.GRAILS-5445.html">Replica: Binding multiple related domain objects for Grails 1.1.2 (from Bug GRAILS-5445)</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li class="InProgress">
+                    <a href="#" class="category">Griffon</a>
+                    <div class="list">
+                    <ul>
+                        <li>
+                        <a href="#">第一課</a>
+                        </li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li class="">
+                    <a href="#" class="category">My Cookbook</a>
+                    <div class="list">
+                    <ul>
+                        <li>
+                        <a href="#" class="category">File</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="groovy/cookbook.file.accesslog.html">處理apache accesslog</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li>
+                        <a href="#" class="category">COM Scripting</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="groovy/cookbook.scriptom.network.html">WMI Tasks: Networking</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li>
+                        <a href="#" class="category">Misc</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="groovy/groovy_lang_annotation.1.html">groovy.lang裡的annotations</a></li>
+                                <li><a href="groovy/groovy_transform_annotation.1.html">groovy.transform裡的<code>EqualsAndHashCode</code></a></li>
+                                <li><a href="groovy/groovy_transform_annotation.2.html">groovy.transform裡的<code>ToString</code></a></li>
+                                <li><a href="groovy/groovy_transform_annotation.3.html">groovy.transform裡的<code>TupleConstructor</code></a></li>
+                                <li><a href="groovy/groovy_transform_annotation.4.html">groovy.transform裡的<code>Immutable</code></a></li>
+                                <li><a href="groovy/groovy_transform_annotation.5.html">groovy.transform裡的<code>Synchronized</code></a></li>
+                                <li><a href="groovy/groovy_transform_annotation.6.html">groovy.transform裡的<code>WithReadLock</code> &amp; <code>WithWriteLock</code></a></li>
+                            </ul>
+                        </div>
+                        </li>
+                    </ul>
+                    </div>
+                    </li>
+                </ul>
+                </div>
+            </div>
+            <div>
+                <h2>Lisp學習筆記</h2>
+                <div id="lisp" class="group">
+                <ul>
+                    <li><a href="#" class="category">Land of LISP</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="lisp/cl/guess_number.html">Guess Number</a></li>
+                        <li><a href="lisp/cl/cons_cells.html">cons cells</a></li>
+                        <li><a href="lisp/cl/conditions.html">Conditions</a></li>
+                        <li><a href="lisp/cl/create_world.html">Create World</a></li>
+                        <li><a href="lisp/cl/interacting_with_the_world.html">Interacting with the world</a></li>
+                        <li><a href="lisp/cl/lambda1.html">lambda</a></li>
+                        <li><a href="lisp/cl/more_lists.html">More Lists</a></li>
+                        <li><a href="lisp/cl/hunt_the_wumpus.html">Hunt the wumpus</a></li>
+                        <li><a href="lisp/cl/advanced_datatypes_and_generic_programming.html">Advanced Datatypes and Generic Programming</a></li>
+                        <li><a href="lisp/cl/loop_command.html">Loop Command</a></li>
+                        <li><a href="lisp/cl/macro.html">The Magic of Lisp Macros</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li><a href="#" class="category">Clojure</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="lisp/clojure/at_a_glance.html">Clojure: At a glance</a></li>
+                        <li class="InProgress"><a href="lisp/clojure/sequence_library.html">Clojure's sequence library</a></li>
+                        <li><a href="lisp/clojure/work_with_java.html">Work with Java</a></li>
+                        <li><a href="lisp/clojure/noir_simple_form_without_db.html">Noir - Simple Form without Database access</a></li>
+                        <li class="InProgress"><a href="lisp/clojure/functional_programming.html">Functional Programming</a></li>
+                        <li class="InProgress"><a href="lisp/clojure/concurrency.html">Concurrency</a></li>
+                        <li class="InProgress"><a href="lisp/clojure/macros.html">Macros</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li class="InProgress"><a href="#" class="category">Scheme</a>
+                    <div class="list">
+                    <ul>
+                    </ul>
+                    </div>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h2>Apple他們家的學習筆記</h2>
+                <div id="apple" class="group">
+                <ul>
+                    <li><a href="#" class="category">iOS application</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="ios/iOS-empty-project-to-single-view.pdf" target="_blank">由Empty Project->Single View Application Project</a></li>
+                        <li><a href="ios/iOS-deactivate-keyboard.pdf" target="_blank">關閉虛擬鍵盤</a></li>
+                        <li><a href="ios/iOS_SQLite_Demo.pdf" target="_blank">SQLite Basic 101</a></li>
+                        <li><a href="ios/iOS_http_get.pdf" target="_blank">發HTTP Get Request</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                    <li class="InProgress"><a href="#" class="category">Mac OS X Application</a>
+                    <div class="list">
+                    <ul>
+                    </ul>
+                    </div>
+                    </li>
+                    <li class="InProgress"><a href="#" class="category">About Unix</a>
+                    <div class="list">
+                    <ul>
+                    </ul>
+                    </div>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h2>Android</h2>
+                <div id="android" class="group">
+                <ul>
+                    <li><a href="#" class="category">開發環境</a>
+                    <div class="list">
+                    <ul>
+                        <li><a href="android/memo.html">Memo</a></li>
+                    </ul>
+                    </div>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h2>Oracle學習雜記</h2>
+                <div id="oracle" class="group">
+                    <ul>
+                        <li><a href="#" class="category">Initiallization Parameters</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="oracle/lab.open_cursors.html">OPEN_CURSORS</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Monitoring</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="oracle/lab.v$object_usage.html">V$OBJECT_USAGE</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Tips</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="oracle/lab.awrrpt.html">執行AWR Report</a></li>
+                                <li><a href="oracle/memo.dbms_scheduler.disable.html">Memo - DBMS_SCHEDULER disable procedure</a></li>
+                                <li><a href="oracle/lab.shared.server.html">Shared Server Configuration</a></li>
+                                <li><a href="oracle/lab.dbms_server_alert.html">DBMS_SERVER_ALERT</a></li>
+                                <li><a href="oracle/tips.clean.schema.table.content.html">delete current user所有table的資料</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Optimizer</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="oracle/lab.cbo.01.html">Lab - Binding Variables</a></li>
+                                <li><a href="oracle/lab.sql_id.and.child_number.html">Lab - sql_id and child_number</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div style="display:none;">
+                <h2>Ruby學習雜記</h2>
+                <div id="ruby" class="group">
+                    <ul>
+                        <li><a href="#" class="category">...</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="ruby/back_ruby.html">...</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div>
+                <h2>Java學習雜記</h2>
+                <div id="java" class="group">
+                    <ul>
+                        <li class="InProgress">
+                            <a href="#" class="category">Java Basic Notebook</a>
+                            <div class="list">
+                                <ul>
+                                    <li><a href="java/enum.type.01.html">enum type 1</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li data-hidden="true" class="hide">
+                            <a href="#" class="category">JA-SIG CAS</a>
+                            <div class="list">
+                                <ul>
+                                    <li><a href="misc/forfun.cas.01.html">第一步：讓JA-SIG CAS SSO跑起來</a></li>
+                                    <li><a href="misc/forfun.cas.02.html">第二步：CAS SSO + OpenDS</a></li>
+                                    <li><a href="misc/forfun.cas.03.0.html">第三步之零：客製化cas-server-webapp的準備動作</a></li>
+                                    <li><a href="misc/forfun.cas.03.1.html">第三步之一：在CAS 3.4.2.1增加captcha功能 (蠻幹硬改法)</a></li>
+                                    <li><a href="misc/forfun.cas.04.html">第四步：logout之後redirect回自己(service provider)要的頁面</a></li>
+                                    <li><a href="misc/jasig.CAS.mm" class="freemind">彙總整理Mind Map</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li><a href="#" class="category">Maven</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="maven/memo.maven.multi.module.html">Memo: Create Multi-Module project</a></li>
+                                <li><a href="maven/memo.copy.dependencies.html">Memo: Copy dependencies jar files to target/lib</a></li>
+                                <li><a href="maven/memo.antlr.project.html">Memo: ANTLR project</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Wicket</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="wicket/BinaryWebResource.html">Write out Binary WebResource </a></li>
+                                <li><a href="wicket/ExternalInlineFrame.html">ExternalInlineFrame </a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Spring Framework</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="springframework/HelloSpringMVC.html">Say "Hello" to Spring MVC</a></li>
+                                <li><a href="springframework/Hello.Spring.LDAP.html">Hello, Spring LDAP - Step 1</a></li>
+                                <li><a href="springframework/Hello.Spring.LDAP.2.html">Hello, Spring LDAP - Step 2</a></li>
+                                <li><a href="springframework/Hello.Spring.LDAP.3.html">Hello, Spring LDAP - Step 3</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Lucene</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="java/meet.lucene.1.html">Meet Lucene (練習maven multi-module)</a></li>
+                                <li><a href="java/meet.lucene.2.html">Meet Lucene 2 (還是練習maven multi-module)</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">JBoss ESB</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="java/jbossesb.quickstarts.spring.action.html">JBoss ESB - quickstarts - from spring_helloworld</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Hibernate</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="java/hibernate-many.to.many-1.html">Hibernate - many-to-many - traditional way</a></li>
+                                <li><a href="java/hibernate-antlr-1.html">Hibernate + ANTLR v3</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Cookbook</a>
+                        <div class="list">
+                            <ul>
+                                <li>
+                                <a href="#" class="category">Web Service</a>
+                                <div class="list">
+                                    <ul>
+                                        <li><a href="java/cookbook.webservice.jax-ws.logging.soap.message.html">如何在JAX-WS client log SOAP Message</a></li>
+                                    </ul>
+                                </div>
+                                </li>
+                                <li>
+                                <a href="#" class="category">Old Stuff</a>
+                                <div class="list">
+                                    <ul>
+                                        <li><a href="java/old-stuff.readwritelock.html">Read-Write Lock</a></li>
+                                    </ul>
+                                </div>
+                                </li>
+                            </ul>
+                        </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div style="display:none;">
+                <h2>Language Design</h2>
+                <div id="language-design" class="group">
+                    <ul>
+                        <li><a href="#" class="category">Internal DSL</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="dsl/smart-api.html">Smart API</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">External DSL</a>
+                        <div class="list">
+                            <ul>
+                            </ul>
+                        </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div>
+                <h2>未分類、雜項</h2>
+                <div id="misc" class="group">
+                    <ul>
+                        <li><a href="misc/git_command_101.pdf">Git Command 101</a></li>
+                        <li><a href="misc/nic.configurator.01.html">NIC Configurator 1</a>&nbsp;(Using C# and WMI)</li>
+                        <li class="InProgress"><a href="misc/nic.configurator.02.html">NIC Configurator 2</a>&nbsp;(完成故事)</li>
+            <li><a href="#" class="category">Apache Footnote</a>
+                        <div class="list">
+                <span>稍微看一下之後，覺得應該深入研究的是Nginx而非Apache</span>
+                        <ul>
+                <li><a href="apache/recipe_5_7.html">Apache Cookbook: Recipe 5.7 Redirecting to Another Location</a></li>
+                            <li><a href="apache/recipe_8_21.html">Apache Cookbook: Recipe 8.21 Enable Python Script Handling</a></li>
+                        </ul>
+                        </div>
+                        <li><a href="#" class="category">Fatwire Content Server</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="ftcs/ftcsforfun1.html">XMLPost ini generator (Basic Asset Type)</a></li>
+                                <li><a href="ftcs/fatwire_xmlpost_memo.html">XMLPost Memo</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li>
+                            <a href="#" class="category">Notebook</a>
+                            <div class="list">
+                                <ul>
+                                    <li>
+                                    <a href="#" class="category">SQL Antipatterns</a>
+                                    <div class="list">
+                                        <ul>
+                                            <li><a href="sqlpatterns/naive.trees.html">Naive Trees</a></li>
+                                        </ul>
+                                    </div>
+                                    </li>
+                                    <li>
+                                    <a href="#" class="category">Seven Languages in Seven Weeks</a>
+                                    <div class="list">
+                                        <ul>
+                                            <li><a href="seven/install.Io.html">Install Io</a></li>
+                                            <li><a href="seven/install_erlang_on_ubuntu.html">Install Erlang on Ubuntu</a></li>
+                                            <li><a href="seven/install-sbt.html">Install and Using Scala SBT</a></li>
+                                        </ul>
+                                    </div>
+                                    </li>
+                                </ul> 
+                            </div>
+                        </li>
+                        <li>
+                            <a href="#" class="category">Operating System</a>
+                            <div class="list">
+                                <ul>
+                                    <li><a href="misc/osdev.notebook.notebook.mm" class="freemind">初步整理</a>&nbsp;努力中&nbsp;(File Format: FreeMind)</li>
+                                    <li><a href="misc/forfun.learning.osdev.01.html">For Fun - Groovy刻hello os image</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li><a href="#" class="category">GTK+</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="misc/forfun.gtksourceview.01.html">GtkSourceView Example 1</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Ada</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="ada/ada.0.html">Ada 0</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                        <li><a href="#" class="category">Data Analysis</a>
+                        <div class="list">
+                            <ul>
+                                <li><a href="misc/glpk.1.html">GLPK</a></li>
+                                <li><a href="misc/glpk.2.html">GLPK in R</a></li>
+                            </ul>
+                        </div>
+                        </li>
+                <li><a href="#" class="category">MongoDB</a>
+                        <div class="list">
+                <span>頭三個都是看Manning的MongoDB in Action整理的</span>
+                            <ul>
+                                <li><a href="mongodb/mongo_shell.png" target="_blank">mongo shell</a>&nbsp;偷懶一下用XMind的圖當成整理</li>
+                    <li><a href="mongodb/Ruby_interact_with_MongoDB.xmind" target="_blank" class="xmind">Ruby + MongoDB</a>&nbsp;繼續偷懶中</li>
+                    <li><a href="mongodb/Replication_Sharding.xmind" target="_blank" class="xmind">Replication & Sharding</a>&nbsp;叫我偷懶王</li>
+                            </ul>
+                        </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="sider">
+            <div class="em">趙子儀&nbsp;(Terence Chao)</div>
+            <div id="profile">
+                <h4>About Me</h4>
+                <blockquote>
+                    <p>住在台灣北部一個超級沒自信的胖老頭。本質是閒雲野鶴，陣營是Neutral。信仰自由和知識，討厭麻煩和權力。生平無大志，只想把生命用在追求想研究的知識和技藝。</p>
+                    <p>什麼電腦語言都喜歡，總是認為重點在於體悟每個語言設計者的思路並內化成自己的知識。喜歡花時間玩Programming Language, Game Artificial Intelligence這些東西。</p>
+                </blockquote>
+                <h4>Contact Me</h4>
+                <ul>
+                    <li>tzuyichao at mail2000.com.tw</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script language="JavaScript">
+    $(function() {
+        $(".list").hide();
+        $(".category").bind("click", function() {
+            $(this).siblings().toggle();
+            return false;
+        });
+        $( '.InProgress,.hide' ).hide();
+        $( 'div h2' ).bind( 'click', function() {
+            $( this ).siblings( 'div.group' ).toggle();
+        });
+        $( '#header' ).bind( 'click', function() {
+            $( 'div.group' ).toggle();
+        });
+        $(".freemind,.xmind").bind( 'click', function() {
+            alert("This is FreeMind/XMind file. Right Click -> save file or download this file.");
+            return false;
+        } );
+        
+    });
+    </script>
+</body>
+</html>

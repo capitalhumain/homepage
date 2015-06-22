@@ -1,0 +1,62 @@
+<html>
+<head>
+<script language="JavaScript" type="text/javascript">
+var isArray1 = function( value ) {
+    return value &&
+        typeof value === 'object' &&
+        value.constructor === Array;
+};
+var isArray2 = function( value ) {
+    return value &&
+        typeof value === 'object' &&
+        typeof value.length === 'number' &&
+        typeof value.splice === 'function' &&
+        !(value.propertyIsEnumerable('length'));
+};
+
+var rightArr = [ 'q', 'h', 'i' ];
+
+window.onload = function() {
+    var leftF = parent.leftFrame;
+    if( typeof console !== 'undefined' ) {
+        // console.log( leftF.leftarr.constructor );
+        console.log( 'leftarr.constructor===Array: ' + (leftF.leftarr.constructor === Array) );
+    }
+    document.getElementById( 'ia1_larr' ).innerHTML = isArray1( leftF.leftarr );
+    document.getElementById( 'ia1_rarr' ).innerHTML = isArray1( rightArr );
+    document.getElementById( 'ia2_larr' ).innerHTML = isArray2( leftF.leftarr );
+    document.getElementById( 'ia2_rarr' ).innerHTML = isArray2( rightArr );
+};
+</script>
+</head>
+<body>
+<pre style='font-family: "Courier New"; border: 1px solid #0000cc;'>
+var rightArr = [ 'q', 'h', 'i' ];
+
+var isArray1 = function( value ) {
+    return value &&
+        typeof value === 'object' &&
+        value.constructor === Array;
+};
+
+var isArray2 = function( value ) {
+    return value &&
+        typeof value === 'object' &&
+        typeof value.length === 'number' &&
+        typeof value.splice === 'function' &&
+        !(value.propertyIsEnumerable('length'));
+};
+</pre>
+This is right frame
+<div>
+    leftArr isArray1: <span id="ia1_larr"></span> 
+    <br />
+    leftArr isArray2: <span id="ia2_larr"></span> 
+</div>
+<div>
+    rightArr isArray1: <span id="ia1_rarr"></span> 
+    <br />
+    rightArr isArray2: <span id="ia2_rarr"></span>
+</div>
+</body>
+</html>

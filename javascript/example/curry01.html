@@ -1,0 +1,63 @@
+<html>
+<head>
+    <title>Curry 01</title>
+    <script type="text/javascript" language="javascript">
+    var f = function(x, y) {
+        return y/x;
+    };
+    
+    var curry = function(fn, thisArg) {
+        var thisArg = thisArg || window;
+        var arg = [];
+        var i;
+        for( i=2; i<arguments.length; i+=1 ) {
+            arg.push( arguments[i] );
+        } // for
+        return function() {
+            if( arguments.length > 0 ) {
+                arg = arg.concat( Array.prototype.slice.apply( arguments ) );
+            } // if
+            return fn.apply( thisArg, arg );
+        };
+    };
+    
+    var divideBy2 = curry( f, null, 2 );
+    var divideBy3 = curry( f, null, 3 );
+    
+    window.onload = function() {
+        document.getElementById( 'r1' ).innerHTML = divideBy2(3);
+        document.getElementById( 'r2' ).innerHTML = divideBy3(3);
+    };
+    </script>
+</head>
+<body>
+<strong>Haskell Curry</strong>
+<div>
+    <dl>
+        <dd>
+            <span style="font-family:serif;">
+            <i>f</i>(<i>x</i>,<i>y</i>)&nbsp;=&nbsp;<i>y</i>/<i>x</i>
+            </span>
+        </dd>
+    </dl>
+    <dl>
+        <dd>
+            <span style="font-family:serif;">
+            <i>divideBy2</i>(<i>y</i>)&nbsp;=&nbsp;<i>f</i>(2,<i>y</i>)
+            </span>
+        </dd>
+    </dl>
+    <dl>
+        <dd>
+            <span style="font-family:serif;">
+            <i>divideBy3</i>(<i>y</i>)&nbsp;=&nbsp;<i>f</i>(3,<i>y</i>)
+            </span>
+        </dd>
+    </dl>
+</div>
+<div>
+divideBy2(3): <span id="r1"></span><br/>
+divideBy3(3): <span id="r2"></span>
+</div>
+</body>
+</html>

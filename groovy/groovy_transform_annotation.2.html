@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>ToString</title>
+</head>
+<body>
+<div>
+    <h1 class="header">ToString</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>記得commons lang裡的<code>ToStringBuilder</code>? 為了在log裡面分析追蹤object state，通常會透過自己寫該類別的<code>toString()</code>或者使用commons lang裡的<code>ToStringBuilder</code>或者自己使用log api來做，都是希望可以追蹤分析object state。針對這個目的，Groovy有一個annotation可以給我們使用。</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.8.0</li>
+            <li>Sun JDK 1.6.0_24</li>
+        </ul>
+    </div>
+    <h2><code>ToString</code></h2>
+    <p>直接拿Groovy API JavaDoc的例子來一步一步踹</p>
+    <div class="codehead">Listing 1. Groovy API JavaDoc的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+
+@ToString
+class Customer {
+    String first, last
+    int age
+    Date since = new Date()
+    Collection favItems
+    private answer = 42
+}
+
+println new Customer(first: 'Tom', last: 'Jones', age: 21, favItems: ['books', 'groovy'])
+    </pre>
+    <div class="codehead">Result</div>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/lab/groovy$ groovy ToString_1.groovy 
+Customer(Tom, Jones, 21, Mon May 23 10:10:33 CST 2011, [books, groovy])
+    </pre>
+    <p>覺得沒attribute name很討厭、很麻煩可以使用<code>includeNames</code>這個設定</p>
+    <div class="codehead">Listing 2. 加上<code>includeNames</code></div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+
+@ToString(includeNames=true)
+class Customer {
+    String first, last
+    int age
+    Date since = new Date()
+    Collection favItems
+    private answer = 42
+}
+
+println new Customer(first: 'Tom', last: 'Jones', age: 21, favItems: ['books', 'groovy'])
+    </pre>
+    <p>有沒有發現javadoc範例裡的private attribute不會在<code>toString()</code>的結果裡面，如果希望<code>toString()</code>把private attribute一起輸出就要透過<code>includeFields</code></p>
+    <div class="codehead">Listing 3. 加上<code>includeFields</code></div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+
+@ToString(includeNames=true, includeFields=true)
+class Customer {
+    String first, last
+    int age
+    Date since = new Date()
+    Collection favItems
+    private answer = 42
+}
+
+println new Customer(first: 'Tom', last: 'Jones', age: 21, favItems: ['books', 'groovy'])
+    </pre>
+    <p>接下來，就是<code>includeSuper</code>，在Listing 4有加上<code>includeSuper</code>。</p>
+    <div class="codehead">Listing 4. 加上<code>includeSuper</code></div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+
+class IAmSuper {
+    String type
+}
+
+@ToString(includeNames=true, includeFields=true, includeSuper=true) class Customer extends IAmSuper {
+    String first, last
+    int age
+    Date since = new Date()
+    Collection favItems
+    private answer = 42
+}
+
+println new Customer(first: 'Tom', last: 'Jones', age: 21, favItems: ['books', 'groovy'])
+    </pre>
+    <div class="codehead">Result</div>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/lab/groovy$ groovy ToString_4.groovy 
+Customer(first:Tom, last:Jones, age:21, since:Mon May 23 12:52:04 CST 2011, favItems:[books, groovy], answer:42, super:Customer@34d507e9)
+    </pre>
+    <p>因為<code>IAmSuper</code>沒有使用<code>@ToString</code>，所以會看到預設的<code>toString()</code>的結果。</p>
+    <div class="codehead">Listing 5. super class也用<code>ToString</code></div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+
+@ToString(includeNames=true)
+class IAmSuper {
+    String type
+}
+
+@ToString(includeNames=true, includeFields=true, includeSuper=true) class Customer extends IAmSuper {
+    String first, last
+    int age
+    Date since = new Date()
+    Collection favItems
+    private answer = 42
+}
+
+println new Customer(first: 'Tom', last: 'Jones', age: 21, favItems: ['books', 'groovy'])
+    </pre>
+    <p>如果我們希望某些attributes不需要透過<code>toString</code>在log看到則可以透過<code>excludes</code>設定不在<code>toString</code>顯示的attributes，attribute name用「,」分開</p>
+    <div class="codehead">Listing 6. 使用<code>excludes</code> attribute設定不顯示attributes</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+
+@ToString(includeNames=true, includeFields=true, excludes="age, favItems")
+class Customer {
+    String first, last
+    int age
+    Date since = new Date()
+    Collection favItems
+    private answer = 42
+}
+
+println new Customer(first: 'Tom', last: 'Jones', age: 21, favItems: ['books', 'groovy'])
+    </pre>
+    <p></p>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Groovy API JavaDoc</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/05/20
+</address>
+<script language="javascript">
+$(function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

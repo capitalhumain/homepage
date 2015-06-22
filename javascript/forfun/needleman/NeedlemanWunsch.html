@@ -1,0 +1,358 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../../../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../../../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../../../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../../../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../../../js/shBrushGroovy.js" ></script>
+    <title>Needleman-Wunsch Algorithm的JavaScript實作</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Needleman-Wunsch Algorithm的JavaScript實作</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        沒記錯的話以前好像在Google blog和yahoo blog整理過Longest Common Subsequence (LCS) Problem
+        的東西。現在整理的是Global Alignment Problem的Needleman-Wunsch Algorithm在JavaScript實作。
+        差別只在於之前LCS是用C++實作。這個問題的定義如下
+        </p>
+        <div class="problem">
+            <label>Global Alignment Problem</label>
+            <div>
+                Find the best alignment between two strings under a given scoring matrix.
+            </div>
+            <div>
+                <label>Input:</label> String v, w and a scoring matrix S.
+            </div>
+            <div>
+                <label>Output:</label> An alignment of v and w whose score (as defined by the matrix S)
+                is maximal among all possible alignments of v and w.
+            </div>
+        </div>
+        <p>
+        這邊使用Wikipedia上舉例的scoring matrix (如下)和gap penality (-5)來實作
+
+        <table cellspacing='0' style="font-family: 'Courier New'; margin-left: 30px;">
+        <tbody><tr>
+        <th>-</th>
+        <th>A</th>
+        <th>G</th>
+        <th>C</th>
+        <th>T</th>
+        </tr>
+        <tr>
+        <th>A</th>
+        <td align="right">10</td>
+        <td>-1</td>
+        <td>-3</td>
+        <td>-4</td>
+        </tr>
+        <tr>
+        <th>G</th>
+        <td>-1</td>
+        <td align="right">7</td>
+        <td>-5</td>
+        <td>-3</td>
+        </tr>
+        <tr>
+        <th>C</th>
+        <td>-3</td>
+        <td>-5</td>
+        <td align="right">9</td>
+        <td align="right">0</td>
+        </tr>
+        <tr>
+        <th>T</th>
+        <td>-4</td>
+        <td>-3</td>
+        <td align="right">0</td>
+        <td align="right">8</td>
+        </tr>
+        </tbody></table>
+        </p>
+        <h2>Enhancement for Needleman-Wumsch Algorithm implementation</h2>
+        <p>
+        因為需要Matrix來儲存計算的結果，為了方便需要使用Douglas Crockford書上產生multiple dimension
+        array的東西；另外根據演算法由substitution matrix計算好的三個mapping的值也必須取最大值放到matrix
+        裡面，待全部計算完畢之後解讀sequence alignment的結果，所以為Array新增了一個max function。
+        </p>
+        <h3>Listing. 部分enhancement.js有用到的東西</h3>
+        <pre name="code" class="javascript:controls:firstline[26]">
+Array.method( 'max', function() {
+    var i = 0;
+    var tmp = this[i];
+    for( i=0; i &lt; this.length; i++ ) {
+        if( tmp &lt; this[i] )
+            tmp = this[i];
+    } // for
+    return tmp;
+} );
+
+// multi dimension array from JavaScript: The Good Parts
+Array.matrix = function (m, n, initial) {
+    var a, i, j, mat = [];
+    for (i = 0; i &lt; m; i += 1) {
+        a = [];
+        for (j = 0; j &lt; n; j += 1) {
+            a[j] = initial;
+        }
+        mat[i] = a;
+    }
+    return mat;
+};
+        </pre>
+        <h2>Needleman-Wunsch Algorithn in JavaScript</h2>
+        <h3>Listing. needleman.js</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+/*
+ * Description:
+ *    Needleman-Wunsch Algorithm in JavaScript
+ *    只是實作不考慮 scoring matrix 和 gap penality 設定這個問題
+ *    所以很多東西都定在global scope |-) 
+ * Reference: 
+ *    http://en.wikipedia.org/wiki/Needleman-Wunsch_algorithm
+ * Required: 
+ *    enhancement.js
+ * Author:
+ *    Terence Chao, 2009
+ */
+
+var s = { 'AA': 10,
+      'AG': -1,
+      'AC': -3,
+      'AT': -4,
+      'GA': -1,
+      'GG':  7,
+      'GC': -5,
+      'GT': -3,
+      'CA': -3,
+      'CG': -5,
+      'CC':  9,
+      'CT':  0,
+      'TA': -4,
+      'TG': -3,
+      'TC':  0,
+      'TT':  8 };
+
+var gap = -5;
+
+var needle = function( sequence, reference ) {
+    var rows = reference.length + 1;
+    var cols = sequence.length + 1;
+    var a = Array.matrix( rows, cols, 0 );
+    var i = 0, j = 0;
+    var choice = [ 0, 0, 0 ];
+    var ref = '';
+    var seq = '';
+    var score, score_diag, score_up, scroe_left;
+    
+    // 計算 F Matrix
+    for( i=1; i&lt;rows; i++ ) {
+        for( j=1; j&lt;cols; j++ ) {
+            choice[0] = a[i-1][j-1] + s[ (reference.charAt(i-1) + sequence.charAt(j-1)).toUpperCase() ];
+            choice[1] = a[i-1][j] + gap;
+            choice[2] = a[i][j-1] + gap;
+            a[i][j] = choice.max();
+        }
+    }
+
+    // 解讀
+    i = reference.length;
+    j = sequence.length;
+    while( i&gt;0 && j&gt;0 ) {
+        score = a[i][j];
+        score_diag = a[i-1][j-1];
+        score_up = a[i][j-1];
+        score_left = a[i-1][j];
+        if( score === (score_diag + s[ (reference.charAt(i-1) + sequence.charAt(j-1)).toUpperCase() ]) ) {
+            ref = reference[i-1] + ref;
+            seq = sequence[j-1] + seq;
+            i -= 1;
+            j -= 1;
+        } else if( score === (score_left + gap) ) {
+            ref = reference[i-1] + ref;
+            seq = '-' + seq;
+            i -= 1;
+        } else if( score === (score_up + gap) ) {
+            ref = '-' + ref;
+            seq = sequence[j-1] + seq;
+            j -= 1;
+        }
+    }
+    
+    while( i&gt;0 ) {
+        ref = reference[i-1] + ref;
+        seq = '-' + seq;
+        i -= 1;
+    }
+    
+    while( j&gt;0 ) {
+        ref = '-' + ref;
+        seq = sequence[j-1] + seq;
+        j -= 1;
+    }
+    
+    return [seq, ref];
+};
+
+        </pre>
+        <a href="needleman.html" target="_blank">Needleman-Wunsh Algorithm Example</a>
+        <h2>Local alignment: Smith-Waterman Algorithm</h2>
+        <div class="problem">
+            <label>Local Alignment Problem</label>
+            <div>
+                Find the best local alignment between two strings.
+            </div>
+            <div>
+                <label>Input:</label> String v, w and a scoring matrix S.
+            </div>
+            <div>
+                <label>Output:</label> Substrings of v and w whose global alignment, as defined by S, 
+                is maximal among all global alignments of all substrings of v and w.
+            </div>
+        </div>
+        <p>
+        
+        </p>
+        <h3>Listing. smith.js</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+/*
+ * Description:
+ *    Smith-Waterman Algorithm in JavaScript
+ *    只是實作不考慮 scoring matrix 和 gap penality 設定這個問題
+ *    所以很多東西都定在global scope |-) 
+ * Reference:
+ *    http://en.wikipedia.org/wiki/Smith-Waterman_algorithm
+ * Required: 
+ *    enhancement.js
+ * Author:
+ *    Terence Chao, 2009
+ */
+
+var s = { 'AA': 2,
+      'AG': -1,
+      'AC': -1,
+      'AT': -1,
+      'GA': -1,
+      'GG':  2,
+      'GC': -1,
+      'GT': -1,
+      'CA': -1,
+      'CG': -1,
+      'CC':  2,
+      'CT': -1,
+      'TA': -1,
+      'TG': -1,
+      'TC': -1,
+      'TT':  2 };
+
+var gap = -1;
+
+var smith = function( sequence, reference ) {
+    var rows = reference.length + 1;
+    var cols = sequence.length + 1;
+    var a = Array.matrix( rows, cols, 0 );
+    var i = 0, j = 0;
+    var choice = [ 0, 0, 0, 0 ];        // Smith-Waterman需要四個element來取max
+    var ref = '';
+    var seq = '';
+    var score, score_diag, score_up, scroe_left;
+    
+    // 計算 F Matrix, 和Needleman-Wunsch algorithm不同之處
+    for( i=1; i&lt;rows; i++ ) {
+        for( j=1; j&lt;cols; j++ ) {
+            choice[0] = 0;
+            choice[1] = a[i-1][j-1] + s[ (reference.charAt(i-1) + sequence.charAt(j-1)).toUpperCase() ];
+            choice[2] = a[i-1][j] + gap;
+            choice[3] = a[i][j-1] + gap;
+            a[i][j] = choice.max();
+        }
+    }
+
+    // 解讀
+    i = reference.length;
+    j = sequence.length;
+    while( i&gt;0 && j&gt;0 ) {
+        score = a[i][j];
+        score_diag = a[i-1][j-1];
+        score_up = a[i][j-1];
+        score_left = a[i-1][j];
+        if( score === (score_diag + s[ (reference.charAt(i-1) + sequence.charAt(j-1)).toUpperCase() ]) ) {
+            ref = reference[i-1] + ref;
+            seq = sequence[j-1] + seq;
+            i -= 1;
+            j -= 1;
+        } else if( score === (score_left + gap) ) {
+            ref = reference[i-1] + ref;
+            seq = '-' + seq;
+            i -= 1;
+        } else if( score === (score_up + gap) ) {
+            ref = '-' + ref;
+            seq = sequence[j-1] + seq;
+            j -= 1;
+        }
+    }
+    
+    while( i&gt;0 ) {
+        ref = reference[i-1] + ref;
+        seq = '-' + seq;
+        i -= 1;
+    }
+    
+    while( j&gt;0 ) {
+        ref = '-' + ref;
+        seq = sequence[j-1] + seq;
+        j -= 1;
+    }
+    
+    return [seq, ref];
+};
+        </pre>
+        <a href="../smithwaterman/smith.waterman.html" target="_blank">Smith-Waterman Algorithm Example</a>
+        <h2>Further</h2>
+        <p>
+        這只是照本宣科把書上演算法的描述用JavaScript做出來，程式碼的重複等問題都是需要改善的地方。
+        聰明的傢伙是發明或發現演算法解決問題，因為對自己智力的了解。
+        只期望可以有能力針對自己有興趣的問題的演算法，了解那些演算法的用處和把演算法轉換成實際程式碼的程度。
+        </p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>JavaScript: The Good Parts</li>
+                <li>An Introduction to Bioinformatics Algorithms</li>
+                <li>Biological Sequence Analysis</li>
+                <li>http://en.wikipedia.org/wiki/Needleman-Wunsch_algorithm</li>
+                <li>http://en.wikipedia.org/wiki/Smith-Waterman_algorithm</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../../../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2009/11/23
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

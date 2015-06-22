@@ -1,0 +1,104 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>jQuery.extend() test run</title>
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js"></script>
+</head>
+<body>
+<h3>jQuery.extend() test run</h3>
+<div>
+    <ol>
+        <li>extend jQuery本身: 使用方式像這樣jQuery.extend( source ) </li>
+        <li>extend 特定Object: 使用方式像這樣jQuery.extend( target, source ) </li>
+        <li>deep copy extend: 要給三個參數，jQuery.extend( deep?, target, source )</li>
+    </ol>
+</div>
+<input type="button" id="testType1" value="Test Type 1"/>
+&nbsp;
+<input type="button" id="testType2" value="Test Type 2"/>
+&nbsp;
+<input type="button" id="testType3" value="Test Type 3 (deep=true)"/>
+&nbsp;
+<input type="button" id="testType4" value="Test Type 3 (deep=false)"/>
+<script type="text/javascript">
+// this is global target object 
+var g_t = {
+};
+
+// this is global source object 
+var g_s = {
+    func1: function() {
+        alert( 'this is g_s.func1()' );
+    }
+};
+
+var foo = {
+};
+
+var bla = {
+    func1: function() {
+        alert( 'bla.func1()' );
+    },
+    blabla: {
+        funcWhat: function() {
+            alert( 'bla.blabla.funcWhat()' );
+        }
+    }
+};
+
+var foo2 = {
+};
+
+var bla2 = {
+    func1: function() {
+        alert( 'bla2.func1()' );
+    },
+    blabla2: {
+        funcWhat: function() {
+            alert( 'bla.blabla.funcWhat()' );
+        }
+    }
+};
+
+$( function() {
+    // Type 1
+    jQuery.extend( {
+        onlyForTest: function() {
+            alert( 'this is only for testing' );
+        }
+    } );
+    
+    // Type 2
+    $.extend( g_t, g_s );
+    
+    $( '#testType1' ).bind( 'click', function() {
+        jQuery.onlyForTest();
+    } );
+    
+    $( '#testType2' ).bind( 'click', function() {
+        g_t.func1();
+    } );
+    
+    $( '#testType3' ).bind( 'click', function() {
+        // type 3. deep? === true
+        $.extend( true, foo, bla );
+        foo.blabla.funcWhat();
+    } );
+    
+    $( '#testType4' ).bind( 'click', function() {
+        // type 3. deep? === false
+        var newfoo2 = $.extend( false, foo2, bla2 );
+        if( foo2.blabla2 ) 
+            foo2.blabla2.funcWhat();    // foo2.blabla2 is still undefined
+        if( foo2.func1 )                
+            foo2.func1();               // foo2.func1 is still undefined
+        
+        if( newfoo2.blabla2 )
+            newfoo2.blabla2.funcWhat();
+        if( newfoo2.func1 )
+            newfoo2.func1();
+    } );
+} );
+</script>
+</body>
+</html>

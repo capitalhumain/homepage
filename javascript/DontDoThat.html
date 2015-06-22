@@ -1,0 +1,82 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Don't do that</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Don't do that</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>個人情感很喜歡ECMA-262第三版，因為ECMAScript規格匆促的制定，所以以我拙劣的腦力在看過偶像的書之後也能夠體會其中缺失。。ECMAScript是個很有趣的語言，即使大多數人都自以為這只是個小東西。</p>
+        <h2>Value Properties of the Global Object (ECMA-262 3rd Edition 15.1.1)</h2>
+        <p>global object有三個value properties，這三個大家都很熟分別是<code>undeinfed</code>、<code>NaN</code>和<code>Infinity</code>。看到NaN、Infinity又有人會自動聯想到java.lang.Double的NaN、POSITIVE_INFININITY or NEGATIVE_INFINITY這些constant。但是很不幸地，<strong>這三個小東西在ECMAScript並不是constant</strong>。</p>
+        <pre name="code" class="javascript:controls:firstline[10]">
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        toString = Object.prototype.toString;
+    
+    msg += ( 'window.undefined: ' + window.undefined + '&lt;br/>' );
+    msg += ( 'typeof(undefined) === "undefined": ' + (typeof(undefined) === "undefined") + '&lt;br/>' );
+    msg += ( 'undefined === undefined: ' + (undefined === undefined) + '&lt;br/>' );
+    window.undefined = 'abc';
+    msg += ( 'after setting window.undefined, window.undefined: ' + window.undefined + '&lt;br/>' );
+    msg += ( 'after setting window.undefined, undefined: ' + undefined + '&lt;br/>' );
+    msg += ( 'after setting window.undefined, "abc" === undefined: ' + ('abc' === undefined) + '&lt;br/>' );
+    
+    msg += ( 'window.NaN: ' + window.NaN + '&lt;br/>' );
+    msg += ( 'typeof(NaN) === "number": ' + (typeof(NaN) === "number") + '&lt;br/>' );
+    window.NaN = 1000;
+    msg += ( 'after setting window.NaN, window.NaN: ' + window.NaN + '&lt;br/>' );
+    msg += ( 'after setting window.NaN, NaN: ' + NaN + '&lt;br/>' );
+    msg += ( 'after setting window.NaN, 1000 === NaN: ' + (1000 === NaN) + '&lt;br/>' );
+    
+    msg += ( 'window.Infinity: ' + window.Infinity + '&lt;br/>' );
+    msg += ( 'typeof(Infinity) === "number": ' + (typeof(Infinity) === "number") + '&lt;br/>' );
+    window.Infinity = 1;
+    msg += ( 'after setting window.Infinity, window.Infinity: ' + window.Infinity + '&lt;br/>' );
+    msg += ( 'after setting window.Infinity, Infinity: ' + Infinity + '&lt;br/>' );
+    msg += ( 'after setting window.Infinity, 1 === Infinity: ' + (1 === Infinity) + '&lt;br/>' );
+    
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>既然這三個是global object的properties，所以由<code>window</code>可以取得<code>undeinfed</code>、<code>NaN</code>和<code>Infinity</code>就不意外，在上面的程式中會令人意外的是這三個小東西在ECMAScript並不是constant，他們是可以被改變的。</p>
+        <p>因此結論是雖然規格設計上有缺失，使用上就要自我要求避開可能會造成問題的點。重點是<strong>無論如何絕對不要改變global object裡的<code>undeinfed</code>、<code>NaN</code>和<code>Infinity</code>這三個properties的值</strong>。</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 3rd edition</li>
+                <li>JavaScript: The Good Parts (O'Reilly)</li>
+                <li>JavaScript Patterns (O'Reilly)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/10/20</i>, latest update 2010/10/20
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

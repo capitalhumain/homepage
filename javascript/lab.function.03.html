@@ -1,0 +1,260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>Lab - Function 03 - Cascade</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Lab - Function 03 - Cascade</h1>
+</div>
+<div class="articlecontent">
+    <h2>碎碎唸</h2>
+    <p>
+    作專案的甲乙方大多數跟買賣行為類似都是<strong>互信基礎薄弱</strong>，其實想想也是應該的大多數有錢人看到旁邊
+    不是相同等級的人而言都是認為別人是想佔他/她便宜，是別有居心想多撈他/她的錢，因此互信基礎薄弱也是理所當然。
+    </p>
+    <p>
+    需求文件互相簽名認可通常也只是收錢所需的效力而已，最近學到的是UAT時候的需求變更可以把功能整個砍掉重練...。
+    需求文件結果只是寫爽的而已。
+    </p>
+    <h2>Preface</h2>
+    <p>
+    Cascade是Douglas Crockford書上的說法，比較為大家熟知的名詞是Chaining。從prototype.js, jQuery...等JavaScript
+    framework到現在大家都很熟悉Chaining的寫作方法，在其他JavaScript的書籍也都有提到Chaining這個東東。
+    順便把Douglas Crockford書上講的Curry和Memoization整理一下。
+    </p>
+    <h2>Cascade (Chaining)</h2>
+    <p>
+    有一些function並不會return任何值，這個時候由於JavaScript的規定：所有function都會有return值，當一個function
+    沒有寫return statement的時候我們會拿到undefined。因此再沒有Cascade的時候我們的程式會像下面這樣寫
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[1]">
+    var blaElem = document.getElementById( 'myBlock' );
+    setStyle( blaElem, 'color', '#eeeeee' );
+    show( blaElem );
+    </pre>
+    <p>
+    有了cascade之後我們程式寫法可以像下面這樣
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[1]">
+    $( 'myBlock' ).setStyle( 'color', '#eeeeee' ).show();
+    </pre>
+    <p>
+    這裡玩了幾個手法，首先透過JavaScript function block scope的特性製作private function object _$，也就是說在(function() {...}())
+    這樣我們定義並執行了一個function object，在這個function object裡面建立的變數、物件是function scope
+    外面無法存取使用的也因此第三步才需要把這個東西建立一個外面可以使用的interface；
+    緊接著在這個private function object的prototype建立給外面程式使用的interface。這裡提供each(), setStyle(),
+    show()和addEvent()當成功能試做；最後透過window這個global browser object設定一個property而值則是透過
+    constructor invocation pattern產生的_$ object。如此一來我們也可以輕鬆做到information hidden和類似jQuery,
+    prototype.js這些好玩東東的東西。
+    </p>
+    <h3>Listing. chaining.js</h3>
+    <pre name="code" class="javascript:nocontrols:firstline[1]">
+    ( function() {
+        // Constructor
+        function _$(els) {
+            var element;
+            this.elements = [];
+            
+            for(var i=0, len=els.length; i&lt;len; i+=1 ) {
+                element = els[i];
+                if(typeof element === 'string') {
+                    element = document.getElementById(element);
+                } // if
+                this.elements.push(element);
+            } // for
+        };
+        
+        // Prototype facility
+        _$.prototype = {
+            each: function( fn ) {
+                for(var i=0, len=this.elements.length; i&lt;len; i+=1) {
+                    fn.call( this, this.elements[i] );
+                } // for
+                return this;
+            },
+            setStyle: function( styleName, styleValue ) {
+                this.each( function ( elem ) {
+                    elem.style[ styleName ] = styleValue;
+                });
+                return this;
+            },
+            show : function() {
+                this.each( function ( elem ) {
+                    elem.style[ 'display' ] = 'block';
+                });
+                return this;
+            },
+            addEvent: function( type, fn ) {
+                var add = function( elem ) {
+                    if( window.addEventListener ) {
+                        elem.addEventListener( type, fn, false );
+                    } // if
+                    else if( window.attachEvent ) {
+                        elem.attachEvent( 'on' + type, fn );
+                    } // else if
+                };
+                
+                this.each( function( elem ) {
+                    add(elem);
+                } );
+                return this;
+            }
+        };
+        
+        // public interface
+        window.$JTool = function() {
+            return new _$(arguments);
+        };
+        window.$ = window.$JTool;
+    } )();
+    </pre>
+    <h3>Listing. 使用chaining.js</h3>
+    <pre name="code" class="xml:nocontrols:firstline[1]">
+    &lt;html&gt;
+    &lt;head&gt;
+        &lt;script type="text/javascript" src="chaining.js"&gt;&lt;/script&gt;
+        &lt;script type="text/javascript"&gt;
+        $( window ).addEvent( 'load', function() {
+            $( 'btn1' ).addEvent( 'click', function() {
+                $( 'myBlock' )
+                .setStyle( 'border', '1px solid #cccccc' )
+                .setStyle( 'margin', '10px' )
+                .setStyle( 'width', '300px' )
+                .setStyle( 'height', '200px' )
+                .show();
+            } );
+        } );
+        &lt;/script&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;input type="button" value="btn" id="btn1" /&gt;
+        &lt;div id="myBlock" style="display: none;"&gt;
+        This is my block
+        &lt;/div&gt;
+    &lt;/body&gt;
+    &lt;/html&gt;
+    </pre>
+    <a href="example/test_chaining.html" target="_blank">Run Example</a>
+    <h2>Curry&nbsp;<a style="text-decoration: none;" href="http://en.wikipedia.org/wiki/Currying" target="_blank"><span style="vertical-align:super;text-decoration: underline;">wikipedia</span></a></h2>
+    <p>
+    數學定義對我而言太難看不懂，Example倒是看有，不過大概也只知道簡化function的程度。
+    可以知道要寫一個javascript function支援如下面例子的行為。
+    </p>
+    <h3>Listing. curry的簡單example</h3>
+    <div style="background: #eeeeee;">
+        <dl>
+            <dd>
+                <span style="font-family:serif;">
+                <i>f</i>(<i>x</i>,<i>y</i>)&nbsp;=&nbsp;<i>y</i>/<i>x</i>
+                </span>
+            </dd>
+        </dl>
+        <dl>
+            <dd>
+                <span style="font-family:serif;">
+                <i>divideBy2</i>(<i>y</i>)&nbsp;=&nbsp;<i>f</i>(2,<i>y</i>)
+                </span>
+            </dd>
+        </dl>
+        <dl>
+            <dd>
+                <span style="font-family:serif;">
+                <i>divideBy3</i>(<i>y</i>)&nbsp;=&nbsp;<i>f</i>(3,<i>y</i>)
+                </span>
+            </dd>
+        </dl>
+    </div>
+    <p>
+    再JavaScript使用curry function的時候，可能像下面這樣的樣子。
+    </p>
+    <h3>Listing. 使用curry function的程式大概像這樣</h3>
+    <pre name="code" class="javascript:nocontrols:firstline[1]">
+    var f = function(x, y) {
+        return y/x;
+    };
+    
+    var divideBy2 = curry( f, null, 2 );    // 產生divideBy2 function
+    var divideBy3 = curry( f, null, 3 );    // 產生divideBy3 function
+    </pre>
+    <p>
+    實作JavaScript的curry function時候就需要用到之前對Arguments object和Function.prototype.apply function
+    的學習，因為在currying
+    的過程我們會簡化某些arguments而留下某些arguments的值在curry後的function使用。因此在產生的function object
+    被呼叫的時候要考慮到使用者認為該輸入給原始function使用的arguments，所以用上了之前對Array.prototype.slice
+    和Array.prototype.concat這兩個method。
+    </p>
+    <h3>Listing. 偶的 curry function 實作版本</h3>
+    <pre name="code" class="javascript:nocontrols:firstline[1]">
+    var curry = function(fn, thisArg) {
+        var thisArg = thisArg || window;
+        var arg = [];
+        var i;
+        for( i=2; i&lt;arguments.length; i+=1 ) {
+            arg.push( arguments[i] );
+        } // for
+        return function() {
+            if( arguments.length &gt; 0 ) {
+                arg = arg.concat( Array.prototype.slice.apply( arguments ) );
+            } // if
+            return fn.apply( thisArg, arg );
+        };
+    };
+    </pre>
+    <a href="example/curry01.html" target="_blank">Run Example</a>
+    <h2>Memoization</h2>
+    <p>
+    顧名思義就是記得function執行的結果用來簡化funcation call和運算的成本。關鍵在於使用一個資料結構紀錄之前function
+    執行結果，而且可以透過執行時的arguments值查到對應結果。(反過來也就是說透過查詢就可以知道是不是有執行過)
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[34]">
+    var memoizer = function (memo, fundamental) {
+        var shell = function (n) {
+            var result = memo[n];
+            if (typeof result !== 'number') {
+                result = fundamental(shell, n);
+                memo[n] = result;
+            }
+            return result;
+        };
+        return shell;
+    };
+    </pre>
+    <a href="example/memoization01_frombook.html" target="_blank">Run 書本上的範例</a>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>ECMA-262</li>
+            <li>JavaScript: The Good Parts</li>
+            <li>Pro JavaScript Design Patterns</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/08/13
+</address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

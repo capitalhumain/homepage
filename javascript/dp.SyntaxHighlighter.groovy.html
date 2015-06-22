@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+	<script language="javascript">
+	window.onload = function () {
+		dp.SyntaxHighlighter.HighlightAll('code');
+	};
+	</script>
+	<title>SyntaxHighlighter - Groovy</title>
+</head>
+<body>
+<div>
+	<h1 class="header">SyntaxHighlighter - Groovy</h1>
+</div>
+<div class="articlecontent">
+	<h2>Preface</h2>
+    <p>
+之前用SyntaxHighlighter寫了Wicket的Syntax Highlighting的component。剛好看到Manning寄來Groovy 
+in Action第二版的廣告，就聯想到SyntaxHighlighter好像沒有Groovy的東東，因此就花了點時間研究一下
+怎麼在SyntaxHighlighter搞出能繪製Groovy Syntax Highlighting的功能。
+    </p>
+    <p>
+<strong>[2009/7/8補充]</strong>&nbsp;其實2.0版就有Groovy支援，另外在同事使用偶的Wicket SyntaxHighlightingBlock
+也發生一點問題，發現SyntaxHighlighter在1.5和2.0用XML brush的時候遇到empty tag如&lt;item/&gt;會產生錯誤的結果
+。用了很暴力的解法就是在SyntaxHighlightingBlock進行render tag內容的時候使用Strings.escapeMarkup()做escape。
+    </p>
+    <h2>蠻幹shBrushGroovy.js</h2>
+    <p>
+參考shBrushJava.js搞了給groovy用的東東。Groovy和Java共用的keyword會設定在java的keyword那邊
+而屬於Groovy才有的keyword會用另外一種顏色顯示。另外就是針對Groovy裡'''這種字串的regex用了蠻
+幹的寫法。
+    </p>
+    <p>
+覺得高手製作的東西果然不一樣，雖然還沒研究SyntaxHighliter的source code，光要支援別的語言要做
+的東西大致有下列幾點重點
+    </p>
+    <div class="paralist">
+    <ol>
+        <li>定義dp.sh.Brushes.Language_to_support的Constructor</li>
+        <li>用空白分隔的字串定義keyword</li>
+        <li>在regexList定義不同regex擷取的字串要append的CSS class的對應</li>
+        <li>如果喜歡可以在Style定義CSS class的內容</li>
+        <li>設定pre區塊class的第一個部分有關語言的alias</li>
+    </ol>
+    </div>
+    <h3>Listing. shBrushGroovy.js</h3>
+    <pre name="code" class="javascript:nocontrols:firstline[1]">
+dp.sh.Brushes.Groovy = function() {
+    var keywords = 'abstract assert boolean break byte case catch char ' +
+        'continue default do double else enum extends class const ' +
+        'false final finally float for goto if implements import ' +
+        'instanceof int interface long native new null ' +
+        'package private protected public return ' +
+        'short static strictfp super switch synchronized this throw throws ' +
+        'transient try void volatile while true';
+    var gkeywords = 'def test as any default in native strictfp threadsafe';
+
+    this.regexList = [
+        { regex: dp.sh.RegexLib.SingleLineCComments,                            
+          css: 'comment' },       // one line comments
+        { regex: dp.sh.RegexLib.MultiLineCComments,                             
+          css: 'comment' },       // multiline comments
+        { regex: dp.sh.RegexLib.DoubleQuotedString,                             
+          css: 'string' },        // strings
+        { regex: new RegExp("'''(?:\\.|(\\\\\\')|[^\\''\\n]|\\n)*'''|" + 
+                          "'(?:\\.|(\\\\\\')|[^\\''\\n])*'", 'g'),             
+          css: 'tstring' },       // strings
+        { regex: new RegExp('\\b([\\d]+(\\.[\\d]+)?|0x[a-f0-9]+)\\b', 'gi'),
+          css: 'number' },        // numbers
+        { regex: new RegExp('(?!\\@interface\\b)\\@[\\$\\w]+\\b', 'g'),
+          css: 'annotation' },    // annotation @anno
+        { regex: new RegExp('\\@interface\\b', 'g'),                            
+          css: 'keyword' },       // @interface keyword
+        { regex: new RegExp(this.GetKeywords(keywords), 'gm'),                  
+          css: 'keyword' },       // java keyword
+        { regex: new RegExp(this.GetKeywords(gkeywords), 'gm'),                 
+          css: 'gkeyword' }       // Groovy keyword
+        ];
+
+    this.CssClass = 'dp-j';
+    this.Style =    '.dp-j .annotation { color: #646464; }' +
+                    '.dp-j .string { color: #FF00FF; }' +
+                    '.dp-j .tstring { color: #cc00cc; }' +
+                    '.dp-j .comment { color: #CC0000; }' +
+                    '.dp-j .gkeyword { color: #0B6138; }' +
+                    '.dp-j .number { color: #C00000; }';
+}
+
+dp.sh.Brushes.Groovy.prototype    = new dp.sh.Highlighter();
+dp.sh.Brushes.Groovy.Aliases      = ['groovy'];
+    </pre>
+	<p>
+接著拿Groovy in Action裡面有關SwingBuilder的一則範例程式來測試看看效過。最後有一些是有關
+'''這種字串的測試。當然程式有加上swing close的那行和書上是不一樣，而且資料的部分也沒全輸入。
+	</p>
+    <h3>Listing. tab_demo.groovy</h3>
+    <pre name="code" class="groovy:nocontrols:firstline[1]">
+/**
+ * from Groovy in action
+ * @author Dierk 
+ * '''
+ */
+import groovy.swing.SwingBuilder
+import javax.swing.WindowConstants as WC
+
+def data = [
+    [nick:'MrG',        full:'Guillaume Laforge'],
+    [nick:'jez',        full:'Jeremy Rayner']
+]
+
+swing = new SwingBuilder()
+frame = swing.frame(title: 'Tab Demo',
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    scrollPane {
+        table() {
+            tableModel(list: data) {
+                propertyColumn(header: 'Nickname', propertyName: 'nick')
+                propertyColumn(header: 'Full Name', propertyName: 'full')
+            }
+        }
+    }
+}
+frame.pack()
+frame.show()
+
+// test 'sd'
+def abc1 = '''wwe
+dsf'''
+
+def abc2 = '''
+dsf'''
+
+def abc3 = ''''''
+def abc4 = '''this string'''
+
+    </pre>
+    <h3>Listing. Thread01.groovy</h3>
+    <pre name="code" class="groovy:nocontrols:firstline[1]">
+package script
+
+println Thread.currentThread().getName() + " Groovy Main BEGIN"
+
+def t = new Thread({
+	for( i in 1..20 ) {
+		println Thread.currentThread().getName() + " :i= " + i
+		Thread.sleep(300)
+	}
+});
+t.start()
+
+println Thread.currentThread().getName() + " Grooby Main END"
+    </pre>
+    <h2>Reference</h2>
+    <div>
+    	<ul>
+    		<li>Based on shBrushJava.js</li>
+    	</ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/07/02
+</address>
+</body>
+</html>

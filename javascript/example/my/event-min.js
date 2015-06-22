@@ -1,0 +1,1 @@
+(function(){var a={addHandler:function(b,d,c){if(b.addEventListener){b.addEventListener(d,c,false)}else{if(b.attachEvent){b.attachEvent("on"+d,c)}else{b["on"+d]=c}}},preventDefault:function(b){if(b.preventDefault){b.preventDefault()}else{b.returnValue=false}},target:function(b){return b.target||b.srcElement},event:function(b){return b||window.event}};window.EventUtil=a})();

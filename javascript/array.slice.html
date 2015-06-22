@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css"type="text/css"  rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Array.prototype.slice</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Array.prototype.slice</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>老了，最近偶而會想起以前發生的事情。沒想到國中就被老師評價為反應慢、學習能力差、腦袋不好如我這樣的人也是可以努力學習知識。這大概也是知識之神是中立的原因吧。除此之外，還有一個課題就是要努力嘗試讓自己都維持愉快的心情過日子。</p>
+        <p>Array.prototype.slice function讓我們可以由一個array物件終結取出自己想要範圍的elements產生一個新的shallow copy的array object。</p>
+        <h2>Array.prototype.slice function</h2>
+        <div>
+            <p>按照ECMA-262 3rd Edition spec講的，這個function做的事情如下</p>
+            <ol>
+                <li>Let A be a new array created as if by the expression new Array().</li>
+                <li>Call the [[Get]] method of this object with argument "length".</li>
+                <li>Call ToUint32(Result(2)).</li>
+                <li>Call ToInteger(start).</li>
+                <li>If Result(4) is negative, use max((Result(3)+Result(4)),0); else use min(Result(4),Result(3)).</li>
+                <li>Let k be Result(5).</li>
+                <li>If end is undefined, use Result(3); else use ToInteger(end).</li>
+                <li>If Result(7) is negative, use max((Result(3)+Result(7)),0); else use min(Result(7),Result(3)).</li>
+                <li>Let n be 0.</li>
+                <li>If k is greater than or equal to Result(8), go to step 19.</li>
+                <li>Call ToString(k).</li>
+                <li>If this object has a property named by Result(11), go to step 13; but if this object has no property named by Result(11), then go to step 16.</li>
+                <li>Call ToString(n).</li>
+                <li>Call the [[Get]] method of this object with argument Result(11).</li>
+                <li>Call the [[Put]] method of A with arguments Result(13) and Result(14).</li>
+                <li>Increase k by 1.</li>
+                <li>Increase n by 1.</li>
+                <li>Go to step 10.</li>
+                <li>Call the [[Put]] method of A with arguments "length" and n.</li>
+                <li>Return A.</li>
+            </ol>
+        </div>
+        <p>簡單的說slice提供指定範圍的shallow copy的array object。為啥說是shallow copy看下面例子的結果就知道。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[9]">
+    window.onload = function() {
+        var ma = [[1, 2, 3], [4, 5, 6], [7, 8, 9]], 
+            mb = Array.prototype.slice.call( ma, 0 ),
+            doc = document,
+            result = doc.getElementById( 'result' );
+        mb[1][0] = 'a';
+        result.innerHTML = ('ma[1][0]= ' + ma[1][0]); // ma[1][0] is 'a'
+    };
+        </pre>
+        <p>可以看到ma和mb這兩個array的第二個element都是取得同一個array object的reference，因此當Line 14執行mb[1][0]的設定之後，在Line 15由ma取值得時候就會看到'a'而非4。</p>
+        <p>其他就是有關範圍的指定，第二個參數end可以忽略不提供，如果沒有提供end則用length property的值替代。如果start大於length property，會拿到空白的陣列。如果start或者end是負的，則會用該參數值加上length property值之後和0相比取大值代表該參數。</p>
+        <p>以下列這個例子來看，-10, -13加上a.length之後還是小於0，因此b的內容就跟Array.prototype.slice.call( a, 0, 0 )的結果是一樣的。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+        var a = [1, 2, 3, 4], b = Array.prototype.slice.call( a, -10, -13 );    
+        </pre>
+        <h2>看看jQuery</h2>
+        <p>jQuery object本身就是一個很像array的東西，由jQuery.fn.init()的source code就可以看到不管是經過selector還是getElementById在jQuery內部都是用由0開始的連續數字的property存放，而且jQuery object也有length property，因此像Array.prototype.slice這類function就可以直接使用在jQuery object上。</p>
+        <h3>Figure. 由firebug觀察，可以看到很像array的連續數字的properties都是DOM elements</h3>
+        <img src="../images/javascript/watch.jquery.object.png" />
+        <p>某些時候我們想要從jQuery object中取得符合自己下的selector的DOM elements，會透過.get() function，就如同jQuery文件寫的<em>Retrieve the DOM elements matched by the jQuery object.</em>。可能的使用程式碼如下</p>
+        <pre name="code" class="javascript:nocontrols:firstline[19]">
+    $( function() {
+        var animals = $( 'li.animal' ).get(), pets = $( 'li.pet' ).get(), result = '', i, l;
+        $.merge( animals, pets );
+        $.unique( animals );
+        for( i=0, l=animals.length; i&lt;l; i++ ) {
+            result += ( '&lt;li>' + animals[i].innerHTML + '&lt;/li>' );
+        } // for
+        $( '#result' ).html( result );
+    } );
+        </pre>
+        <p>.get() function的source code如下，如果沒有指定要那個index的elements就會呼叫jQuery object的toArray() function。</p>
+        <h3>Listing. jQuery source code</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[201]">
+	// Get the Nth element in the matched element set OR
+	// Get the whole matched element set as a clean array
+	get: function( num ) {
+		return num == null ?
+
+			// Return a 'clean' array
+			this.toArray() :
+
+			// Return just the object
+			( num < 0 ? this.slice(num)[ 0 ] : this[ num ] );
+	},
+        </pre>
+        <p>toArray() function就是我想要的東西，透過Array.prototype.slice將jQuery object裡面用連續數字properties存放的的DOM elements產生一個新的正港的Array object。</p>
+        <h3>Listing. jQuery source code</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[197]">
+	toArray: function() {
+		return slice.call( this, 0 );
+	},
+        </pre>
+        <p>換句話說，從這個角度看jQuery object就像下面簡單、無用的例子裡的a這個物件。<strong>只要符合想執行function運作標的物件需要的properties，就可以套到該function。重點在於物件能做哪些事、具備哪些特性，而非物件的型別是啥，那個物件的祖宗十八代是誰。</strong></p>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;html>
+&lt;head>
+    &lt;title>mimic jQuery object for Array.prototype.slice&lt;/title>
+&lt;/head>
+&lt;body>
+    &lt;div id="result">&lt;/div>
+    &lt;script type="text/javascript">
+    window.onload = function() {
+        var a = { 0: '1234', 1: 'abcd',  length: 2, toString: function() { return 'this is toString speaking'; } }, 
+            arr, doc = document, str = '',
+            result = doc.getElementById( 'result' );
+        arr = Array.prototype.slice.call( a, 0 );
+        str += ('length: ' + arr.length + '&lt;br/>');
+        str += arr;
+        result.innerHTML = str;
+    };
+    &lt;/script>
+&lt;/body>
+&lt;/html>
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 3rd edition</li>
+                <li>ECMA-262 5th edition</li>
+                <li>http://api.jquery.com/get/</li>
+                <li>jQuery 1.3.2/1.4.2 source code</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/10/12</i>, latest update 2010/10/13
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

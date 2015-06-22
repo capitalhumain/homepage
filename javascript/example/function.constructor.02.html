@@ -1,0 +1,36 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Function Constructor 02</title>
+    <script type="text/javascript" language="javascript">
+    window.onload = function() {
+        var execute = document.getElementById( 'execute' );
+        var handler =  function() {
+            var fn;
+            var prog = document.getElementById( 'code' ).value;
+            if( /\W/.test( prog ) ) {
+                fn = Function( prog );
+                fn.apply();
+            } else {
+                alert( '請輸入程式' );
+            }
+        };
+        if( execute.addEventListener )
+            execute.addEventListener( 'click', handler, false);
+        else if( execute.attachEvent ) 
+            execute.attachEvent( 'onclick', handler );
+        else
+            execute.onclick = handler;  
+    };
+    </script>
+</head>
+<body>
+<p>
+Function Constructor 簡單範例
+</p>
+<textarea id="code" style="border: 1px solid #cccccc;font-family:'Courier New'; margin: 5px;" cols="60" rows="10">
+</textarea>
+<br/>
+<input type="button" id="execute" value="execute" />
+</body>
+</html>

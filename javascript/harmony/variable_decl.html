@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="../../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../../css/style.css" type="text/css"  rel="stylesheet"/>
+    <title>Harmony - Variable Declaration</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Harmony - Variable Declaration</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>每天努力學習、練習產出...</p>
+        <h2>Context</h2>
+        <p><code>let</code>和<code>const</code>可以讓我們宣告正在執行的context的scope的變數。回想以前我們只有global scope和function scope，為了避免搞太多東西到global object，而有一些手法來達成這個目的。但是在ECMAScript 6當中明確定義了在ECMAScript 5.1保留的keyword，讓我們可以宣告常數變數和block scope variable（通俗的說法）。</p>
+        <h2><code>const</code></h2>
+        <p>透過<code>const</const>我們可以宣告常數變數，在一般模式就如Listing 1程式碼，執行起來有點...怪怪的，不過蠻符合ECMAScript發展當初為了能跑為最高指導原則的結果。</p>
+        <h3>Listing 1. simple const example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+const const1 = 10;
+
+console.log( const1 );
+
+const1 = const1 + 5;
+
+console.log( const1 );
+        </pre>
+        <h3 class="execution">執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">terence-mba:harmony tzuyichao$ node let_and_const_decl_3.js 
+10
+10
+        </pre>
+        <p>怪怪的地方在於其他語言我們如果對const variable重新賦值會「哭夭」，我們可以把程式碼加上<code>"use strict"</code>把engine切到strict mode。此時我們也需要加上--harmony讓Node.js支援ECMAScript Harmony的語法（就是ECMAScript 6）。</p>
+        <h3>Listing 2. strict mode const example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+"use strict"
+const const1 = 10;
+
+console.log( const1 );
+
+const1 = const1 + 5;
+
+console.log( const1 );
+        </pre>
+        <h3 class="execution">執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">terence-mba:harmony tzuyichao$ node --harmony let_and_const_decl_4.js 
+
+/Users/tzuyichao/lab/javascript/harmony/let_and_const_decl_4.js:6
+const1 = const1 + 5;
+
+SyntaxError: Assignment to constant variable.
+    at Module._compile (module.js:439:25)
+    at Object.Module._extensions..js (module.js:474:10)
+    at Module.load (module.js:356:32)
+    at Function.Module._load (module.js:312:12)
+    at Function.Module.runMain (module.js:497:10)
+    at startup (node.js:119:16)
+    at node.js:901:3
+        </pre>
+        <p>回到scope這個主題，我們可以用Listing 3的程式碼來看，在if scope裡面宣告一個const variable c，然後離開if scope之後，嘗試用在console印出c的時候就會收到"c is not defined"的error。</p>
+        <h3>Listing 3. const scope simple example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+"use strict"
+if(true) {
+    const c = 10;
+}
+
+console.log( c );
+        </pre>
+        <h3 class="execution">執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">terence-mba:harmony tzuyichao$ node --harmony let_and_const_decl_6.js 
+
+/Users/tzuyichao/lab/javascript/harmony/let_and_const_decl_6.js:6
+console.log( c );
+             ^
+ReferenceError: c is not defined
+    at Object.&lt;anonymous&gt; (/Users/tzuyichao/lab/javascript/harmony/let_and_const_decl_6.js:6:14)
+    at Module._compile (module.js:456:26)
+    at Object.Module._extensions..js (module.js:474:10)
+    at Module.load (module.js:356:32)
+    at Function.Module._load (module.js:312:12)
+    at Function.Module.runMain (module.js:497:10)
+    at startup (node.js:119:16)
+    at node.js:901:3
+        </pre>
+        <h2><code>let</code></h2>
+        <h3>Listing 4. let simple example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+"use strict"
+for(var i=0; i&lt;2; i++) {
+    let l = 2
+    console.log( i + l );
+}
+
+console.log( '[i]:' + i );
+try {
+    console.log( '[l]:' + l );
+} catch( err ) {
+    console.log( err.message );
+}
+        </pre>
+        <p>首先，故意在<code>for</code>裡面用<code>var</code>宣告一個變數，然後在<code>for</code>裡面使用<code>let</code>宣告一個變數。按照<code>var</code>的行為，我們預期離開for loop之後，還是可以正常取得i的值，因此try catch加在嘗試取得<code>let</code>宣告的變數那邊。看到下面的執行結果，就如我們預期在第九行會發生exception，而且原因是l is not defined~</p>
+        <h3 class="execution">執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">terence-mba:harmony tzuyichao$ node --harmony let_and_const_decl_2.js 
+2
+3
+[i]:2
+l is not defined
+        </pre>
+        <p>如果要像其他語言在Listing 4的i也只存在for loop scope裡面則要改寫成下列這樣</p>
+        <h3>Listing 5. let simple example。(i也在for loop scope裡面)</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+"use strict"
+for(let i=0; i&lt;2; i++) {
+    let l = 2
+    console.log( i + l );
+}
+
+try {
+    console.log( '[i]:' + i );
+    console.log( '[l]:' + l );
+} catch( err ) {
+    console.log( err.message );
+}
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 6 Draft November 8, 2013</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2013/12/03
+    </address>
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

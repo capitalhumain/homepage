@@ -1,0 +1,65 @@
+ANDREA@orcl> alter index t_pk monitoring usage;
+
+Index altered.
+
+ANDREA@orcl> col index_name for a5
+ANDREA@orcl> col table_name for a5
+ANDREA@orcl> col start_monitoring for a30
+ANDREA@orcl> col end_monitoring for a30
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    NO     10/15/2009 23:31:53
+
+ANDREA@orcl> set autotrace traceonly explain
+ANDREA@orcl> select * from t where id < 100;
+
+Execution Plan
+----------------------------------------------------------
+Plan hash value: 3772518221
+
+------------------------------------------------------------------------------------
+| Id  | Operation                   | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT            |      |    99 | 32373 |   101   (0)| 00:00:02 |
+|   1 |  TABLE ACCESS BY INDEX ROWID| T    |    99 | 32373 |   101   (0)| 00:00:02 |
+|*  2 |   INDEX RANGE SCAN          | T_PK |    99 |       |     2   (0)| 00:00:01 |
+------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   2 - access("ID"<100)
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    YES    10/15/2009 23:31:53
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    YES    10/15/2009 23:31:53
+
+ANDREA@orcl> alter index t_pk nomonitoring usage;
+
+Index altered.
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     NO     YES    10/15/2009 23:31:53            10/15/2009 23:35:28
+
+ANDREA@orcl> alter index t_pk monitoring usage;
+
+Index altered.
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    NO     10/15/2009 23:35:41

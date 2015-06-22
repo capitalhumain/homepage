@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>Lab - Function 02 - Arguments</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Lab - Function 02 - Arguments</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+    about呼叫function object的arguments object。所謂的規定一直以來都只是Spec.說這樣這樣，但是現實各個實作品並
+    不一定就是這樣。
+    </p>
+    <h2 style="font-family: 微軟正黑體 標楷體 'Courier New';">規定的東東</h2>
+    <pre style='font-family: "Courier New";'>
+10.1.7 This
+        There is a this value associated with every active execution context. The this value depends on the caller
+        and the type of code being executed and is determined when control enters the execution context. The
+        this value associated with an execution context is immutable.
+10.1.8 Arguments Object
+        When control enters an execution context for function code, an arguments object is created and
+        initialised as follows:
+        • The value of the internal [[Prototype]] property of the arguments object is the original Object
+        prototype object, the one that is the initial value of Object.prototype (see 15.2.3.1).
+        • A property is created with name callee and property attributes { DontEnum }. The initial value of
+        this property is the Function object being executed. This allows anonymous functions to be recursive.
+        • A property is created with name length and property attributes { DontEnum }. The initial value of
+        this property is the number of actual parameter values supplied by the caller.
+        • For each non-negative integer, arg, less than the value of the length property, a property is created
+        with name ToString(arg) and property attributes { DontEnum }. The initial value of this property is
+        the value of the corresponding actual parameter supplied by the caller. The first actual parameter
+        value corresponds to arg = 0, the second to arg = 1, and so on. In the case when arg is less than the
+        number of formal parameters for the Function object, this property shares its value with the
+        corresponding property of the activation object. This means that changing this property changes the
+        corresponding property of the activation object and vice versa.
+    </pre>
+    <h2>Free parameters for function object</h2>
+    <p>
+    每個javascript function被呼叫的時候都會大放送兩個參數，一個是this，另一個是arguments。this是啥東西取決
+    於呼叫的方法(包含Apply Invocation Pattern時給function的this物件)。而arguments我們用起來像Array object，
+    但是其實並不是Array object。簡單的測試程式如下
+    </p>
+    <a href="example/argument01.html" target="_blank">Example 1</a>
+    <pre name="code" class="javascript:nocontrols:firstline[5]">
+    var bla = function() {
+        var i, sum=0;
+        document.getElementById( 'tp' ).innerHTML = typeof arguments;
+        document.getElementById( 'ctrl' ).innerHTML = arguments.constructor;
+        for(i=0; i&lt;arguments.length; i+=1) {
+            sum += arguments[i];
+        } // for
+        return sum;
+    };
+    
+    window.onload = function() {
+        document.getElementById( 'sum' ).innerHTML =  bla(1, 2, 3);
+    };
+    </pre>
+    <p>
+    當然也可以用之前Array那邊的isArray()來判斷arguments object是不是Array object。
+    arguments object不是Array object又如何? 反正我們程式目前為止當他是Array object
+    也都跑的相當正常。問題會發生在我們需要把arguments物件透過apply invocation pattern
+    傳給另一個function object的時候。根據規定Function.prototype.apply()的第二個參數是
+    argument array。
+    </p>
+    <p>
+    上述問題Array object有一function(Array.prototype.concat)可以讓我們串接array objects。
+    但是在下面測試會看到不如預期的結果。
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[4]">
+    var bla = function() {
+        var arr = [1, 2, 3];
+        return arr.concat(arguments);
+    };
+    ...
+    ...
+    ...
+    ...
+    ...
+    window.onload = function() {
+        document.getElementById( 'result' ).innerHTML = bla( 'a', 'b', 'c' );
+        document.getElementById( 'result2' ).innerHTML = bla( ['a', 'b', 'c'] );
+    };
+    </pre>
+    <p>
+    這個時候必須搭配另一個剛好可以和Arguments object使用。
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[4]">
+    // 第一個測試
+    // 沒有start, end的時候
+    var arr1 = [1, 2, 3];
+    
+    var sarr1 = arr1.slice();
+    alert( '測試一' );
+    alert( arr1 );
+    alert( sarr1 );
+    alert( arr1 === sarr1 );    // false
+    
+    // 第二個測試
+    // 類似array的物件
+    // 0 沒東西
+    // 按照Array object定義length等於最大正整數的property+1
+    var farr1 = { 1: "one", 2: "two", length: 3};
+    var sarr2 = Array.prototype.slice.apply(farr1);
+    alert( '測試二' );
+    alert( sarr2 );
+    alert( sarr2.constructor );
+    
+    // 第三個測試
+    // 看起來像array的object literal，但是length property內容
+    // 和實際有點不符
+    var farr2 = { 0: "bla", 1: "fla", 2: "kla", length: 2};
+    var sarr3 = Array.prototype.slice.apply(farr2);
+    alert( '測試三' );
+    alert( sarr3 );                 // bla, fla
+    </pre>
+    <p>
+    從測試看起來Arguments object應該剛好可以透過Array.prototype.slice製作出我們想要的array object。
+    從觀察大膽猜測Array.prototype.slice的程式碼可能類似下面程式片段
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[32]">
+    // 不考慮邊界值的狀況下，slice的程式碼可能如下
+    var slice = function(start, end) {
+        var sidx = start || 0;
+        var eidx = end || this.length;
+        var i;
+        var result = [];
+        for( i=sidx; i&lt;eidx; i+=1 ) {
+            result.push( this[i] );
+        } // for
+        return result;
+    };
+    </pre>
+    <p>
+    由此看來上面bla function我們改寫如下，就可以達到我們想要的東西。這樣就可以把多個arguments object
+    都串串起來。
+    
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[1]">
+    var bla = function() {
+        var arr = [1, 2, 3];
+        return arr.concat( Array.prototype.slice.apply( arguments ) );
+    };
+    </pre>
+    <h2>callee Property</h2>
+    <p>
+    ECMA-262 10.1.8 第二點講Arguments的callee這個property，也舉了一個可以利用的例子。簡單的範例如下。
+    </p>
+    <p>
+    實作anonymous recursive function下面有兩種做法，一個是使用Arguments object的callee property；另一個是使用anonymous function name賦予的名字可以在function內部使用。
+    </p>
+    <p style="color: red; font-style: bold;">
+    Note: 特別注意使用arguments.callee的時候，如果this object很重要的話，this指的東西也要當成參數傳進去。
+    </p>
+    <a href="example/argument02.html" target="_blank">Run Example</a>
+    <pre name="code" class="javascript:nocontrols:firstline[6]">
+    window.onload = function() {
+        // 使用Arguments object的callee
+        $( '#normal' ).bind( 'click', function() {
+            $( '#nResult' ).text( function(n) { 
+                if( n === 0 )
+                    return 0;
+                if( n === 1 )
+                    return 1;
+                return arguments.callee( n-1 ) + arguments.callee( n-2 );
+            }(10) );
+        } );
+        
+        // 使用anonymous function name來做
+        // 那個name fib是無法在function之外使用的
+        $( '#normal2' ).bind( 'click', function() {
+            $( '#nResult2' ).text( function fib(n) { 
+                if( n === 0 )
+                    return 0;
+                if( n === 1 )
+                    return 1;
+                return fib( n-1 ) + fib( n-2 );
+            }(10) );
+        } );
+    };
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>ECMA-262</li>
+            <li>JavaScript: The Good Parts</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/08/12
+</address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

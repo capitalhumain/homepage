@@ -1,0 +1,56 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>jQuery test run</title>
+    <style type="text/css">
+    .cls1 {
+        border: 1px solid blue;
+        width: 100px; 
+        height: 100px;
+    }
+    #container1 {
+        padding: 10px;
+        margin: 5px;
+        border: 1px dotted red;
+    }
+    .sqr1 {
+        margin: 5px;
+        padding: 5px;
+        border: 1px solid #556677;
+        color: blue;
+    }
+    </style>
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js"></script>
+</head>
+<body>
+<div id="abcd">
+</div>
+<div class="cls">
+</div>
+<div class="cls1">
+</div>
+<div id="container1">
+    <div class="cls1">
+    </div>
+</div>
+<span id="root"></span>
+<script type="text/javascript">
+$( function() {
+    $( '#abcd' ).text( 'Hello, World!' );
+    $( '.cls' ).text( 'class selector' );
+    
+    // test for context
+    var container1Elem = document.getElementById( 'container1' );
+    $( '.cls1', container1Elem ).text( 'context test' );
+    
+    // test html 把HTML內容放到$()裡面是把內容叫jQuery做create elements
+    $( container1Elem ).append( $( '<div></div>' ).addClass( 'sqr1' ).text( 'add by jQuery' ) );
+    
+    // 沒有寫selector selector = selector || document, 最終 回傳的物件的context property就是 => document物件
+    var doc = $();
+    $( '#root' ).text( doc.context.nodeName + ";" + (doc.context === document) );
+    
+} );
+</script>
+</body>
+</html>

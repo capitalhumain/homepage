@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css"type="text/css"  rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.6.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushCpp.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>V8 JavaScript Engine: The "Hello, World!"</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">V8 JavaScript Engine: The "Hello, World!"</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>沒想到該封存的從C/C++變成C#...</p>
+        <p>Google家威猛的JavaScript engine，是ECMA-262第五版的實作，用在google chrome，也可以當作embedded script engine。</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 11.04</li>
+            </ul>
+        </div>
+        <h2>Installation</h2>
+        <p>用<code>apt-get install</code>或package manager安裝libv8-dev</p>
+        <h2>Hello, World</h2>
+        <p>程式是從google code上的document打的，我打字慢，所以只是把註解都拿掉。</p>
+        <div class="codehead">Listing. helloworld.cpp (from google code v8 engine project page)</div>
+        <pre name="code" class="cpp:controls:firstline[1]">
+#include &lt;v8.h>
+
+using namespace v8;
+
+int main(int argc, char* argv[]) {
+    HandleScope handle_scope;
+    Persistent&lt;Context> context = Context::New();
+    Context::Scope context_scope( context );
+    Handle&lt;String> source = String::New( "'Hello' + ', World!'" );
+
+    Handle&lt;Script> script = Script::Compile(source) ;
+    
+    Handle&lt;Value> result = script->Run();
+
+    context.Dispose();
+    
+    String::AsciiValue ascii( result );
+    printf( "%s\n", *ascii );
+    return 0;
+}
+        </pre>
+        <p>因為環境和google code上文件內容不一樣，所以Makefile如下</p>
+        <pre name="code" class="text:controls:firstline[1]">
+helloworld: helloworld.cpp
+    g++ -Iinclude helloworld.cpp -o $@ /usr/lib/libv8.so -lpthread
+        </pre>
+        <h2>Resource</h2>
+        <div>
+            <ol>
+                <li>http://code.google.com/intl/zh-TW/apis/v8/intro.html</li>
+                <li>http://code.google.com/intl/zh-TW/apis/v8/get_started.html#intro</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2011/08/15
+    </address>
+    <script type="text/javascript">
+    $( function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    } );
+    </script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>FTCS forfun XMLPost ini Generator (Basic AssetType)</title>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+    };
+    </script>
+</head>
+<body>
+<div>
+    <h1 class="header">FTCS forfun XMLPost ini Generator (Basic AssetType)</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+準備工作既然做完，就開工啦！下面列出來的就是之前用來轉的Basic AssetType content
+的ini file。至於怎麼啟動和詳細每一個參數啥意思就要自己去看FTCS的Developer Guide。
+對我而言，我把這個ini設定檔分成三大塊，就是下面Comments
+部分那三塊。第一塊比較需要注意的部分是<strong>xmlpost.deletefile</strong>
+因為我們要把content內容製作成xml file而XMLPost會讀這些xml file，
+根據ini設定檔內容將這些xml file contents一個一個透過一隻ContentServer的程式(就是第二部分pagename
+所指定的那個程式OpenMarket/Xcelerate/Actions/RemoteContentPost)。而這個參數如果設定成y
+則表示XMLPost程式每做完一個就會刪除檔案。因為某些未知的因素可能XMLPost
+在執行過程當中會莫名的中斷，如果有設定這個參數會每做完一個content就刪除檔案的話，
+就可以輕鬆的知道停下來的地方。在轉移成千上萬的content的時候就相當有幫助。
+    </p>
+    <h3>Listing. Example for XMLPost ini file</h3>
+    <pre>
+# Config for XMLPost
+xmlpost.xmlfilenamefilter: .xml
+xmlpost.url: http://localhost:8080/cs/ContentServer
+xmlpost.logfile: ecBulletin_xmlpost_log.txt
+xmlpost.success: Success
+xmlpost.failure: Error
+xmlpost.deletefile: y
+# Config for Posting Element
+xmlpost.numargs: 7
+xmlpost.argname1: pagename
+xmlpost.argvalue1: OpenMarket/Xcelerate/Actions/RemoteContentPost
+xmlpost.argname2: AssetType
+xmlpost.argvalue2: ecBulletin
+xmlpost.argname3: authusername
+xmlpost.argvalue3: terence
+xmlpost.argname4: authpassword
+xmlpost.argvalue4: password
+xmlpost.argname5: xmlpostdebug
+xmlpost.argvalue5: on
+xmlpost.argname6: inifile
+xmlpost.argvalue6: futuretense.ini
+xmlpost.argname7: publication
+xmlpost.argvalue7: eCare
+# Config for Source file
+postname: y
+truncname: 32
+postdescription: y
+truncdescription: 128
+poststartdate: y
+postenddate: y
+postheadlineweb: y
+truncheadlineweb: 255
+postbodyweb: y
+postheadlinewap: y
+truncheadlinewap: 255
+postbodywap: y
+    </pre>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.6.3</li>
+            <li>Sun JDK 1.6.0_10</li>
+            <li>Fatwire ContentServer 7.0.3</li>
+        </ul>
+    </div>    
+    <h2>Step 1. 建立空殼</h2>
+    <p>
+首先，先搞個空格出來。就只是大致上把需要的參數用Swing component排好。
+
+    </p>
+    <h3>Listing. FTCS_XMLPost_forfun.groovy (v1. 空殼)</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+/**
+ * FTCS: FaTwire ContentServer，自己用爽的縮寫
+ * 
+ */
+package script
+
+import groovy.sql.Sql
+import java.awt.BorderLayout
+import java.awt.GridLayout
+import javax.swing.*
+import groovy.swing.SwingBuilder
+import javax.swing.WindowConstants as WC
+
+def db = Sql.newInstance(
+    'jdbc:oracle:thin:@localhost:1521:orcl',
+    'fwuser',
+    'fwpwd',
+    'oracle.jdbc.OracleDriver'
+)
+
+def swing = new SwingBuilder()
+
+def combodata = [ '' ]
+
+def data = []
+
+def argdata = [ [name: 'pagename', value: 'OpenMarket/Xcelerate/Actions/RemoteContentPost'],
+                [name: 'authusername', value: 'terence'],
+                [name: 'authpassword', value: 'password'],
+                [name: 'xmlpostdebug', value: 'On'],
+                [name: 'inifile', value: 'futuretense.ini'],
+                [name: 'publication', value: 'site name']
+                ]
+
+db.eachRow( "select assettype from assettype where logic <> 'com.openmarket.assetframework.complexasset.ComplexAsset'" ) { line ->
+    combodata.add( line.assettype )
+}
+
+comboBoxAction = swing.action( name: 'Execute', closure: {
+    data.clear()
+    if( swing.assettype.selectedItem != '' ) {
+        def qry = "select * from $swing.assettype.selectedItem where rownum=1"
+        db.query( qry.toString() ) { rs ->
+            def meta = rs.metaData
+            if(meta.columnCount <= 0) return
+            for( i in 1..meta.columnCount) {
+                data.add( [colName: meta.getColumnName(i), 
+                    colTypeName: meta.getColumnTypeName(i),
+                    colLen: meta.getColumnDisplaySize(i),
+                    colScale: "( " + meta.getPrecision(i) + "," + 
+                              meta.getScale(i) + " )",
+                    imported: false] ) 
+            }
+        }
+    }
+    swing.metatable.revalidate()
+})
+
+frame = swing.frame(title: 'FTCS XMLPost ini Generator (Basic AssetType for now)',
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE,
+                    preferredSize: [500, 600]) {
+    panel(layout: new BorderLayout()) {
+        vbox(constraints: BorderLayout.CENTER) {
+            panel(layout: new GridLayout(6, 2)) {
+                label 'xmlpost.xmlfilenamefilter'
+                textField( id: 'xmlfilenamefilter')
+                label 'xmlpost.url'
+                textField( id: 'url')
+                label 'xmlpost.logfile'
+                textField( id: 'logfile')
+                label 'xmlpost.success'
+                textField( id: 'success')
+                label 'xmlpost.failure'
+                textField( id: 'failure')
+                label 'xmlpost.deletefile'
+                textField( id: 'deletefile')
+            }
+            scrollPane(preferredSize: [500, 150]) {
+                table(id: 'argument') {
+                    tableModel(list: argdata) {
+                        propertyColumn(header: 'Argument Name', propertyName: 'name')
+                        propertyColumn(header: 'Argument Value', propertyName: 'value')
+                    }
+                }
+            }
+            hbox() {
+                label 'Basic Asset Type: '
+                comboBox( id: 'assettype', items: combodata ) {
+                    action(comboBoxAction) 
+                }
+            }
+            scrollPane(preferredSize: [500, 300]) {
+                table(id: 'metatable') {
+                    tableModel(list: data) {
+                        propertyColumn(header: 'Column Name', propertyName: 'colName')
+                        propertyColumn(header: 'Type Name', propertyName: 'colTypeName')
+                        propertyColumn(header: 'Length', propertyName: 'colLen')
+                        propertyColumn(header: 'Scale', propertyName: 'colScale')
+                        closureColumn(header: 'Import ?', 
+                            cellRenderer: new CheckCellRenderer(),
+                            cellEditor: new DefaultCellEditor(checkBox(horizontalAlignment: JCheckBox.CENTER)),
+                            read: { row -> return row.imported }, 
+                            write: { row, newValue -> 
+                                    row.imported = newValue })
+                    }
+                }
+            }
+        } // CENTER
+        hbox(constraints: BorderLayout.SOUTH) {
+            button( 'Generate' ) 
+        } // SOUTH
+    }
+}
+
+frame.pack()
+frame.show()
+    </pre>
+    <h3>Figure. 程式執行結果</h3>
+    <img class="screenshoot" src="../images/ftcs/forfun_1_1.PNG" />
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Groovy Web Site</li>
+            <li>Groovy in Action, First Edition</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/07/21
+</address>
+</body>
+</html>

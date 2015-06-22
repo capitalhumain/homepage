@@ -1,0 +1,328 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css"type="text/css"  rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Learning jQuery - Utilities</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Learning jQuery - Utilities</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        看jQuery Utilities算看jQuery主要程式附帶的產物。
+        </p>
+        <h2>jQuery Utilities</h2>
+        <div class="toc">
+        <legend>Table of Content</legend>
+        <ul>
+            <li><a href="#isfunction">jQuery.isFunction()</a></li>
+            <li><a href="#isarray">jQuery.isArray()</a></li>
+            <li><a href="#isplainobject">jQuery.isPlainObject()</a></li>
+            <li><a href="#grep">jQuery.grep()</a></li>
+            <li><a href="#merge">jQuery.merge()</a></li>
+            <li><a href="#unique">jQuery.unique()</a></li>
+        </ul>
+        </div>
+        <h4>jQuery.isFunction()<a id="isfunction"></a></h4>
+        <p>
+        判斷物件是否為function物件。直覺來說會用typeof，但是很無奈的並不是所有的狀況都能夠使用typeof來判斷。
+        就如同是不是array的判斷也無法單純的使用typeof來做一樣。在Secret of the JavaScript Ninja書中John Resig
+        列了一些browser用typeof判斷有問題的狀況，下面連結是我根據那些狀況寫的測試頁面。
+        </p>
+        <a href="example/function/type_outter.html" target="_blank">Function type check Example</a>
+        <p>
+        光根據jQuery source code把isFunction這個function拿下來用的話，會覺得很挫折。因為Object.prototype.toString
+        在jQuery當中常常被用到為了效能已經把Object.prototype.toString放到local variable中。所以完整的看起來應該像下列這樣
+        </p>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var jqAnno = {
+    toString: Object.prototype.toString,
+    isFunction: function( obj ) {
+	    return jqAnno.toString.call(obj) === "[object Function]";
+    }
+};
+        </pre>
+        <p>
+        或者像書上那樣寫法
+        </p>
+        <pre name="code" class="javascript:controls:firstline[1]">
+function isFunction( fn ) {
+    return Object.prototype.toString.call( fn ) === "[object Function]";
+};
+        </pre>
+        <h3>Listing. Using jQuery isFunction</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var fn = function() {
+    alert( '13' );
+};
+
+$( function() {
+    alert( jQuery.isFunction( fn ) );   // true
+    alert( $.isFunction( fn ) );        // true
+};
+        </pre>
+        <h4>jQuery.isArray()<a id="isarray" name="isarray"></a></h4>
+        <p>Reference <a href="lab.array.01.html">Array 01</a></p>
+        <h3>Listing. jQuery 1.4.2 jQuery.isArray function</h3>
+        <pre name="code" class="javascript:controls:firstline[457]">
+	isArray: function( obj ) {
+		return toString.call(obj) === "[object Array]";
+	},
+        </pre>
+        <p></p>
+        <h4>jQuery.isPlainObject()<a id="isplainobject" name="isplainobject"></a></h4>
+        <p></p>
+        <h3>Listing. jQuery 1.4.2 jQuery.isPlainObject function</h3>
+        <pre name="code" class="javascript:controls:firstline[461]">
+	isPlainObject: function( obj ) {
+		// Must be an Object.
+		// Because of IE, we also have to check the presence of the constructor property.
+		// Make sure that DOM nodes and window objects don't pass through, as well
+		if ( !obj || toString.call(obj) !== "[object Object]" || obj.nodeType || obj.setInterval ) {
+			return false;
+		}
+		
+		// Not own constructor property must be Object
+		if ( obj.constructor
+			&& !hasOwnProperty.call(obj, "constructor")
+			&& !hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf") ) {
+			return false;
+		}
+		
+		// Own properties are enumerated firstly, so to speed up,
+		// if last one is own, then all properties are own.
+	
+		var key;
+		for ( key in obj ) {}
+		
+		return key === undefined || hasOwnProperty.call( obj, key );
+	},
+        </pre>
+        <p>首先如同John Resig註解寫的要避免用Object.prototype.toString在IE時，誤放window物件和DOM node element過去，所以要多加一些判斷方法擋掉window object和DOM node element。一個簡單的測試程式如下</p>
+        <pre name="code" class="javascript:controls:firstline[1]">
+    window.onload = function() {
+        var toString = Object.prototype.toString, 
+            doc = document, 
+            testElem = doc.getElementById( 'test' );
+        alert( toString.call( window ) + "/" + window.setInterval + "/" + window.nodeType );
+        alert( toString.call( testElem ) + "/" + testElem.setInterval + "/" + testElem.nodeType );
+    };
+        </pre>
+        <p>在IE下執行會看到Object.prototype.toString針對window和DOM node element得到的結果竟然都是"[object Object]"，所以才需要用nodeType來測試DOM node element和用setInterval來測試window物件。</p>
+        <h4>jQuery.grep()<a id="grep" name="grep"></a></h4>
+        <p>最後一個參數代表inverse，傳入boolean。inv = true代表經callback運算後，傳回false的資料會被選出來。</p>
+        <h3>Listing. jQuery.grep function source code</h3>
+        <pre name="code" class="javascript:controls:firstline[642]">
+	grep: function( elems, callback, inv ) {
+		var ret = [];
+
+		// Go through the array, only saving the items
+		// that pass the validator function
+		for ( var i = 0, length = elems.length; i < length; i++ ) {
+			if ( !inv !== !callback( elems[ i ], i ) ) {
+				ret.push( elems[ i ] );
+			}
+		}
+
+		return ret;
+	},
+        </pre>
+        <p>下面兩個例子看inv參數的使用，第一個例子是inv = false或者沒有提供inv的狀況。這個例子會得到所有"J"開頭的月份。</p>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;html>
+&lt;head>
+    &lt;title>jQuery grep&lt;/title>
+    &lt;script type="text/javascript" src="script/jquery-1.4.2.js">&lt;/script>
+&lt;/head>
+&lt;body>
+    &lt;div>&lt;ol id="months">&lt;/ol>&lt;/div>
+    &lt;script type="text/javascript">
+    $( function() {
+        var months = [ 'January', 'Februrary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
+        months = $.grep( months, function( value, i ) {
+            return (value.indexOf( 'J' ) === 0);
+        }, false );
+        $( '#months' ).html( '&lt;li>' + months.join( '&lt;/li>&lt;li>' ) + '&lt;/li>' );
+    } );
+    &lt;/script>
+&lt;/body>
+&lt;/html>
+        </pre>
+        <p>第二個例子是inv=true的例子，下面的例子會得到所有非"J"開頭的月份。</p>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;html>
+&lt;head>
+    &lt;title>jQuery grep&lt;/title>
+    &lt;script type="text/javascript" src="script/jquery-1.4.2.js">&lt;/script>
+&lt;/head>
+&lt;body>
+    &lt;div>&lt;ol id="months">&lt;/ol>&lt;/div>
+    &lt;script type="text/javascript">
+    $( function() {
+        var months = [ 'January', 'Februrary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
+        months = $.grep( months, function( value, i ) {
+            return (value.indexOf( 'J' ) === 0);
+        }, true );
+        $( '#months' ).html( '&lt;li>' + months.join( '&lt;/li>&lt;li>' ) + '&lt;/li>' );
+    } );
+    &lt;/script>
+&lt;/body>
+&lt;/html>
+        </pre>
+        <h4>jQuery.merge()<a id="merge" name="merge"></a></h4>
+        <p>從source code來看有兩個特殊點，在使用jQuery.merge()時要特別注意</p>
+        <div>
+            <ol>
+                <li>第一個參數一定要是array或者很像array的物件(比如說jQuery object自己就是一個現成的例子，如果不在乎連續數字的properties，至少要有length property)，如果第一個參數不是array會發生很刺激的事情，最好先確認一下。</li>
+                <li>第二個參數如果是object，就會衍伸出另外兩個情況，就是有沒有length property，在這樣的狀況即使執行結果如預期也只是單純運氣好。（最好也是確認第二個是不是array）</li>
+            </ol>
+        </div>
+        <h3>Listing. jQuery.merge function source code</h3>
+        <pre name="code" class="javascript:controls:firstline[623]">
+	merge: function( first, second ) {
+		var i = first.length, j = 0;
+
+		if ( typeof second.length === "number" ) {
+			for ( var l = second.length; j < l; j++ ) {
+				first[ i++ ] = second[ j ];
+			}
+		
+		} else {
+			while ( second[j] !== undefined ) {
+				first[ i++ ] = second[ j++ ];
+			}
+		}
+
+		first.length = i;
+
+		return first;
+	},
+        </pre>
+        <p>首先，來看悲慘狀況，第一個參數給literal object會怎樣。正常的array預期會看到所有的連續整數(or整數的字串)為名的properties(用array的說法是elements)和length property。</p>
+        <p>但是因為months只是literal object沒有length property，所以merge function一開始的i是undefined，而對undefined做數值運算會得到NaN。因此結果就如預期中的不正常months[NaN]會被重複設定obj的內容，後面重設第一個參數的length property的時候會把length property設為NaN。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[9]">
+    $( function() {
+        var months = { a: 'A', b: 'B' }, obj = [1, 2], msg = '';
+        $.merge( months, obj );
+        for( var a in months ) {
+            msg += ('<li>' + a + ":" + months[a] + '</li>' ) ;
+        }
+        $( '#result' ).html( msg );
+        // 下面這個一定失敗，因為literal object months沒有join function
+        // $( '#result' ).html( '<li>' + months.join( '</li><li>' ) + '</li>' );
+    } );
+        </pre>
+        <p>到第二個參數的討論，如果第二個參數只是literal object且沒有length property，但是「運氣很好」有從0開始的properties，那些從0開始連續的properties也會被放到第一個參數裡面。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[9]">
+    $( function() {
+        var months = [ 'January', 'Februrary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
+        var obj = { 0: 'zero', 1: 'one', 7: 'seven' };
+        $.merge( months, obj );
+        $( '#result' ).html( '<li>' + months.join( '</li><li>' ) + '</li>' );
+    } );
+        </pre>
+        <p>如果第二個參數只是literal object，但是有length property且length property內容的型別是number，merge會在第二個參數從0開始搬東西到第一個參數裡面。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[9]">
+    $( function() {
+        var months = [ 'January', 'Februrary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
+        var obj = { 2: 'zero', 1: 'one', 7: 'seven', length: 5 };
+        $.merge( months, obj );
+        $( '#result' ).html( '<li>' + months.join( '</li><li>' ) + '</li>' );
+    } );
+        </pre>
+        <p>以上面這個例子來看months會有好幾個element都是空的資料。快快樂樂的使用例子就不用舉了。</p>
+        <h4>jQuery.unique()/Sizzle.uniqueSort()<a id="unique" name="unique"></a></h4>
+        <p>jQuery的unique function就是John Resig另一個project Sizzle的uniqueSort function。用來對DOM object collections做排序的工作。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[3679]">
+jQuery.unique = Sizzle.uniqueSort;
+        </pre>
+        <pre name="code" class="javascript:nocontrols:firstline[2769]">
+Sizzle.uniqueSort = function(results){
+	if ( sortOrder ) {
+		hasDuplicate = baseHasDuplicate;
+		results.sort(sortOrder);
+
+		if ( hasDuplicate ) {
+			for ( var i = 1; i < results.length; i++ ) {
+				if ( results[i] === results[i-1] ) {
+					results.splice(i--, 1);
+				}
+			}
+		}
+	}
+
+	return results;
+};
+        </pre>
+        <p>一個簡單的使用例子，如下</p>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;html>
+&lt;head>
+    &lt;title>jQuery unique example&lt;/title>
+    &lt;script type="text/javascript" src="script/jquery-1.4.2.js">&lt;/script>
+&lt;/head>
+&lt;body>
+    &lt;div>
+        &lt;ul>
+            &lt;li class="animal pet">dog&lt;/li>
+            &lt;li class="fruit">apple&lt;/li>
+            &lt;li class="fruit">melon&lt;/li>
+            &lt;li class="animal pet">cat&lt;/li>
+            &lt;li class="fruit">watermelon&lt;/li>
+            &lt;li class="animal">tiger&lt;/li>
+        &lt;/ul>
+    &lt;/div>
+    &lt;div>&lt;ol id="result">&lt;/ol>&lt;/div>
+    &lt;script type="text/javascript">
+    $( function() {
+        var animals = $( 'li.animal' ).get(), pets = $( 'li.pet' ).get(), result = '', i, l;
+        $.merge( animals, pets );
+        $.unique( animals );
+        for( i=0, l=animals.length; i&lt;l; i++ ) {
+            result += ( '&lt;li>' + animals[i].innerHTML + '&lt;/li>' );
+        } // for
+        $( '#result' ).html( result );
+    } );
+    &lt;/script>
+&lt;/body>
+&lt;/html>    
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>jQuery 1.3.2/1.4.2 source code</li>
+                <li>Secret of the JavaScript Ninja (Manning)</li>
+                <li>jQuery cookbook (O'Reilly)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/04/01</i>, latest update 2010/10/12
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

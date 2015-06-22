@@ -1,0 +1,41 @@
+<html>
+<head>
+<script type="text/javascript">
+window.onload = function() {
+    var arr = [ 'one', 'two', 'three', 'four' ];
+
+    document.getElementById( 'initLength' ).innerHTML = arr.length;
+    arr.push( '23444' );
+    document.getElementById( 'secLength' ).innerHTML = arr.length;
+
+    document.getElementById( 'fetch4a' ).innerHTML = arr[4];
+    arr.length = 3;
+    document.getElementById( 'thirdLength' ).innerHTML = arr.length;
+    document.getElementById( 'fetch4b' ).innerHTML = (arr[4] === undefined);
+    
+    arr[2000] = 'abc';
+    document.getElementById( 'fourLength' ).innerHTML = arr.length;
+    document.getElementById( 'fetchud1' ).innerHTML = (arr[1000] === undefined);
+    
+    // logger in debug console
+    // FireFox: need fireug
+    // IE: 8 should be ok
+    // Safari: should be ok
+    if( typeof console !== 'undefined' ) {
+        console.log( 'arr.constructor===Array: ' + (arr.constructor === Array) );
+        console.log( 'arr.hasOwnProperty( \'length\' ): ' + arr.hasOwnProperty( 'length' ));
+    } // if
+};
+</script>
+</head>
+<body>
+    Array Init Length: <span id="initLength"></span><br />
+    Array add '23444' Length: <span id="secLength"></span><br />
+    Array [4]: <span id="fetch4a"></span><br />
+    Array set length=3 Length: <span id="thirdLength"></span><br />
+    Array [4]: <span id="fetch4b"></span><br />
+    <hr />
+    Array arr[2000] = 'abc' Length: <span id="fourLength"></span><br />
+    Array arr[1000] === undefined: <span id="fetchud1"></span><br />
+</body>
+</html>

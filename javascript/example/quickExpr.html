@@ -1,0 +1,37 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+</head>
+<body>
+<div id="abcd">
+</div>
+<script type="text/javascript">
+// jQuery的$( selector, context )的處理過程
+// 此時簡化到context is null的狀況
+// 在jQuery首先先判斷selector是否是string
+// 是string的話
+// 透過 quickExpr取出 傳進來的是html tag or id
+// 如果都不是代表是要John Resig的selector api找到目標
+( function() {
+    var selector = '#abcd',
+        doc = document,
+        quickExpr = /^[^<]*(<(.|\s)+>)[^>]*$|^#([\w-]+)$/,
+        context,
+        match = quickExpr.exec( selector );
+    if( match ) { //&&  ( match[1] || !context ) ) { // jquery source 在複雜的狀況(jquery考慮的狀況),context有意義所以需要
+        if( match[1] ) {
+            alert( match[1] );
+        } else {
+            alert( match[3] );
+            var elem = doc.getElementById( match[3] );
+            elem.innerHTML = "Hello, World!";
+        }
+    } else {
+        // go jquery selector
+        alert( 'return jQuery( context ).find( selector );' );
+    }
+} )();
+</script>
+</body>
+</html>

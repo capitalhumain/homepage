@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Lab - void OPERATOR</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Lab - void OPERATOR</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>雖然說規格是準則，但是畢竟制定規格的也是人並不是所有規格寫得都是好的。更何況當初是在匆忙的狀況下制定的ECMAScript spec。所以如Douglas Crockford說的一樣，要了解好和不好的地方，然後用好的部份。</p>
+        <p>標題OPERATOR用大寫是為了強調void在javascript和其他語言的void是不同的。</p>
+        <h2>void OPERATOR</h2>
+        <p>javascript的void和其他語言相當不同。在其他語言void是一種型別；但是在javascript void是operator。在javascript void是一個unary expression，他需要一個operand，但是不管你給他啥東西javascript void operator都只會return undefined。</p>
+        <pre name="code" class="xml:controls:firstline[7]">
+<div>
+    <ol>
+        <li>void(0) === undefined: <span id="result1"></span></li>
+        <li>void 1: <span id="result2"></span></li>
+        <li>void without any operand 會收到 javascript error</li>
+    </ol>
+</div>
+<script type="text/javascript">
+window.onload = function() {
+    var doc = document,
+        res1 = doc.getElementById( 'result1' ),
+        res2 = doc.getElementById( 'result2' );
+
+    res1.innerHTML = (void(0) === undefined);
+    res2.innerHTML = void 1;
+};
+</script>
+        </pre>
+        <p>因此為了避免寫出令維護的人困擾的程式碼，JSLint和Crockford都建議盡量避免使用void operator。</p>
+        <p>話說回來，講歸講不過還是敵不過『標準』這招大絕啦！畢竟這個東東也是寫在規格書裡面的東西。</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>JavaScript: The Good Parts</li>
+                <li>ECMA-262 Third Edition (1999/12)</li>
+                <li>ECMA-262 Fifth Edition (2009/12 final final...draft)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/06/02, Last Modified 2010/07/05
+    </address>
+    <script type="text/javascript">
+    $(function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    });
+    </script>
+</body>
+</html>

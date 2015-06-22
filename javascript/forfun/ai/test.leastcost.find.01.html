@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>Test Suite</title>
+<script type="text/javascript" src="core.js"></script>
+<script type="text/javascript" src="leastcost.js"></script>
+<script type="text/javascript">
+function assert( value, desc ) {
+    var li = document.createElement("li");
+    li.className = value ? "pass" : "fail";
+    li.appendChild( document.createTextNode( desc ) );
+    document.getElementById("results").appendChild( li );
+}
+
+window.onload = function(){
+    var lc = new LeastCost();
+    var i = 0;
+    var theflights;
+    
+    lc.addFlightInfo("New York", "Chicago", 900);
+    lc.addFlightInfo("Chicago", "Denver", 1000);
+    lc.addFlightInfo("New York", "Toronto", 500);
+    lc.addFlightInfo("New York", "Denver", 1800);
+    lc.addFlightInfo("Toronto", "Calgary", 1700);
+    lc.addFlightInfo("Toronto", "Los Angeles", 2500);
+    lc.addFlightInfo("Toronto", "Chicago", 500);
+    lc.addFlightInfo("Denver", "Urbana", 1000);
+    lc.addFlightInfo("Denver", "Houston", 1000);
+    lc.addFlightInfo("Houston", "Los Angeles", 1500);
+    lc.addFlightInfo("Denver", "Los Angeles", 1000);
+    
+    solve( lc, 'New York', 'Los Angeles' );
+    
+    assert( lc.btStack.length > 0, "Testing for Least Cost algorithm ..." );
+    
+    with( lc ) {
+        theflights = '<ul>';
+        if( btStack.length > 0 ) {
+            for( i=0; i<btStack.length; i++ ) {
+                theflights += ('<li>' + btStack[i].from + ' -> ' + btStack[i].to + ', distance: ' + btStack[i].distance + '</li>');
+            }
+        }
+        theflights += '</ul>';
+    }
+    document.getElementById( 'flight_results' ).innerHTML = theflights;
+};
+</script>
+<style>
+    #results li.pass { color: green; }
+    #results li.fail { color: red; }
+</style>
+</head>
+<body>
+    <ul id="results"></ul>
+    Solution:
+    <div id="flight_results"></div>
+</body>
+</html>

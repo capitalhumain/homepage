@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>Test Suite</title>
+<script type="text/javascript" src="core.js"></script>
+<script type="text/javascript" src="hillclimbing.js"></script>
+<script type="text/javascript">
+function assert( value, desc ) {
+    var li = document.createElement("li");
+    li.className = value ? "pass" : "fail";
+    li.appendChild( document.createTextNode( desc ) );
+    document.getElementById("results").appendChild( li );
+}
+
+window.onload = function(){
+    var hill = new HillClimbing();
+    var i = 0;
+    var theflights;
+    
+    hill.addFlightInfo("New York", "Chicago", 900);
+    hill.addFlightInfo("Chicago", "Denver", 1000);
+    hill.addFlightInfo("New York", "Toronto", 500);
+    hill.addFlightInfo("New York", "Denver", 1800);
+    hill.addFlightInfo("Toronto", "Calgary", 1700);
+    hill.addFlightInfo("Toronto", "Los Angeles", 2500);
+    hill.addFlightInfo("Toronto", "Chicago", 500);
+    hill.addFlightInfo("Denver", "Urbana", 1000);
+    hill.addFlightInfo("Denver", "Houston", 1000);
+    hill.addFlightInfo("Houston", "Los Angeles", 1500);
+    hill.addFlightInfo("Denver", "Los Angeles", 1000);
+    
+    solve( hill, 'New York', 'Los Angeles' );
+    
+    assert( hill.btStack.length > 0, "Testing for Hill Climbing algorithm ..." );
+    
+    with( hill ) {
+        theflights = '<ul>';
+        if( btStack.length > 0 ) {
+            for( i=0; i<btStack.length; i++ ) {
+                theflights += ('<li>' + btStack[i].from + ' -> ' + btStack[i].to + ', distance: ' + btStack[i].distance + '</li>');
+            }
+        }
+        theflights += '</ul>';
+    }
+    document.getElementById( 'flight_results' ).innerHTML = theflights;
+};
+</script>
+<style>
+    #results li.pass { color: green; }
+    #results li.fail { color: red; }
+</style>
+</head>
+<body>
+    <ul id="results"></ul>
+    Solution:
+    <div id="flight_results"></div>
+</body>
+</html>

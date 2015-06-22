@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Common LISP" />
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushErlang.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/style.css" />
+    <title>筆記： loop macro</title>
+</head>
+<body>
+<div>
+    <h1 class="header">筆記： loop macro</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>或許是Lisp程度還不夠，總覺得其他functional programming弟弟妹妹如Erlang在這個主題，因為有pattern matching，所以覺得Erlang、Haskell在這個主題比Common Lisp的loop macro程式碼看起來更漂亮。><"</p>
+    <p>Common Lisp威力強大的loop macro。</p>
+    <h2>loop macro</h2>
+    <p>最簡單的<code>loop</code>形式，就是無窮迴圈（哈哈）</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(loop (princ "type something: ")
+      (force-output)
+      (read))
+    </pre>
+    <p>這是個無窮迴圈，這樣寫至少給了用Ctrl-C的機會。Conrad在書裡面整理了48個<code>loop</code>使用的週期表（回憶一下元素週期表的意義，作者也是針對<code>loop</code> macro使用和特性來區分畫出這個<code>loop</code> macro的週期表），而且還舉了例子。節錄一些如下</p>
+    <p>基礎的使用，<code>for</code>和<code>as</code>是一樣的。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[9]> (loop for i below 5 sum i)
+10
+[10]> (loop as i below 5 sum i)
+10
+    </pre>
+    <p>如果要用<code>loop</code>走玩某個list則透過下面的<code>in</code>/<code>on</code>。只是<code>in</code>和<code>on</code>拿到的東西有所不同</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[25]> (loop for i in '(10 20 30) sum i)
+60
+[26]> (loop for i on '(10 20 30) do (print i))
+
+(10 20 30) 
+(20 30) 
+(30) 
+NIL
+    </pre>
+    <p>如果我們要的迴圈裡面需要某些condition則可以透過<code>if</code>、<code>when</code>、<code>unless</code>、<code>and</code>、<code>else</code>、<code>end</code>來協助。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[28]> (loop for i below 5 if (oddp i) sum i)
+4
+[29]> (loop for i below 5 when (oddp i) sum i)
+4
+[30]> (loop for i below 5 unless (oddp i) sum i)
+6
+    </pre>
+    <p>如果我們要針對<code>loop</code>運行和結果做處理則可以透過<code>count</code>、<code>sum</code>、<code>minimize</code>、<code>maximize</code>、<code>append</code>、<code>nconc</code>。<code>sum</code>剛剛都看過了，先看看<code>count</code>可以讓我們知道迴圈的本體執行的次數</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[31]> (loop for i below 5 if (oddp i) count i)
+2
+[32]> (loop for i below 5 when (oddp i) count i)
+2
+[33]> (loop for i below 5 unless (oddp i) count i)
+3
+    </pre>
+    <p>顧名思義<code>minimize</code>和<code>maximize</code>就是讓我們知道loop中的最大值和最小值。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[34]> (loop for i below 5 unless (oddp i) minimize i)
+0
+[35]> (loop for i below 5 unless (oddp i) maximize i)
+4
+    </pre>
+    <p>而<code>append</code>和<code>nconc</code>的目的則是讓我們可以串接出一個新的list。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[2]> (loop for i below 5 unless (oddp i) append (list 'Z i))
+(Z 0 Z 2 Z 4)
+[3]> (loop for i below 5 unless (oddp i) append (list i))
+(0 2 4)
+[4]> (loop for i below 5 unless (oddp i) nconc (list i))
+(0 2 4)
+[5]> (loop for i below 5 unless (oddp i) append (list 'Z i))
+(Z 0 Z 2 Z 4)
+[6]> (loop for i below 5 unless (oddp i) nconc (list 'Z i))
+(Z 0 Z 2 Z 4)
+    </pre>
+    <p></p>
+    <h2>Clojure <code>loop</code> special form</h2>
+    <p>Clojure這個Lisp直系血親有<code>loop</code> special form，可以binding一些東西、evaluate expressions並且<strong>設定一個recursion point</strong>，之後可以透過<code>recur</code> evaluate expressions回到recursion point。</p>
+    <pre name="code" class="plain:controls:firstline[1]">
+(loop [result [] x 5]
+  (if (zero? x) result
+    (recur (conj result x) (dec x))))
+    </pre>
+    <p></p>
+    <h2>Clojure <code>for</code>、<code>doseq</code>、<code>dotimes</code>、<code>while</code> macro</h2>
+    <p><code>for</code> macro的範例</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (for [x (range 10)] (* x 2))
+(0 2 4 6 8 10 12 14 16 18)
+user=> (for [x (range 10) :when (odd? x)] x)
+(1 3 5 7 9)
+    </pre>
+    <p><code>doseq</code> macro的範例</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (doseq [x '(1 2 3)] (println x))
+1
+2
+3
+nil
+user=> (def v (vector 1 2 3))
+#'user/v
+user=> (doseq [x v] (println x))
+1
+2
+3
+nil
+    </pre>
+    <p><code>dotimes</code> macro的範例</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (dotimes [n 5] (do (println "n=" n)))
+n= 0
+n= 1
+n= 2
+n= 3
+n= 4
+nil
+    </pre>
+    <p><code>while</code> macro的範例</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (binding [n 5]
+         (while (pos? n) (do (println "n=" n) (set! n (dec n)))))
+n= 5
+n= 4
+n= 3
+n= 2
+n= 1
+nil
+    </pre>
+    <h2>Erlang菜鳥寫的Erlang式迴圈</h2>
+    <p>看一下erlang菜鳥寫的erlang的迴圈程式吧，這是自己嘗試寫寫看erlang程式，寫出來的東西。順便複習一下，這個是Erlang版的higher-order function。<code>fun</code>也是Erlang版的<code>lambda</code>。</p>
+    <h3>Listing. lib_misc.erl</h3>
+    <pre name="code" class="erl:controls:firstline[1]">
+-module(lib_misc).
+-export([sum_for/3, count_down/2]).
+
+sum_for(Max, Max, F) ->
+    F(Max);
+sum_for(I, Max, F) ->
+    F(I) + sum_for(I+1, Max, F).
+
+count_down(1, F) ->
+    F();
+count_down(Max, F) when Max > 0 ->
+    F(),
+    count_down(Max-1, F).
+    </pre>
+    <p>其中<code>count_down</code>的目的是可以由執行狀況如下，第二次執行<code>count_down</code>給負值，會因為pattern matching失敗而收到error message。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+Erlang R14B01 (erts-5.8.2) [source] [64-bit] [smp:4:4] [rq:4] [async-threads:0] [hipe] [kernel-poll:false]
+
+Eshell V5.8.2  (abort with ^G)
+1> c(lib_misc).
+{ok,lib_misc}
+2> lib_misc:count_down(5, fun() -> io:format("Called!!\n") end).
+Called!!
+Called!!
+Called!!
+Called!!
+Called!!
+ok
+3> lib_misc:count_down(-5, fun() -> io:format("Called!!\n") end).
+** exception error: no function clause matching lib_misc:count_down(-5,#Fun<erl_eval.20.67289768>)
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Land of LISP, Chapter 10</li>
+	    <li>Programming Clojure</li>
+            <li>Programming Erlang</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/03/21
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

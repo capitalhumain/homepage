@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Array</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Array</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>這兩年多來拆掉許多保護牆，果然就見識到這個世界虛假的一面。想到無知那時還天真的以為真是幸運，現在就只覺得白白浪費了許多口水和時間。搞的假日連Fable 3都懶的玩，也算學到教訓。首先先把牆蓋回去，然後修正演算法，把觀察期放長，確定安全之後再考慮走出幾道牆外看看。似乎有人不知道Neutral陣營很痛恨被欺騙…想想還是像以前窩在自己世界寫assembly比較好玩。</p>
+        <p>老蘇說：「博觀而約取，厚積而薄發」。雖然我不是很喜歡孔老大，但是以我這個認為學習知識是最快樂的的傢伙而言，學而篇第一第一句「學而時習之，不亦說乎？」是相當認同的。</p>
+        <p>回到主題，javascript array和以往學C時對array的了解是很不一樣的東西。記住一個重點就是javascript的object就是一個property container，即使是native object。</p>
+        <h2>Create Array</h2>
+        <p>我們可以透過construtor function Array()或透過array literal產生array object。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+// constructor invocation
+var arr1 = new Array(),                // create empty array
+    arr2 = new Array( 'foo', 'bla' ),  // create an array, contains 'foo', 'bla'
+    arr3 = new Array(3);               // create an array, contains undefined, undefined, undefined
+// array literal
+var arr4 = [],                         
+    arr5 = [ 'foo', 'bla' ],           
+    arr6 = [ 1, 2, ],                  // 只有[1, 2]，據說IE6會錯判
+    arr7 = [ ,, ];                     // 只有[,]，據說IE6會錯判
+        </pre>
+        <p>如果沒用constructor invocation呼叫constructor function的話勒，在firefox執行的結果如下面註解。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+var arr8 = Array(),                    // empty array
+    arr9 = Array( 'bla', 'foo' ),      // an array, contains 'bla', 'foo'
+    arr10 = Array( 3 );                // an array, contains undefined, undefined, undefined
+        </pre>
+        <p>使用array constructor function有一個看似好處的東西就是可以透過Array(v_length)一開始就產生一個想要長度的array object。但是卻會附帶一個潛在的問題，就是Array()並不會幫忙初始化array中每一個element的值。以下面這個例子而言，undefined就造成了很討厭的情形。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[10]">
+var sum = function(arr) {
+    var l, i,
+        result = 0;
+    for( i=0, l=arr.length; i&lt;l; i++ ) {
+        result += arr[ i ];
+    }
+    
+    return result;
+};
+
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        toString = Object.prototype.toString,
+        arr = new Array(5);
+    
+    // arr[0] = 1;  // Oops
+    arr[1] = 2;
+    arr[2] = 3;
+    arr[3] = 4;
+    arr[4] = 5;
+    
+    msg += ( 'sum of arr is ' + sum( arr ) + '&lt;br/>' );    // NaN
+    
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>雖然有兩個偶像的書都建議不要用array constructor function建立array object，但是我覺得重點還是先了解高手們這樣說得原因，將來使用上或許有一些應用還是可以用constructor function寫出優雅的程式，只是要知道優缺點和潛在的問題點。</p>
+        <p>以Stefanov書上講一個constructor function的應用例子來看，假設我們要產生連續的字的時候可以透過new Array(v_length)產生的array加上join( seperator )來達成。需注意的是因為join()的串接那個東西的次數是array length-1。也就是說如果下面程式是想產生5個空白的區域，arr的長度應該是6而非5。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[10]">
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        toString = Object.prototype.toString,
+        arr = new Array(5);
+    
+    msg += ( 'sum of arr is [' + arr.join( '&amp;nbsp' ) + ']&lt;br/>' );
+    
+    result.innerHTML = msg;
+};
+        </pre>
+        <p></p>
+        <h2>Array判定的課題</h2>
+        <p>主要是針對判定是不是array的議題，眼前可以先參考<a href="lab.array.01.html">這個</a>。</p>
+        <p>在ECMAScript五代目就有一個Array.isArray()可以用。(ECMA-262 5th edition 15.4.3.2)</p>
+        <p></p>
+        <h2>Array.length property</h2>
+        <p>還記得一開始強調的重點嗎？看看下面例子就更能體會</p>
+        <pre name="code" class="javascript:nocontrols:firstline[8]">
+window.onload = function() {
+    var arr1 = new Array(10), doc = document, result = doc.getElementById( 'result' ), msg = '', i;
+    for(i=arr1.length-1; i>=0; i--) {
+        arr1[i] = 1;
+    }
+    msg += ("arr1[" + arr1.length + "]:" + arr1 + "&lt;br />"); // arr1[10]:1,1,1,1,1,1,1,1,1,1
+    arr1.length = 4;
+    msg += ("arr1[" + arr1.length + "]:" + arr1 + ":arr1[5]=" + arr1[5] + "&lt;br />"); //arr1[4]:1,1,1,1:arr1[5]=undefined
+    arr1[ 15 ] = 'abc';
+    msg += ("arr1[" + arr1.length + "]:" + arr1 + "&lt;br />"); // arr1[16]:1,1,1,1,,,,,,,,,,,,abc
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>根據一開始學的東西，line 9建立的arr1是一個擁有10個內容是undefined elements的array object。為了方便印證，所以把所有elements設定成1。接著要幹一件寫其他語言的人不會幹的事，就是把arr1的length的值設為4。之後就會看到arr1被截斷成為長度為4的array object。然後如果我們直接指定一個超過目前長度位置(x)設定一個值，就會看到arr1的length = x+1，而且中間的elements的內容都是undefined。</p>
+        <p>由此可知javascript array object的length property跟一般的property沒有兩樣，他並不是readonly，你可以隨意改變length property的內容。</p>
+        <p></p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 3rd edition</li>
+                <li>JavaScript: The Good Parts (O'Reilly)</li>
+                <li>JavaScript Patterns (O'Reilly)</li>
+                <li>Professional JavaScript for Web Developers (Wrox)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/10/19</i>, latest update 2010/10/31
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

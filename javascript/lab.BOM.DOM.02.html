@@ -1,0 +1,294 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Lab - BOM and DOM events 02 - Attribute Changes</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Lab - BOM and DOM events 02 - Attribute Changes</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        DOM Level 2以後制定了許多Mutation Events，讓我們可以處理更多events。其中當attribute有變動的時候，DOMAttrModified
+        event會被觸發。然而並不是所有browser都支援mutation events，雖然經驗不足的我目前認為其他大多數的event在觸發時的handler
+        除了控制DOM結構、attribute...等的變化的同時也可以因應那些變化寫程式碼，並不見得需要把事情那麼明確的再細分下去。
+        比如說example 3 那樣的做法，sqr2的呈現會再sqr1 attribute發生變動的時候；相同的在讓sqr1呈現的event handler
+        當中也可以做一樣的事情。
+        </p>
+        <h2>Environment</h2>
+        <div>
+            <table style="width: 500px; margin-left: 20px;">
+            <tr>
+                <th>Browser</th>
+                <th>DOMSubtreeModified</th>
+                <th>DOMAttrModified</th>
+            </tr>
+            <tr>
+                <td>Firefox 3.6.2</td>
+                <td class="table-data">ok</td>
+                <td class="table-data">ok</td>
+            </tr>
+            <tr>
+                <td>Internet Explorer 8</td>
+                <td colspan="2" class="table-data">沒實作，但有自己的做法</td>
+            </tr>
+            <tr>
+                <td>Safari 4.0.5</td>
+                <td class="table-data">x</td>
+                <td class="table-data">x</td>
+            </tr>
+            <tr>
+                <td>Opera 10.51</td>
+                <td class="table-data">x</td>
+                <td class="table-data">ok</td>
+            </tr>
+            <tr>
+                <td>Chrome 4.1.249.1042</td>
+                <td class="table-data">x</td>
+                <td class="table-data">x</td>
+            </tr>
+            </table>
+        </div>
+        <h2>規格講的東西 (我的測試環境只有FireFox 3.6實作，Opera 10實作部份)</h2>
+        <p>
+        根據規格書上寫mutation events的event物件可能(不是所有mutation events都會)會有下列attributes
+        </p>
+        <ul>
+            <li>attrChange: attribute改變的狀態，這放的是integer對應到規格書上定義的</li>
+                <ul>
+                    <li>MODIFICATION: 1</li>
+                    <li>ADDITION: 2</li>
+                    <li>REMOVAL: 3</li>
+                </ul>
+            <li>attrName: 發生變動的attribute名稱</li>
+            <li>newValue: 該attribute被賦予的新值</li>
+            <li>prevValue: 該attribute原本的值</li>
+            <li>relatedNode: 當這個event handler在capturing and budding的過程當中，由parent node的mutation Events
+                handler處理的時候，會由這個attribute指出發生變動的attribute。這裡放的是Node物件。</li>
+        </ul>
+        <p>
+        另外還值得一提的是規格書上有規定DOMSubtreeModified這個general event也就是說在某個node處理這個general event
+        的話。會在event capturing and bubbling的處理流程當中處理到所有mutation event。舉例來說當發生DOMAttrModified
+        這件事情的話也會觸發DOMSubtreeModified這個event。
+        </p>
+        <p>
+        根據DOMSubtreeModified補充一點在測試的時候，Opera 10有實作DOMAttrModified，但是相同的程式DOMSubtreeModified
+        在Opera 10和Firefox 3.6運作結果是不同的。
+        </p>
+        <h2>比爾家的做法</h2>
+        <p>
+        比爾他們家並沒有實作mutation events。其實也ok，因為目前為止也只有Firefox有做。反而比爾他們家有另外的做法。
+        透過onpropertychange這個event我們可以在IE達成和DOMAttrModified一樣的目的。
+        </p>
+        <p>
+        當然比爾家的event物件就沒有DOM規定那些東西，而IE的event有propertyName這個可以看到變動的property。
+        另外還有一個特色和FireFox的DOMAttrModified不同的是，在範例中重複按show在FireFox會重複觸發DOMAttrModified
+        這個event，即使newValue和prevValue是一樣的；但是在IE卻不會重複觸發onpropertychange event。
+        </p>
+        <h2>Example</h2>
+        <div>
+            <ol>
+                <li><a href="#example1">Example 1</a>: 看看DOMAttrModified的觸發和event的attribute</li>
+                <li><a href="#example2">Example 2</a>: 看看DOMSubtreeModified的觸發</li>
+                <li><a href="#example3">Example 3</a>: 展示sqr1 div在DOMAttrModied觸發時，讓sqr2 div出現的範例</li>
+            </ol>
+        </div>
+        <h3>部分的EventUtils functions</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+/**
+ * By Terence Chao ( modified from Nicholas's book )
+ */
+(function() {
+    var _EventUtil = {
+        /**
+         * 註冊event handler
+         */
+        addHandler: function( element, type, handler ) {
+            if( element.addEventListener ) {
+                element.addEventListener( type, handler, false );
+            } else if( element.attachEvent ) {
+                element.attachEvent( 'on' + type, handler );
+            } else {
+                element[ 'on' + type ] = handler;
+            }
+        },
+        /**
+         * 停止event capturing and bubbling
+         */
+        preventDefault: function( event ) {
+            if( event.preventDefault ) {
+                event.preventDefault();
+            } else {
+                event.returnValue = false;
+            }
+        },
+        /**
+         * 取得event的存放被觸發的那個物件
+         */
+        target: function( event ) {
+            return event.target || event.srcElement;
+        },
+        /**
+         * 取得event物件...
+         */
+        event: function( event ) {
+            return event || window.event;
+        }
+    }
+    // 把這個物件放到global scope的EventUtil property
+    window.EventUtil = _EventUtil;
+})();
+
+        </pre>
+        <a id="example1"></a>
+        <h3>Example 1: DOMAttrModified event HTML部分</h3>
+        <pre name="code" class="xml:controls:firstline[16]">
+<a href="#" id="show">Show</a>
+<div style="display:none;" id="sqr1">
+</div>
+        </pre>
+        <h3>Example 1: DOMAttrModified event JavaScript部分</h1>
+        <pre name="code" class="javascript:controls:firstline[20]">
+var attrChangeListener = function( elem, fn ) {
+    if( elem.onpropertychange === undefined ) {
+        EventUtil.addHandler( elem, 'DOMAttrModified', fn );
+    } else {
+        EventUtil.addHandler( elem, 'propertychange', fn );
+    }
+};
+
+EventUtil.addHandler( window, 'load', function() {
+    var showElem = document.getElementById( 'show' );
+    var sqr1 = document.getElementById( 'sqr1' );
+    
+    EventUtil.addHandler( showElem, 'click', function() {
+        if( sqr1.style.setAttribute ) {
+            sqr1.style.setAttribute( 'display', 'block' );
+        } else {
+            sqr1.setAttribute( 'style', 'display:block;' );
+        }
+    } )
+    
+    attrChangeListener( sqr1, function( event ) {
+        alert( EventUtil.target( event ) );
+        alert( event.type );
+        alert( 'Attrubute Name:' + ( event.attrName || '' ) );
+        alert( 'Attribute Change:' + ( event.attrChange || '' ) );
+        alert( 'Previous value:' + ( event.prevValue || '' ) );
+        alert( 'New value:' + ( event.newValue || '' ) );
+        alert( 'Relate Node:' + ( event.relatedNode || '' ) );      // style
+    } );
+} );
+        </pre>
+        <a href="example/domattrmodified_1.html" target="_blank">Run Example 1</a>
+        <a id="example2"></a>
+        <h3>Example 2: DOMSubtreeModified event JavaScript部分</h3>
+        <pre name="code" class="javascript:controls:firstline[19]">
+var attrChangeListener = function( elem, fn ) {
+    EventUtil.addHandler( elem, 'DOMSubtreeModified', fn );
+};
+
+EventUtil.addHandler( window, 'load', function() {
+    var showElem = document.getElementById( 'show' );
+    var sqr1 = document.getElementById( 'sqr1' );
+    
+    EventUtil.addHandler( showElem, 'click', function() {
+        if( sqr1.style.setAttribute ) {
+            sqr1.style.setAttribute( 'display', 'block' );
+        } else {
+            sqr1.setAttribute( 'style', 'display:block;' );
+        }
+    } )
+    
+    attrChangeListener( sqr1, function( event ) {
+        alert( EventUtil.target( event ) );
+        alert( event.type );
+        alert( 'Attrubute Name:' + ( event.attrName || '' ) );
+        alert( 'Attribute Change:' + ( event.attrChange || '' ) );
+        alert( 'Previous value:' + ( event.prevValue || '' ) );
+        alert( 'New value:' + ( event.newValue || '' ) );
+    } );
+} );
+        </pre>
+        <a href="example/domattrmodified_2.html" target="_blank">Run Example 2</a>
+        <a id="example3"></a>
+        <h3>Example 3: 回到DOMAttrModified event HTML部分</h3>
+        <pre name="code" class="xml:controls:firstline[25]">
+<a href="#" id="show">Show</a>
+<div style="display:none;" id="sqr1">
+</div>
+<div style="display:none;" id="sqr2">
+</div>
+        </pre>
+        <h3>Example 3: 回到DOMAttrModified event JavaScript部分</h3>
+        <pre name="code" class="javascript:controls:firstline[31]">
+var attrChangeListener = function( elem, fn ) {
+    if( elem.onpropertychange === undefined ) {
+        EventUtil.addHandler( elem, 'DOMAttrModified', fn );
+    } else {
+        EventUtil.addHandler( elem, 'propertychange', fn );
+    }
+};
+
+EventUtil.addHandler( window, 'load', function() {
+    var showElem = document.getElementById( 'show' );
+    var sqr1 = document.getElementById( 'sqr1' );
+    
+    EventUtil.addHandler( showElem, 'click', function() {
+        if( sqr1.style.setAttribute ) {
+            sqr1.style.setAttribute( 'display', 'block' );
+        } else {
+            sqr1.setAttribute( 'style', 'display:block;' );
+        }
+    } )
+    
+    attrChangeListener( sqr1, function( event ) {
+        var sqr2 = document.getElementById( 'sqr2' );
+        if( sqr2.style.setAttribute ) {
+            sqr2.style.setAttribute( 'display', 'block' );
+        } else {
+            sqr2.setAttribute( 'style', 'display:block;' );
+        }
+    } );
+} );
+        </pre>
+        <a href="example/domattrmodified_3.html" target="_blank">Run Example 3</a>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Professional JavaScript for Web Developers, 2nd Edition</li>
+                <li>DOM Level 2 Events: http://www.w3.org/TR/DOM-Level-2-Events/events.html</li>
+                <li>DOM Level 3 Events: http://www.w3.org/TR/DOM-Level-3-Events/events.html</li>
+            </ol>
+        </div>
+    </div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+    <address>
+    Terence Chao, 2010/03/30
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

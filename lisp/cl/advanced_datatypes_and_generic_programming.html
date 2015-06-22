@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Common LISP" />
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/style.css" />
+    <title>筆記： Advanced Datatypes and Generic Programming</title>
+</head>
+<body>
+<div>
+    <h1 class="header">筆記： Advanced Datatypes and Generic Programming</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>打算趕快把這個階段夜讀項目告個段落，夜讀項目換成Android，寫一些小東西放在偶的Desire上玩玩。晨間領讀還是繼續維持Erlang。</p>
+    <p>Lisp的其他資料結構，arrays、Hash Tables和Strtuctures。</p>
+    <h2>Arrays</h2>
+    <p>在Lisp我們要建立一個array的方法就是透過<code>make-array</code></p>
+    <h3>Listing. <code>make-array</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[5]> (defparameter *arr1* (make-array 5))
+*ARR1*
+[6]> *arr1*
+#(NIL NIL NIL NIL NIL)
+    </pre>
+    <p>由arrays中取得某個index的值則是透過<code>aref</code> function來取得。看一下下面的例子</p>
+    <h3>Listing. <code>aref</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[5]> (aref *arr1* 1)
+NIL
+[6]> (setf (aref *arr1* 1) 5)
+5
+[7]> *arr1*
+#(NIL 5 NIL NIL NIL)
+    </pre>
+    <p>由這個例子也可以看到Lisp的array是zero-based的。這兩個簡單的例子也告訴我們另一個array的宣告方法</p>
+    <h3>Listing. This is alternative way to create lisp array.</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[8]> (defparameter *arr2* #(1 2 3 nil 5))
+*ARR2*
+[9]> (arrayp *arr2*)
+T
+    </pre>
+    <h4>Arrays vs Lists</h4>
+    <p>最大的差別就是效能。想想cons cells的結構、再想想如果一個很大的lisp list要搜尋和變更裡面的某個cell的值的困難。</p>
+    <h2>Hash table</h2>
+    <p>之前看過<em>alist</em>，一開始感覺很像其他語言的hash table，但是其實不是。在lisp真正的hash table透過<code>make-hash-table</code>建立。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (defparameter x (make-hash-table))
+X
+[2]> x
+#S(HASH-TABLE :TEST FASTHASH-EQL)
+[3]> (gethash 'yup x)
+NIL ;
+NIL
+[4]> (setf (gethash 'yup x) '25)
+25
+[5]> (gethash 'yup x)
+25 ;
+T
+[6]> x
+#S(HASH-TABLE :TEST FASTHASH-EQL (YUP . 25))
+    </pre>
+    <p>而要從hash table裡面取某個key的值的方法則是透過<code>gethash</code>；設定則是透過通用型<code>setf</code>就可以用。在hash table和<em>alist</em>最大的差別就是相同的key的儲存。在之前幾個章節使用<em>alist</em>可以知道相同的key會重複存在<em>alist</em>裡面，而我們透過<code>assoc</code>只會取到相同的key之中第一個的值。但是hash table則是有唯一的key值。</p>
+    <h4>multiple values</h4>
+    <p>上面<code>gethash</code>回傳的就是回傳multiple values的例子。以下面<code>round</code> function也是return multiple values的function。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[2]> (round 3.4)
+3 ;
+0.4000001
+    </pre> 
+    <p>接著如果我們自己寫的function要return multiple values的時候，可以透過<code>values</code>。看看下面的<code>foo</code>範例就知道</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[5]> (defun foo ()
+  (values 3 7))
+FOO
+[6]> (foo)
+3 ;
+7
+[7]> (defun foo ()
+  (values 3 7 10))
+FOO
+[8]> (foo)
+3 ;
+7 ;
+10
+    </pre>
+    <p>如果我們需要處理回傳multiple values的每一個值就必須透過<code>multiple-value-bind</code>。假設我們要處理上面例子最後那個回傳三個值的<code>foo</code> function的範例如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[9]> (multiple-value-bind (a b c) (foo)
+       (* a b c))
+210
+    </pre>
+    <h4>Hash table vs </em>alist</em></h4>
+    <p>概念很像的兩個東西，但是使用上hash table的效能優於<em>alist</em>。需注意相同key在兩者的差異。</p>
+    <h2>Structuress</h2>
+    <p><code>defstruct</code> function可以讓我們建立一個structure的結構，下面例子當中person是structure name，而這個structure有三個<em>slots</em>（對其他OOPL的人而言，稱為attributes或properties）。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (defstruct person
+  name
+  gender
+  age)
+PERSON
+    </pre>
+    <p>在此之後我們就可以透過<code>make-person</code>來建立instance。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[2]> (defparameter *oldT* (make-person :name "T" :gender "M" :age 37))
+*OLDT*
+[3]> *oldT*
+#S(PERSON :NAME "T" :GENDER "M" :AGE 37)
+    </pre>
+    <p>延伸閱讀就是著名的Common Lisp Object System(CLOS)和Meta-object protocol(MOP)。</p>
+    <h2>Type Predicates</h2>
+    <p><code>numberp</code>、<code>listp</code>、<code>stringp</code>、<code>arrayp</code>…等這些function可以用來測試object type，因此如果要寫一個function遇到不同type有不同的處理方法的時候，就需要這類function來讓我們檢視遭遇的object type。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (arrayp '#(1 2))
+T
+[2]> (arrayp '(1 2))
+NIL
+[3]> (numberp 1)
+T
+[4]> (numberp "1")
+NIL
+[5]> (stringp "1")
+T
+[6]> (stringp 1)
+NIL
+[7]> (stringp '(1))
+NIL
+[8]> (listp '(1))
+T
+[9]> (listp '#(1 2))
+NIL
+    </pre>
+    <p></p>
+    <h3>Listing. 吃number和list的<code>add</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defun add (a b)
+  (cond ( (and (numberp a)(numberp b)) 
+          (+ a b) )
+        ( (and (listp a)(listp b))
+          (append a b) )))
+    </pre>
+    <p></p>
+    <h2>The Orc Battle Game</h2>
+    <p></p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Land of LISP, Chapter 9</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/03/18
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

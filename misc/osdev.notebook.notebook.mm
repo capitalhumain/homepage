@@ -1,0 +1,79 @@
+<map version="0.8.1">
+<!-- To view this file, download free mind mapping software FreeMind from http://freemind.sourceforge.net -->
+<node CREATED="1272507291640" ID="Freemind_Link_1029511834" MODIFIED="1272507348812" TEXT="30 &#x65e5;&#x3067;&#x3067;&#x304d;&#x308b;! OS&#x81ea;&#x4f5c;&#x5165;&#x9580;">
+<node CREATED="1272507375140" ID="_" MODIFIED="1272590373312" POSITION="right" TEXT="CPU&#x8207;&#x6676;&#x7247;&#x8a2d;&#x5b9a;" VSHIFT="-32">
+<node CREATED="1272507480593" FOLDED="true" ID="Freemind_Link_1437885150" MODIFIED="1272511635406" TEXT="Protected Mode" VSHIFT="-4">
+<node CREATED="1272594168656" ID="Freemind_Link_387592174" MODIFIED="1272601433281" TEXT="&#x9032;&#x5165;&#x4fdd;&#x8b77;&#x6a21;&#x5f0f;&#x9664;&#x975e;&#x5207;&#x56de;real mode&#xff0c;&#xa;&#x5426;&#x5247;&#x7121;&#x6cd5;&#x4f7f;&#x7528;bios&#x63d0;&#x4f9b;&#x7684;&#x529f;&#x80fd;&#x3002;" VSHIFT="-20"/>
+</node>
+<node CREATED="1272507495203" ID="Freemind_Link_1528483467" MODIFIED="1272507503171" TEXT="GDT/IDT"/>
+<node CREATED="1272507531328" ID="Freemind_Link_689606415" MODIFIED="1272507542687" TEXT="PIC">
+<node CREATED="1272509701890" ID="Freemind_Link_1594995881" MODIFIED="1272509712437" TEXT="keyboard"/>
+<node CREATED="1272509712843" ID="Freemind_Link_1946518655" MODIFIED="1272509714703" TEXT="mouse"/>
+</node>
+<node CREATED="1272507543203" ID="Freemind_Link_528138418" MODIFIED="1272600463562" TEXT="PIT/8254"/>
+</node>
+<node CREATED="1272590363765" ID="Freemind_Link_225459232" MODIFIED="1272590370515" POSITION="right" TEXT="IPL" VSHIFT="-33">
+<node CREATED="1272590599484" ID="Freemind_Link_846951414" MODIFIED="1272590791312" TEXT="&#x6216;&#x7a31;&#x70ba;bootloader, bootstrap" VSHIFT="-1"/>
+<node CREATED="1272590774093" ID="Freemind_Link_675703152" MODIFIED="1272594134765" TEXT="&#x7a0b;&#x5f0f;&#x53ea;&#x6709;512 byte&#x7684;&#x7a7a;&#x9593;&#x597d;&#x653e;"/>
+<node CREATED="1272590792781" ID="Freemind_Link_370517899" MODIFIED="1272590941000" TEXT="&#x7531;&#x78c1;&#x789f;&#x7a7a;&#x9593;&#x8f09;&#x5165;OS&#x6838;&#x5fc3;&#x7a0b;&#x5f0f;&#x5230;&#x8a18;&#x61b6;&#x9ad4;&#xff0c;&#xa;&#x4e26;&#x4e14;&#x5728;&#x6700;&#x5f8c;&#x5c07;&#x57f7;&#x884c;&#x6b0a;&#x4ea4;&#x7d66;OS&#x7684;&#x6838;&#x5fc3;&#x7a0b;&#x5f0f;"/>
+<node CREATED="1272590829468" ID="Freemind_Link_683515737" MODIFIED="1272590870000" TEXT="&#x4fdd;&#x7559;&#x5207;&#x5230;&#x4fdd;&#x8b77;&#x6a21;&#x5f0f;&#x4e4b;&#x5f8c;&#x9084;&#x9700;&#x8981;&#x4fdd;&#x7559;&#x7684;&#x8cc7;&#x8a0a;"/>
+</node>
+<node CREATED="1272511515968" ID="Freemind_Link_792596937" MODIFIED="1272600463562" POSITION="right" TEXT="Timer">
+<arrowlink DESTINATION="Freemind_Link_528138418" ENDARROW="Default" ENDINCLINATION="149;0;" ID="Freemind_Arrow_Link_546605146" STARTARROW="None" STARTINCLINATION="149;0;"/>
+<node CREATED="1272872932671" ID="Freemind_Link_1196357836" MODIFIED="1272872943843" TEXT="&#x591a;&#x500b;Timer"/>
+<node CREATED="1272872916656" ID="Freemind_Link_1707911979" MODIFIED="1272872926187" TEXT="&#x5be6;&#x4f5c;">
+<node CREATED="1272857174359" ID="Freemind_Link_1256571772" MODIFIED="1272874771546" TEXT="&#x4e00;&#x958b;&#x59cb;&#x4f7f;&#x7528;array&#xff0c;&#x5728;&#x8a2d;&#x5b9a;timeout&#x7684;&#x6642;&#x9593;&#x7684;&#x6642;&#x5019;&#xa;&#x8abf;&#x6574;&#x9806;&#x5e8f;&#x3002;&#x5f8c;&#x4f86;refactoring&#x70ba;&#x4f7f;&#x7528;&#x7528;timeout&#x6392;&#x5e8f;&#xa;&#x7684;LinkedList&#x7684;&#x65b9;&#x5f0f;(&#x548c;Minix&#x61c9;&#x8a72;&#x985e;&#x4f3c;&#x5427;)"/>
+</node>
+</node>
+<node CREATED="1272507401109" ID="Freemind_Link_1251532805" MODIFIED="1272511697921" POSITION="left" TEXT="&#x8a18;&#x61b6;&#x9ad4;&#x7ba1;&#x7406;" VSHIFT="2"/>
+<node CREATED="1272511687625" ID="Freemind_Link_1377857934" MODIFIED="1272511693625" POSITION="left" TEXT="File System"/>
+<node CREATED="1272930542640" ID="Freemind_Link_772917601" MODIFIED="1272930544281" POSITION="left" TEXT="IO">
+<node CREATED="1272940165468" ID="Freemind_Link_1250921475" MODIFIED="1272940170578" TEXT="&#x756b;&#x9762;">
+<node CREATED="1272940171734" ID="Freemind_Link_261720994" MODIFIED="1272940195546" TEXT="BIOS int 10h"/>
+<node CREATED="1272940197343" ID="Freemind_Link_1440341344" MODIFIED="1272940243781" TEXT="VESA BIOS Extension(VBE) int 10h"/>
+</node>
+<node CREATED="1272940215625" ID="Freemind_Link_558033774" MODIFIED="1272940218078" TEXT="disk"/>
+</node>
+<node CREATED="1272511060343" ID="Freemind_Link_832685053" MODIFIED="1272511068031" POSITION="left" TEXT="utilities">
+<node CREATED="1273023500390" ID="Freemind_Link_1541668173" MODIFIED="1273023509828" TEXT="disk image editor"/>
+</node>
+<node CREATED="1272507417562" ID="Freemind_Link_849189173" MODIFIED="1272893657359" POSITION="right" TEXT="multi-task" VSHIFT="16">
+<node CREATED="1272937147812" ID="Freemind_Link_1220746366" MODIFIED="1273026234828" TEXT="Intel CPU Task Support">
+<node CREATED="1273026247343" ID="Freemind_Link_100881607" MODIFIED="1273026285140" TEXT="32bit Task" VSHIFT="-2">
+<node CREATED="1273023414843" ID="Freemind_Link_843214784" MODIFIED="1273023442156" TEXT="&#x521d;&#x59cb;&#x5316;TSS32 struct"/>
+<node CREATED="1273023443281" ID="Freemind_Link_1917652116" MODIFIED="1273023448359" TEXT="&#x8a3b;&#x518a;GDT"/>
+<node CREATED="1273023449078" ID="Freemind_Link_221571163" MODIFIED="1273023452906" TEXT="far jump"/>
+</node>
+<node CREATED="1273457709187" ID="Freemind_Link_1060380565" MODIFIED="1273457749843" TEXT="&#x5728;Minix&#x53ef;&#x4ee5;&#x770b;&#x5230;&#x8003;&#x616e;&#x4e0d;&#x4f7f;&#x7528;32bit TSS&#x548c;&#x4e0d;&#x652f;&#x63f4;TSS&#x7684;&#x9f15;&#x9f15;"/>
+</node>
+</node>
+<node CREATED="1272507440843" ID="Freemind_Link_567695827" MODIFIED="1272511700203" POSITION="left" TEXT="&#x6982;&#x5ff5;" VSHIFT="-4">
+<node CREATED="1272507451421" ID="Freemind_Link_607410344" MODIFIED="1272507473375" TEXT="OS is resources manager"/>
+<node CREATED="1272507596125" ID="Freemind_Link_1501065035" MODIFIED="1272507600109" TEXT="&#x5be6;&#x4f5c;">
+<node CREATED="1272507514296" ID="Freemind_Link_1345025212" MODIFIED="1272507526515" TEXT="&#x9996;&#x5148;&#x5148;&#x5b89;&#x6392;&#x8a18;&#x61b6;&#x9ad4;&#x914d;&#x7f6e;"/>
+<node CREATED="1272537497296" ID="Freemind_Link_1333470400" MODIFIED="1272537502046" TEXT="&#x4e2d;&#x65b7;&#x5b89;&#x6392;"/>
+</node>
+</node>
+<node CREATED="1272513108937" ID="Freemind_Link_1342522355" MODIFIED="1272532976312" POSITION="left" TEXT="&#x9019;&#x672c;&#x66f8;&#x5beb;&#x4f5c;&#x7279;&#x8272;">
+<node CREATED="1272513116218" ID="Freemind_Link_1604676666" MODIFIED="1272513199859" TEXT="&#x7c21;&#x55ae;&#x5be6;&#x4f5c;&#x65b0;&#x529f;&#x80fd;">
+<icon BUILTIN="full-1"/>
+</node>
+<node CREATED="1272513127156" ID="Freemind_Link_877646775" MODIFIED="1272513160593" TEXT="&#x6162;&#x6162;&#x589e;&#x52a0;&#x529f;&#x80fd;">
+<icon BUILTIN="full-2"/>
+</node>
+<node CREATED="1272513143015" ID="Freemind_Link_78734968" MODIFIED="1272513199859" TEXT="refactoring">
+<arrowlink DESTINATION="Freemind_Link_1604676666" ENDARROW="Default" ENDINCLINATION="56;0;" ID="Freemind_Arrow_Link_1583987980" STARTARROW="None" STARTINCLINATION="56;0;"/>
+<icon BUILTIN="full-3"/>
+</node>
+<node CREATED="1272940330156" ID="Freemind_Link_1580118188" MODIFIED="1272940362906" TEXT="&#x5f88;&#x559c;&#x6b61;&#x9019;&#x6a23;&#x7684;&#x5beb;&#x4f5c;&#x65b9;&#x5f0f;&#xff0c;&#x5b8c;&#x5168;&#xa;&#x9069;&#x5408;&#x6211;&#x9019;&#x7a2e;&#x6c92;&#x7a0b;&#x5ea6;&#x7684;&#x50a2;&#x4f19;"/>
+<node CREATED="1272533020046" ID="Freemind_Link_1720504457" MODIFIED="1272533044453" TEXT="&#x89ba;&#x5f97;&#x7b97;miniw">
+<node CREATED="1272602099765" ID="Freemind_Link_207287411" MODIFIED="1272940283718" TEXT="&#x81ea;&#x5df1;&#x5beb;OS&#x5c31;&#x662f;&#x756b;&#x9762;&#x90fd;&#x8981;&#x9760;&#x81ea;&#x5df1;&#x5beb;&#x7a0b;&#x5f0f;&#x523b;&#x51fa;&#x4f86;"/>
+<node CREATED="1273023574937" ID="Freemind_Link_78145673" MODIFIED="1273023604500" TEXT="&#x82b1;&#x4e86;&#x4e0d;&#x5c11;&#x529f;&#x592b;&#x8655;&#x7406;&#x8996;&#x7a97;&#x7684;&#x554f;&#x984c;"/>
+</node>
+</node>
+<node CREATED="1272537342000" ID="Freemind_Link_1677532788" MODIFIED="1272537348750" POSITION="left" TEXT="references">
+<node CREATED="1272537350343" ID="Freemind_Link_1803370899" MODIFIED="1272537366000" TEXT="http://www.brokenthorn.com/Resources/"/>
+</node>
+<node CREATED="1272507566562" ID="Freemind_Link_1562336801" MODIFIED="1272590383578" POSITION="right" TEXT="API" VSHIFT="18"/>
+</node>
+</map>

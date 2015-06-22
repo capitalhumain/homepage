@@ -1,0 +1,309 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="maven,jbossesb,AbstractSpringAction" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>JBoss ESB - quickstarts - AbstractSpringAction</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">JBoss ESB - quickstarts - AbstractSpringAction</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>本週進度落後中，只有先搞定dummy logger esb...預定還要試試看Spring LDAP勒</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 1.6.0_20</li>
+                <li>Maven 2.2.1</li>
+                <li>JBoss SOA Platform: Standalone Server - Version 5.0.1.GA</li>
+            </ul>
+        </div>
+        <h2>Project Strutcture of dummy logger ESB</h2>
+        <p>首先，還是把真正做事情的bean弄到另一個logger-core module，而esb action和設定檔都放在logger-esb module裡面。</p>
+        <h3>Figure 1. logger esb project structure</h3>
+        <img src="../images/java/jbossesb_logger_project_structure.png" />
+        <p>parent module的pom.xml比較特別的只有jbossesb-rosetta和spring framework的repository設定。</p>
+        <h3>Listing 1. logger-parent module's pom.xml</h3>
+        <pre name="code" class="xml:controls:firstline[35]">
+&lt;repositories>
+    &lt;repository>
+        &lt;id>jboss&lt;/id>
+        &lt;name>JBoss&lt;/name>
+        &lt;url>https://repository.jboss.org/nexus/content/groups/public-jboss&lt;/url>
+        &lt;layout>default&lt;/layout>
+    &lt;/repository>
+    &lt;repository>
+        &lt;id>springsource-milestone&lt;/id>
+        &lt;url>http://repository.springsource.com/maven/bundles/milestone&lt;/url>
+    &lt;/repository>
+    &lt;repository>
+        &lt;id>springsource-release&lt;/id>
+        &lt;url>http://repository.springsource.com/maven/bundles/release&lt;/url>
+    &lt;/repository>
+    &lt;repository>
+        &lt;id>springsource-external&lt;/id>
+        &lt;url>http://repository.springsource.com/maven/bundles/snapshot&lt;/url>
+    &lt;/repository>
+&lt;/repositories>
+        </pre>
+        <p>而logger-esb module的pom.xml比較特別的地方有兩個，首先是dependencies的設定，其次是jboss packaging plugin設定。有關spring framework的版本，我是設定的跟從samples/quickstarts/conf/base-build.xml找到server/default/deploy/spring.esb一樣，因此是provided。</p>
+        <p>另外，AbstractSpringAction並不在jbossesb-rosetta.jar裡面，從spring.esb可以找到jbossesb-spring.jar裡面就只有AbstractSpringAction這個class，所以我用system的方式設定在pom.xml裡面。</p>
+        <h3>Listing 2. logger-esb module's dependencies configuration</h3>
+        <pre name="code" class="xml:controls:firstline[57]">
+&lt;dependencies>
+    &lt;dependency>
+        &lt;groupId>net.greenrivers.esb&lt;/groupId>
+        &lt;artifactId>logger-core&lt;/artifactId>
+        &lt;version>1.0&lt;/version>
+        &lt;type>jar&lt;/type>
+    &lt;/dependency>
+        
+    &lt;dependency>
+        &lt;groupId>org.springframework&lt;/groupId>
+        &lt;artifactId>spring-beans&lt;/artifactId>
+        &lt;version>${springframework.version}&lt;/version>
+        &lt;scope>provided&lt;/scope>
+    &lt;/dependency>
+        
+    &lt;dependency>
+        &lt;groupId>org.jboss.soa&lt;/groupId>
+        &lt;artifactId>jbossesb-spring&lt;/artifactId>
+        &lt;version>4.8&lt;/version>
+        &lt;scope>system&lt;/scope>
+        &lt;systemPath>${project.basedir}/../../lib/jbossesb-spring.jar&lt;/systemPath>
+    &lt;/dependency>
+        
+    &lt;dependency>
+        &lt;groupId>org.jboss.soa.bpel.dependencies.esb&lt;/groupId>
+        &lt;artifactId>jbossesb-rosetta&lt;/artifactId>
+        &lt;version>4.8&lt;/version>
+        &lt;type>jar&lt;/type>
+        &lt;scope>provided&lt;/scope>
+    &lt;/dependency>
+
+    &lt;dependency>
+        &lt;groupId>javax.jms&lt;/groupId>
+        &lt;artifactId>jms&lt;/artifactId>
+        &lt;version>1.1&lt;/version>
+        &lt;type>jar&lt;/type>
+        &lt;scope>provided&lt;/scope>
+    &lt;/dependency>
+&lt;/dependencies>
+        </pre>
+        <h3>Listing 3. logger-esb module's jboss packaging configuration</h3>
+        <pre name="code" class="xml:controls:firstline[35]">
+&lt;plugin>
+    &lt;groupId>org.codehaus.mojo&lt;/groupId>
+    &lt;artifactId>jboss-packaging-maven-plugin&lt;/artifactId>
+    &lt;version>2.1.1&lt;/version>
+    &lt;extensions>true&lt;/extensions>
+    &lt;configuration>
+        &lt;archiveName>logger&lt;/archiveName>
+    &lt;/configuration>
+    &lt;executions>
+        &lt;execution>
+            &lt;id>build-esb&lt;/id>
+            &lt;goals>
+                &lt;goal>esb&lt;/goal>
+            &lt;/goals>
+        &lt;/execution>
+    &lt;/executions>
+&lt;/plugin>
+        </pre>
+        <h2>logger-core module</h2>
+        <p>目前一個很簡單的空殼logger service...乏善可陳。</p>
+        <h3>Listing 4. LoggerService.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.esb.logger;
+
+/**
+ * 這個才是真正做事情的小傢伙，但是現在啥都沒做 哈哈
+ */
+public class LoggerService {
+    public void info(String message) {
+        System.out.println( "LoggerService#info: " + message );
+    }
+}
+        </pre>
+        <h2>logger-esb module</h2>
+        <p>放設定檔和esb action程式的module</p>
+        <h3>Listing 5. LoggerAction.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.esb.logger;
+
+import org.jboss.soa.esb.actions.AbstractSpringAction;
+import org.jboss.soa.esb.helpers.ConfigTree;
+import org.jboss.soa.esb.message.Body;
+import org.jboss.soa.esb.message.Message;
+
+public class LoggerAction extends AbstractSpringAction {
+
+    public LoggerAction(ConfigTree config) throws Exception {
+        configTree = config;
+    }
+
+    public Message logInfo(Message message) throws Exception {
+        System.out.println("In Action Body: " + message.getBody().get());
+        LoggerService service = (LoggerService) getBeanFactory().getBean( "loggerService" );
+        Body msgBody = message.getBody();
+        String contents = (String) message.getBody().get();
+        service.info( contents );
+        return message;
+    }
+}
+        </pre>
+        <p>有關jboss esb設定檔內容一大堆還搞不清楚意義貼的很心虛。反正先確定有能力讓他動起來，對有Enterprise字眼的東西要先建立點信心，再來研究JBoss ESB programmer's guide。</p>
+        <h3>Listing 6. deployment.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;jbossesb-deployment>
+  &lt;depends>jboss.esb:deployment=spring.esb&lt;/depends>
+  &lt;depends>jboss.esb.quickstart.destination:service=Queue,name=terence_logger_Request&lt;/depends>
+  &lt;depends>jboss.esb.quickstart.destination:service=Queue,name=terence_logger_Response&lt;/depends>
+  &lt;depends>jboss.esb.quickstart.destination:service=Queue,name=terence_logger_esb&lt;/depends>
+&lt;/jbossesb-deployment>
+        </pre>
+        <p></p>
+        <h3>Listing 7. jboss-esb.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version = "1.0" encoding = "UTF-8"?>
+&lt;jbossesb xmlns="http://anonsvn.labs.jboss.com/labs/jbossesb/trunk/product/etc/schemas/xml/jbossesb-1.0.1.xsd" parameterReloadSecs="5">
+
+    &lt;providers>
+        &lt;jms-provider name="JBossMQ" connection-factory="ConnectionFactory">
+            &lt;jms-bus busid="loggerGwChannel">
+                &lt;jms-message-filter
+                    dest-type="QUEUE"
+                    dest-name="queue/terence_logger_Request"
+                />
+            &lt;/jms-bus>
+            &lt;jms-bus busid="loggerEsbChannel">
+                &lt;jms-message-filter
+                    dest-type="QUEUE"
+                    dest-name="queue/terence_logger_esb"
+                />
+            &lt;/jms-bus>
+
+        &lt;/jms-provider>
+    &lt;/providers>
+      
+    &lt;services>
+          
+        &lt;service category="TerenceLogger_ActionESB" 
+                 name="SimpleListener" 
+                 description="Logger Service" >
+            &lt;listeners>
+                &lt;jms-listener name="JMS-Gateway"
+                    busidref="loggerGwChannel"                         
+                    is-gateway="true"
+                />
+                &lt;jms-listener name="JMS-ESBListener"
+                    busidref="loggerEsbChannel"
+                />                
+            &lt;/listeners>
+            &lt;!-- mep可以設其他的，現在也不知道三小用 -->
+            &lt;actions mep="OneWay"> 
+            &lt;!-- process可以設定多個method會循序呼叫 -->            
+		    &lt;action name="loginfo" 
+               		class="net.greenrivers.esb.logger.LoggerAction" 
+               		process="logInfo">
+                &lt;property name="exceptionMethod" value="exceptionHandler"/>
+                &lt;property name="springContextXml" value="spring-context-logger.xml"/>
+		    &lt;/action>   
+            &lt;!-- 這個action不知道三小用途，從javadoc看起來應該可以拿掉 -->
+		    &lt;action name="testStore" class="org.jboss.soa.esb.actions.TestMessageStore"/> 
+            &lt;/actions>
+        &lt;/service>
+    &lt;/services>
+     
+&lt;/jbossesb>
+        </pre>
+        <p></p>
+        <h3>Listing 8. jbm-queue-service.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;server>
+  &lt;mbean code="org.jboss.jms.server.destination.QueueService"
+    name="jboss.esb.quickstart.destination:service=Queue,name=terence_logger_Request"
+    xmbean-dd="xmdesc/Queue-xmbean.xml">
+    &lt;depends optional-attribute-name="ServerPeer">jboss.messaging:service=ServerPeer&lt;/depends>
+	&lt;depends>jboss.messaging:service=PostOffice&lt;/depends>
+
+  &lt;/mbean>
+  &lt;mbean code="org.jboss.jms.server.destination.QueueService"
+    name="jboss.esb.quickstart.destination:service=Queue,name=terence_logger_Response"
+    xmbean-dd="xmdesc/Queue-xmbean.xml">
+    &lt;depends optional-attribute-name="ServerPeer">jboss.messaging:service=ServerPeer&lt;/depends>
+	&lt;depends>jboss.messaging:service=PostOffice&lt;/depends>
+  &lt;/mbean>
+
+  &lt;mbean code="org.jboss.jms.server.destination.QueueService"
+    name="jboss.esb.quickstart.destination:service=Queue,name=terence_logger_esb"
+    xmbean-dd="xmdesc/Queue-xmbean.xml">
+    &lt;depends optional-attribute-name="ServerPeer">jboss.messaging:service=ServerPeer&lt;/depends>
+	&lt;depends>jboss.messaging:service=PostOffice&lt;/depends>
+  &lt;/mbean>
+
+&lt;/server>
+        </pre>
+        <p></p>
+        <h3>Listing 9. spring-context-logger.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version="1.0" encoding="UTF-8"?>
+
+&lt;beans xmlns="http://www.springframework.org/schema/beans"
+	     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+
+	&lt;!-- ========================= BUSINESS OBJECT DEFINITIONS ======================== -->
+
+	&lt;bean id="loggerService" class="net.greenrivers.esb.logger.LoggerService">
+	&lt;/bean>
+&lt;/beans>
+        </pre>
+        <p>打包好的東西在<a href="logger-parent.tar.gz">這</a></p>
+        <h2>測試</h2>
+        <p>測試用的client程式會透過jndi lookup，設定檔如下</p>
+        <h3>Listing 10. jndi.properties</h3>
+        <pre name="code" class="plain:controls:firstline[1]">
+java.naming.factory.initial=org.jnp.interfaces.NamingContextFactory
+java.naming.provider.url=jnp://localhost:1099
+java.naming.factory.url.pkgs=org.jboss.naming
+java.naming.factory.url.pkgs=org.jnp.interfaces
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>JBoss SOA platform samples/quickstarts/spring_helloworld</li>
+                <li>http://thomassundberg.wordpress.com/2010/07/09/maven-and-jboss-esb-hello-world/</li>
+                <li>http://mojo.codehaus.org/jboss-packaging-maven-plugin/esb-mojo.html#libDirectory</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/09/30
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <title>Memo Maven: ANTLR project</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Memo Maven: ANTLR project</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>如果把有軟、硬體銷售和軟體開發這類的IT專案比喻成雪山隧道工程，有的公司打算賺的是燈光、抽風設備、警報設備和這些控制軟體的銷售和設定，不在乎挖洞的人是不是有地質專家、水文專家、爆破專家、或者是被困在裡面的Big Tom專家...等，這類公司也不管洞挖得漂不漂亮、路線經過地下水脈怎麼辦...等這些「低等」的挖洞問題，更不管裡面埋幾個人，反正只要有人去把洞挖出來，讓那些設備和設定的錢能夠賺到就好；有的公司是戰戰兢兢找專家探勘好地質和水脈、找專家設計尋找最佳的照明、通風等設備的安排…；當然還有幾家公司有自己的專業方面一起去承接這種工程；或者常看到的大公司去包然後全部或者部份(通常是雞肋部份)下包給其他小公司去做。我相信不同公司有自己不同的定位而有不同作法。有的看重設施的銷售、有的看重伴隨設施外購軟體的建制設定、有的看重挖洞的規劃和控制…您待的公司定位是啥？想賺的是啥？自己在這樣「雪山隧道工程」又是何者定位？都是相當有趣可以觀察的項目。</p>
+        <p>Terence Parr這本2007年的「古書」又是屬於列入書單很久沒勇氣買來看的書。趁著Fowler的Domain Specific Language發行強迫自己把這領域的閒書(最近才跟難椰老大說除了Java Web Application開發的書之外，我都歸類為閒書)看一看、學一學。</p>
+        <p>打算透過幾個例子讓自己熟悉ANTLR maven project，大概就是一、簡單的Lexer, Parser產生AST，二、用rule actions evaluate，三、簡單的tree parser走過AST。</p>
+        <h2>最簡單的方法</h2>
+        <p>直接使用<code>mvn archetype:generate</code>選擇</p>
+        <div class="console">
+63: remote -> antlr3-maven-archetype (null)
+        </div>
+        <p>在這個時候可以看到3.2和3.3兩個版本可以選，3.3的版本在repo1.maven.org/maven2上的jar filename似乎錯誤，所以用3.2。</p>
+        <p></p>
+        <h2>像我這種笨蛋用的方法</h2>
+        <p>手工打造使用<code>antlr3-maven-plugin</code> plugin的project</p>
+        <h3>Listing. Project Directory Structure</h3>
+        <img src="../images/java/maven.antlr.structure.png" />
+        <p>重點在build/plugins裡面設定<code>antlr3-maven-plugin</code> plugin</p>
+        <h3>Listing. project pom.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    &lt;modelVersion>4.0.0&lt;/modelVersion>
+    &lt;groupId>net.greenrivers.antlr&lt;/groupId>
+    &lt;artifactId>e-first&lt;/artifactId>
+    &lt;name>antlr maven project demo&lt;/name>
+    &lt;version>1.0-SNAPSHOT&lt;/version>
+    &lt;packaging>jar&lt;/packaging>
+    &lt;url>www.antlr.org&lt;/url>
+    
+    &lt;properties>
+        &lt;antlr-version>3.3&lt;/antlr-version>
+    &lt;/properties>
+    
+    &lt;dependencies>
+        &lt;dependency>
+            &lt;groupId>org.antlr&lt;/groupId>
+            &lt;artifactId>antlr-runtime&lt;/artifactId>
+            &lt;version>${antlr-version}&lt;/version>
+            &lt;scope>compile&lt;/scope>
+        &lt;/dependency>
+    &lt;/dependencies>
+    
+    &lt;build>
+        &lt;plugins>
+            &lt;plugin>
+                &lt;groupId>org.antlr&lt;/groupId>
+                &lt;artifactId>antlr3-maven-plugin&lt;/artifactId>
+                &lt;version>${antlr-version}&lt;/version>
+                &lt;executions>
+                    &lt;execution>
+                        &lt;goals>
+                            &lt;goal>antlr&lt;/goal>
+                        &lt;/goals>
+                    &lt;/execution>
+                &lt;/executions>
+            &lt;/plugin>
+            
+            &lt;plugin>
+                &lt;groupId>org.apache.maven.plugins&lt;/groupId>
+                &lt;artifactId>maven-compiler-plugin&lt;/artifactId>
+                &lt;configuration>
+                    &lt;source>1.6&lt;/source>
+                    &lt;target>1.6&lt;/target>
+                    &lt;encoding>UTF-8&lt;/encoding>
+                &lt;/configuration>
+            &lt;/plugin>
+            
+            &lt;plugin>
+                &lt;groupId>org.apache.maven.plugins&lt;/groupId>
+                &lt;artifactId>maven-resources-plugin&lt;/artifactId>
+                &lt;configuration>
+                    &lt;encoding>UTF-8&lt;/encoding>
+                &lt;/configuration>
+            &lt;/plugin>
+        &lt;/plugins>
+    &lt;/build>
+&lt;/project>
+        </pre>
+        <p></p>
+        <h4>Task 1. Simple Lexer and Parser</h4>
+        <p>不採用lexer和parser合併的作法，因此要分別定義lexer grammar和parser grammar。就拿書本上的例子來做，首先是在lexer定義token。</p>
+        <h3>Listing. ELexer.g</h3>
+        <pre name="code" class="plain:controls:firstline[1]">
+lexer grammar ELexer;
+
+@header {
+package net.greenrivers.antlr;
+}
+
+MINUS   : '-'
+        ;
+
+PLUS    : '+'
+        ;
+
+TIMES   : '*'
+        ;
+
+ASSIGN  : '='
+        ;
+
+LPAREN  : '('
+        ;
+
+RPAREN  : ')'
+        ;
+
+ID      : ('a'..'z'|'A'..'Z')+
+        ;
+
+INT     : ('0'..'9')+
+        ;
+        
+NEWLINE : '\r'?'\n' 
+        ;
+
+WS      : (' '|'\t'|'\n'|'\r')+ {$channel=HIDDEN;} 
+        ;
+
+        </pre>
+        <p>在lexer grammar裡面用<code>@header</code>設定好ANTLR產生出來的java file在file header部份要加進去的內容。ANTLR產生出來的java file name會是<code>grammar</code>名稱加上副檔名。此外還會產生一個副檔名為tokens的檔案，裡面放是grammar裡面的token和對應的id。接下來parser grammar的設定和rules定義如下。</p>
+        <h3>Listing. EParser.g</h3>
+        <pre name="code" class="plain:controls:firstline[1]">
+parser grammar EParser;
+
+options {
+    language = Java;
+    output = AST;
+    tokenVocab = ELexer;
+}
+
+@header {
+package net.greenrivers.antlr;
+}
+
+program : stat+ 
+        ;
+
+stat    : expr NEWLINE
+        | ID ASSIGN expr NEWLINE
+        | NEWLINE
+        ;
+
+expr    : multiExpr ( (PLUS|MINUS) multiExpr )*
+        ;
+        
+multiExpr
+        : atom ( TIMES atom )*
+        ;
+        
+atom    : INT
+        | ID
+        | LPAREN expr RPAREN
+        ;
+
+        </pre>
+        <p>在這個parser grammar裡面可以設定由別的grammar定義的vocabulary，所以在<code>options</code>裡設定<code>tokenVocab</code>使用ELexer，這時候ANTLR就會需要ELexer.tokens這個檔案。而且為了要看看ANTLR預設的Abstract Syntax Tree(AST)的結果，所以設定<code>output</code>這個參數為AST，而每個rule定義那邊不加上任何有關AST的定義。</p>
+        <p>開始寫程式之前可以先看一下target目錄下generated-sources目錄就是ANTLR產生的檔案。</p>
+        <h3>Listing. Generated files</h3>
+        <img src="../images/java/maven.antlr.generated.png" />
+        <p>接下來就寫個簡單的程式來用看看我們定義的grammar會不會有如我們預料的行為</p>
+        <h3>Listing. Main.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.antlr;
+
+import org.antlr.runtime.*;
+import org.antlr.runtime.tree.*;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            // create a CharStream that reads from standard input
+            ANTLRInputStream input = new ANTLRInputStream( System.in );
+                
+            // create a lexer that feeds off of input CharStream
+            ELexer lexer = new ELexer( input );
+                
+            // create a buffer of tokens pulled from the lexer
+            CommonTokenStream tokens = new CommonTokenStream( lexer );
+                
+            // create a parser that feeds off the tokens buffer
+            EParser parser = new EParser( tokens );
+                
+            // begin parsing at rule program
+            EParser.program_return result = parser.program();
+            
+            CommonTree tree = (CommonTree) result.getTree();
+            StringBuilder msg = new StringBuilder();
+            msg.append( "Default AST tree: " );
+            msg.append( tree.toStringTree() );
+            System.out.println( msg.toString() );
+        } catch (Exception ex) {
+            System.err.println("ANTLR demo parser threw exception:");
+            ex.printStackTrace();
+        }
+    }
+}
+        </pre>
+        <p>因為沒有設定<code>exec</code> plugin，所以執行的時候要自己跟plugin說mainClass，執行的狀況如下面所示</p>
+        <h3>Listing. 執行情形</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/antlr/hand/e-first$ mvn exec:java -Dexec.mainClass=net.greenrivers.antlr.Main
+[INFO] Scanning for projects...
+[INFO] Searching repository for plugin with prefix: 'exec'.
+[INFO] ------------------------------------------------------------------------
+[INFO] Building antlr maven project demo
+[INFO]    task-segment: [exec:java]
+[INFO] ------------------------------------------------------------------------
+[INFO] Preparing exec:java
+[INFO] No goals needed for project - skipping
+[INFO] [exec:java {execution: default-cli}]
+a=10+2*3
+Default AST tree: a = 10 + 2 * 3 
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESSFUL
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 17 seconds
+[INFO] Finished at: Mon Jan 10 22:40:14 CST 2011
+[INFO] Final Memory: 8M/88M
+[INFO] ------------------------------------------------------------------------
+        </pre>
+        <p>就醬子在console輸入<code>a=10+2*3</code>緊接著在<code>enter</code>之後，加上EOF就可以看到螢幕上出現ANTLR default AST tree的字串。hmm 不是BNF，要讓<code>parser grammar</code>弄出BNF的樣子還要加上一點動作讓ANTLR做出自己想要的東東。</p>
+        <h4>Task 2. Evaluate</h4>
+        <p>透過寫actions程式的方式來evaluate輸入的程式，因此就要在parser grammar為rules加上actions。</p>
+        <p>因此首先要在<code>@header</code>加上需要import的class，然後可以透過<code>@members</code>裡面定義<code>EParser</code>的member attributes。</p>
+        <p>ANTLR是一個recursive descent lexer/parser generator，透過ANTLR每一個rule都會用一個method來表示，而在grammar DSL針對rule寫的actions就會被安排於這些method裡面。</p>
+        <h3>Listing. EParser.g</h3>
+        <pre name="code" class="plain:controls:firstline[1]">
+parser grammar EParser;
+
+options {
+    language = Java;
+    output = AST;
+    tokenVocab = ELexer;
+}
+
+@header {
+package net.greenrivers.antlr;
+
+import java.util.Map;
+import java.util.HashMap;
+}
+
+@members {
+    HashMap&lt;String, Integer> memory = new HashMap&lt;String, Integer>();
+}
+
+program : stat+ 
+        ;
+
+stat    : expr NEWLINE { System.out.println( $expr.value ); }
+        | ID ASSIGN expr NEWLINE { memory.put( $ID.text, new Integer( $expr.value ) ); }
+        | NEWLINE
+        ;
+
+expr returns [int value]
+        : e=multiExpr { $value = $e.value; } 
+          ( PLUS e=multiExpr { $value += $e.value; }
+          | MINUS e=multiExpr { $value -= $e.value; }
+          )*
+        ;
+        
+multiExpr returns [int value]
+        : e=atom { $value = $e.value; } ( TIMES e=atom { $value *= $e.value; } )*
+        ;
+        
+atom returns [int value]
+        : INT { $value = Integer.parseInt( $INT.text ); }
+        | ID 
+          {
+          Integer v = (Integer) memory.get( $ID.text );
+          if( v!= null ) {
+              $value = v.intValue();
+          } else {
+              System.err.println( "undefined variable " + $ID.text );
+          }
+          }
+        | LPAREN expr RPAREN { $value = $expr.value; }
+        ;
+
+        </pre>
+        <p>如此一來產生的EParser.java就具備evaluate E language的能力。原本寫的程式不用修改就可以用來玩看看這個語言執行的狀況。</p>
+        <h3>Listing. 執行狀況</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/antlr/hand/e-second$ mvn exec:java -Dexec.mainClass=net.greenrivers.antlr.Main
+[INFO] Scanning for projects...
+[INFO] Searching repository for plugin with prefix: 'exec'.
+[INFO] ------------------------------------------------------------------------
+[INFO] Building antlr maven project demo
+[INFO]    task-segment: [exec:java]
+[INFO] ------------------------------------------------------------------------
+[INFO] Preparing exec:java
+[INFO] No goals needed for project - skipping
+[INFO] [exec:java {execution: default-cli}]
+a=1+(20*2)
+b=2*a
+b
+82
+Default AST tree: a = 1 + ( 20 * 2 ) 
+ b = 2 * a 
+ b 
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESSFUL
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 25 seconds
+[INFO] Finished at: Tue Jan 11 23:04:03 CST 2011
+[INFO] Final Memory: 8M/88M
+[INFO] ------------------------------------------------------------------------
+        </pre>
+        <p></p>
+        <h4>Task 3. Tree Grammar</h4>
+        <p>接下來，首先希望EParser可以產生BNF的AST，然後再寫tree grammar走過parse tree。</p>
+        <h3>Listing. EParser.g</h3>
+        <pre name="code" class="plain:controls:firstline[1]">
+parser grammar EParser;
+
+options {
+    language = Java;
+    output = AST;
+    tokenVocab = ELexer;
+    ASTLabelType=CommonTree;
+}
+
+@header {
+package net.greenrivers.antlr;
+}
+
+program : stat+    /* (stat { System.out.println($stat.tree == null?"null":$stat.tree.toStringTree()); } )+  */
+        ;
+
+stat    : expr NEWLINE                  -> expr
+        | ID ASSIGN expr NEWLINE        -> ^(ASSIGN ID expr)
+        | NEWLINE                       ->
+        ;
+
+expr    : multiExpr ( (PLUS^|MINUS^) multiExpr )*
+        ;
+        
+multiExpr
+        : atom ( TIMES^ atom )*
+        ;
+        
+atom    : INT
+        | ID
+        | LPAREN! expr RPAREN!
+        ;
+
+        </pre>
+        <p>一般而言，說java程式有一定彈性的話，就會很容易看到function return or arguments type是<code>java.lang.Object</code>。ANTLR每一個rule的return class都會有一個<code>tree</code>的attribute，預設的行為下tree attribute的type也會是<code>java.lang.Object</code>。然而在<code>options</code>裡設定<code>ASTLabelType</code>的class就可以更動型別。可以比較一下e-second產生出來的EParser.java和e-third產生出來的EParser.java，在e-third裡面tree attribute的type都會是<code>ASTLabelType</code>設定的那個型別。</p>
+        <h3>Listing. compare e-second和e-third的EParser.java的stat的inner class</h3>
+        <pre name="code" class="java:nocontrols:firstline[1]">
+// e-second EParser.java 
+    public static class stat_return extends ParserRuleReturnScope {
+        Object tree;
+        public Object getTree() { return tree; }
+    };
+// e-third EParser.java
+    public static class stat_return extends ParserRuleReturnScope {
+        CommonTree tree;
+        public Object getTree() { return tree; }
+    };
+        </pre>
+        <p>接下來就是針對每一個rule透過operator設定產生AST的部份（這裡用了書上寫的Constructing ASTs Using Operators和Constructing ASTs with Rewrite Rules）。看到<code>-></code>就是Constructing ASTs with Rewrite Rules；Constructing ASTs Using Operators的話則是透過兩個operator來設定，<code>^</code>表示這個token會是subtree的root node，<code>!</code>則表示該token不需要放到node或subtree裡面。</p>
+        <h3>Listing. 用來看看產生BNF parse tree的Main.java (其實跟e-second裡的一樣)</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.antlr;
+
+import org.antlr.runtime.*;
+import org.antlr.runtime.tree.*;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            // create a CharStream that reads from standard input
+            ANTLRInputStream input = new ANTLRInputStream( System.in );
+                
+            // create a lexer that feeds off of input CharStream
+            ELexer lexer = new ELexer( input );
+                
+            // create a buffer of tokens pulled from the lexer
+            CommonTokenStream tokens = new CommonTokenStream( lexer );
+                
+            // create a parser that feeds off the tokens buffer
+            EParser parser = new EParser( tokens );
+                
+            // begin parsing at rule program
+            EParser.program_return result = parser.program();
+            
+            CommonTree tree = (CommonTree) result.getTree();
+            StringBuilder msg = new StringBuilder();
+            msg.append( "Default AST tree: " );
+            msg.append( tree.toStringTree() );
+            System.out.println( msg.toString() );
+        } catch (Exception ex) {
+            System.err.println("ANTLR demo parser threw exception:");
+            ex.printStackTrace();
+        }
+    }
+}
+        </pre>
+        <h3>Listing. 執行狀況</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/antlr/hand/e-third$ mvn exec:java -Dexec.mainClass=net.greenrivers.antlr.Main
+[INFO] Scanning for projects...
+[INFO] Searching repository for plugin with prefix: 'exec'.
+[INFO] ------------------------------------------------------------------------
+[INFO] Building antlr maven project demo
+[INFO]    task-segment: [exec:java]
+[INFO] ------------------------------------------------------------------------
+[INFO] Preparing exec:java
+[INFO] No goals needed for project - skipping
+[INFO] [exec:java {execution: default-cli}]
+a=20+2*3
+b=a*(1+1)
+b
+Default AST tree: (= a (+ 20 (* 2 3))) (= b (* a (+ 1 1))) b
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESSFUL
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 26 seconds
+[INFO] Finished at: Wed Jan 12 18:30:34 CST 2011
+[INFO] Final Memory: 8M/88M
+[INFO] ------------------------------------------------------------------------
+        </pre>
+        <p>準備動作完成，接著就是透過tree grammar來逛逛產生的AST。</p>
+        <h3>Listing. EWalker.g</h3>
+        <pre name="code" class="plain:controls:firstline[1]">
+tree grammar EWalker;
+
+options {
+    tokenVocab=ELexer;
+    ASTLabelType=CommonTree;
+}
+
+@header {
+package net.greenrivers.antlr;
+
+import java.util.Map;
+import java.util.HashMap;
+}
+
+@members {
+HashMap&lt;String, Integer> memory = new HashMap&lt;String, Integer>();
+}
+
+prog    :       stat+
+        ;
+
+stat    :       expr { System.out.println( $expr.value ); }
+        |       ^(ASSIGN ID expr) { memory.put( $ID.text, new Integer( $expr.value ) ); }
+        ;
+
+expr returns [int value]
+        :       ^(PLUS a=expr b=expr) { $value = a+b; }
+        |       ^(MINUS a=expr b=expr) { $value = a-b; }
+        |       ^(TIMES a=expr b=expr) { $value = a*b; }
+        |       ID
+                {
+                Integer v = (Integer) memory.get( $ID.text );
+                if( v != null ) {
+                    $value = v.intValue();
+                } else {
+                    System.err.println( "undefined variable " + $ID.text );
+                }
+                }
+        |       INT { $value = Integer.parseInt( $INT.text ); }
+        ;
+
+        </pre>
+        <p>tree parser rule的寫法就是要處理的AST subtree的單元</p>
+        <h3>Listing. Test.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.antlr;
+
+import org.antlr.runtime.*;
+import org.antlr.runtime.tree.*;
+
+public class Test {
+    public static void main(String[] args) {
+        try {
+            // create a CharStream that reads from standard input
+            ANTLRInputStream input = new ANTLRInputStream( System.in );
+                
+            // create a lexer that feeds off of input CharStream
+            ELexer lexer = new ELexer( input );
+                
+            // create a buffer of tokens pulled from the lexer
+            CommonTokenStream tokens = new CommonTokenStream( lexer );
+                
+            // create a parser that feeds off the tokens buffer
+            EParser parser = new EParser( tokens );
+                
+            // begin parsing at rule program
+            EParser.program_return result = parser.program();
+            
+            CommonTree tree = (CommonTree) result.getTree();
+            StringBuilder msg = new StringBuilder();
+            msg.append( "Default AST tree: " );
+            msg.append( tree.toStringTree() );
+            System.out.println( msg.toString() );
+            
+            CommonTreeNodeStream nodes = new CommonTreeNodeStream( tree );
+            EWalker walker = new EWalker( nodes );
+            walker.prog();
+        } catch (Exception ex) {
+            System.err.println("ANTLR demo parser threw exception:");
+            ex.printStackTrace();
+        }
+    }
+}
+        </pre>
+        <h3>Listing. 執行狀況</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/antlr/hand/e-third$ mvn exec:java -Dexec.mainClass=net.greenrivers.antlr.Test
+[INFO] Scanning for projects...
+[INFO] Searching repository for plugin with prefix: 'exec'.
+[INFO] ------------------------------------------------------------------------
+[INFO] Building antlr maven project demo
+[INFO]    task-segment: [exec:java]
+[INFO] ------------------------------------------------------------------------
+[INFO] Preparing exec:java
+[INFO] No goals needed for project - skipping
+[INFO] [exec:java {execution: default-cli}]
+a=10*(1+2)
+b=a*5
+b
+a
+Default AST tree: (= a (* 10 (+ 1 2))) (= b (* a 5)) b a
+150
+30
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESSFUL
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 30 seconds
+[INFO] Finished at: Wed Jan 12 18:32:11 CST 2011
+[INFO] Final Memory: 8M/88M
+[INFO] ------------------------------------------------------------------------
+        </pre>
+        <p>所以初步搞定這樣的maven project應該足夠我現在對ANTLR粗淺的了解程度下，可以正常使用。</p>
+        <a href="../samples/antlr-hand.tar.gz">Sample Code</a>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>The Definitive ANTLR Reference</li>
+            </ol>
+        </div>
+    </div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+    <address>
+    Terence Chao, 2011/01/10
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

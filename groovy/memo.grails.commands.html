@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="grails" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Grails Memo: Commands</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Grails Memo: Commands</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+    給健忘的自己用的Grails指令備忘用，用到哪寫到哪。比較好的參考地方<a href="http://grails.org/doc/latest/" target="_blank">http://grails.org/doc/latest/</a>或$GRAILS_HOME/doc/index.html。
+    </p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Grails 1.3.1</li>
+            <li>Sun JDK 1.6.0_20</li>
+            <li>Ubuntu 10.04</li>
+        </ul>
+    </div>
+    <h2>Commands</h2>
+    <p class="preformatted console" style="display:none;">grails bootstrap
+grails bug-report
+grails clean
+grails compile
+grails console
+grails create-app
+grails create-controller
+grails create-domain-class
+grails create-filters
+grails create-integration-test
+grails create-plugin
+grails create-script
+grails create-service
+grails create-tag-lib
+grails create-unit-test
+grails dependency-report
+grails doc
+grails generate-all
+grails generate-controller
+grails generate-views
+grails help
+grails init
+grails install-dependency
+grails install-plugin
+grails install-templates
+grails integrate-with
+grails list-plugin-updates
+grails list-plugins
+grails package
+grails package-plugin
+grails plugin-info
+grails release-plugin
+grails run-app
+grails run-war
+grails schema-export
+grails set-proxy
+grails set-version
+grails shell
+grails stats
+grails test-app
+grails tomcat
+grails uninstall-plugin
+grails upgrade
+grails war</p>
+    <h4>create-app</h4>
+    <h4>create-domain-class</h4>
+    <h4>create-controller</h4>
+    <h4>create-service</h4>
+    <h4>create-filters</h4>
+    <p>根據template產生的filter程式位置在grails-app/conf下。</p>
+    <h4>create-tag-lib</h4>
+    <h4>create-unit-test</h4>
+    <p>Unit Test的時候不會起始application context</p>
+    <h4>create-integration-test</h4>
+    <p>Integration Test會起始application context，可以正常執行GORM的功能</p>
+    <h4>run-app</h4>
+    <p class="preformatted console">
+terence@M1210:~/lab/grails/dave$ grails help run-app
+Welcome to Grails 1.3.1 - http://grails.org/
+Licensed under Apache Standard License 2.0
+Grails home is set to: /home/terence/local/grails-1.3.1
+
+Base Directory: /home/terence/lab/grails/dave
+Resolving dependencies...
+Dependencies resolved in 1347ms.
+Running script /home/terence/local/grails-1.3.1/scripts/Help_.groovy
+Environment set to development
+
+    grails run-app -- Runs a Grails application
+
+Usage (optionals marked with *):
+    grails [environment]* run-app
+    </p>
+    <p>
+    environment設定值如下
+    </p>
+    <div>
+        <ul>
+            <li>dev: developement environment</li>
+            <li>test: test environment</li>
+            <li>prod: production environment</li>
+        </ul>
+    </div>
+    <h4>test-app</h4>
+    <p class="preformatted console">
+terence@M1210:~/lab/grails/dave$ grails help test-app
+Welcome to Grails 1.3.1 - http://grails.org/
+Licensed under Apache Standard License 2.0
+Grails home is set to: /home/terence/local/grails-1.3.1
+
+Base Directory: /home/terence/lab/grails/dave
+Resolving dependencies...
+Dependencies resolved in 2089ms.
+Running script /home/terence/local/grails-1.3.1/scripts/Help_.groovy
+Environment set to development
+
+    grails test-app -- Run a Grails applications unit tests
+
+Usage (optionals marked with *):
+    grails [environment]* test-app
+    </p>
+    <p>執行grail test-app會先跑unit test之後接著跑integration test。如果想要只跑unit test或integration test可以在指令後面加-unit或-integration讓grails執行unit test或integration test。</p>
+    <h4>create-script</h4>
+    <p>建立一個可以在terminal透過grails執行的script，產生的script會放在scripts目錄下。</p>
+    <h4>schema-export</h4>
+    <p>export DDL to file or console，當然必須要有正確的hibernate dialect設定。</p>
+    <h4>set-version</h4>
+    <p>設定project root directory的application.properties (Grails官方文件稱這個檔案為application metadata file，在GSP裡面可以透過&lt;g:meta name="property_key" /&gt;這個tag取得檔案裡面的資訊)裡的app.version的value。</p>
+    <h2>Static Scaffold</h2>
+    <p>產生static scaffold有下列指令</p>
+    <p class="preformatted console">
+grails generate-all
+grails generate-controller
+grails generate-views
+    </p>
+    <p>如果覺得開發的project要用特定的scaffold template來generate的話，可以使用下列指令把那些template安裝到project裡面</p>
+    <p class="preformatted console">
+grails install-templates
+    </p>
+    <p>安裝的檔案在/src/templates下。/src/templates/artifacts裡放的是create-xxxxxx用的template、/src/templates/scaffolding是scaffold使用的template，最後/src/templates/war放的是web.xml的template。</p>
+    <h2>Grails Plug-in Development and Usage</h2>
+    <h4>create-plugin</h4>
+    <h4>package-plugin</h4>
+    <h4>install-plugin</h4>
+    <h4>uninstall-plugin</h4>
+    <h4>list-plugins</h4>
+    <h4>plugin-info</h4>
+    <h4>release-plugin</h4>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Grails: A Quick-Start Guide</li>
+            <li>Grails in Action</li>
+            <li>Grails 1.3.1 Official Documents</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, Start with 2010/06/30 Last Modified 2010/07/05
+</address>
+    <script language="javascript">
+    $(function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    });
+    </script>
+</body>
+</html>

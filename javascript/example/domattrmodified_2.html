@@ -1,0 +1,53 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <style type="text/css">
+    #sqr1 {
+        width: 100px;
+        height: 100px;
+        border: 1px solid blue;
+    }
+    </style>
+    <script type="text/javascript" src="my/event-min.js"></script>
+</head>
+<body>
+<div style="display:none;" id="sqr1">
+</div>
+<a href="#" id="show">Show</a>
+<script type="text/javascript">
+var attrChangeListener = function( elem, fn ) {
+    /*
+    if( elem.onpropertychange === undefined ) {
+        EventUtil.addHandler( elem, 'DOMAttrModified', fn );
+    } else {
+        EventUtil.addHandler( elem, 'propertychange', fn );
+    }
+    */
+    EventUtil.addHandler( elem, 'DOMSubtreeModified', fn );
+};
+
+EventUtil.addHandler( window, 'load', function() {
+    var showElem = document.getElementById( 'show' );
+    var sqr1 = document.getElementById( 'sqr1' );
+    
+    EventUtil.addHandler( showElem, 'click', function() {
+        if( sqr1.style.setAttribute ) {
+            sqr1.style.setAttribute( 'display', 'block' );
+        } else {
+            sqr1.setAttribute( 'style', 'display:block;' );
+        }
+    } )
+    
+    attrChangeListener( sqr1, function( event ) {
+        alert( EventUtil.target( event ) );
+        alert( event.type );
+        alert( 'Attrubute Name:' + ( event.attrName || '' ) );
+        alert( 'Attribute Change:' + ( event.attrChange || '' ) );
+        alert( 'Previous value:' + ( event.prevValue || '' ) );
+        alert( 'New value:' + ( event.newValue || '' ) );
+    } );
+} );
+</script>
+</body>
+</html>

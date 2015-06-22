@@ -1,0 +1,41 @@
+<html>
+<head>
+    <script type="text/javascript" language="javascript">
+    var Oolong = function() {
+    };
+    
+    Oolong.prototype = {
+        oxidation: 'Medium',
+        brewing: function() {
+            return 'Tea time~'
+        }
+    };
+    
+    Oolong.prototype.maturing = function() {
+        return 'OOO....';
+    };
+    
+    Oolong.prototype.brewing = function() {
+        return 'Oolong Tea Time....';
+    };
+    
+    var DongDing = function() {
+        this.location = 'Taiwan';
+    };
+    
+    DongDing.prototype = new Oolong();
+    
+    var obj = new DongDing();
+    var prop;
+    if( obj.__proto__ ) {
+        for( prop in obj.__proto__ ) {
+            document.writeln( prop + ': ' + obj.__proto__[prop] + '</br>');
+        }
+    } else {
+        alert( 'This Browser do not expose __proto__ property' );
+    }
+    </script>
+</head>
+<body>
+</body>
+</html>

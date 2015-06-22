@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script language="JavaScript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+	<script language="JavaScript" src="../js/shBrushPython.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <title>Recipe 8.21 Enable Python Script Handling</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Recipe 8.21 Enable Python Script Handling</h1>
+</div>
+<div class="articlecontent">
+	<h2>Environment</h2>
+	<ul>
+	    <li>Ubuntu 11.04</li>
+		<li>Apache 2.2.19</li>
+		<li>Python 2.7.1</li>
+		<li>mod_python 3.3.1</li>
+	</ul>
+	<h2>Footnote</h2>
+	<h4>Install mod_python 3.3.1</h4>
+	<p>跟一般linux程式從source開始做一樣，<em>mod_python</em>在<code>./configure</code>要設定apxs。我已經先裝過<em>mod_perl</em>，還需要的library如下列表</p>
+	<ul>
+	    <li>flex</li>
+		<li>python-dev</li>
+	</ul>
+	<p>在<code>make</code>的時候，因為使用的<em>apr-util</em>版本在<em>mod_python 3.3.1</em> <code>make</codE>的時候會有問題。透過google大神找到解法(Ref 3)。改掉</code>connobject.c</code>那行，重新compile就不會遇到問題。</p>
+	<h4>Configuration & Test</h4>
+	<pre name="code" class="plain:nocontrols:firstline[1]">
+# for mod_python
+LoadModule python_module modules/mod_python.so
+
+# config mod_python
+&lt;IfModule mod_python.c>
+    &lt;Directory /opt/apache2219/htdocs/test>
+        AddHandler mod_python .py
+        PythonHandler mptest
+        PythonDebug On
+    &lt;/Directory>
+&lt;/IfModule>
+	</pre>
+	<div class="codehead">Listing. mptest.py</div>
+	<pre name="code" class="python:nocontrols:firstline[1]">
+from mod_python import apache
+
+def handler(req):
+    req.content_type = 'text/plain'
+    req.write( "Hello, World!" )
+    return apache.OK
+
+	</pre>
+	<p>無聊踹的，跟這個Recipe沒關係</p>
+	<pre name="code" class="plain:nocontrols:firstline[1]">
+terence@ubuntu:/opt/apache2219/bin$ ./ab -n 1000 -c 10 http://localhost/test/mptest.py
+This is ApacheBench, Version 2.3 <$Revision: 655654 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 100 requests
+Completed 200 requests
+Completed 300 requests
+Completed 400 requests
+Completed 500 requests
+Completed 600 requests
+Completed 700 requests
+Completed 800 requests
+Completed 900 requests
+Completed 1000 requests
+Finished 1000 requests
+
+
+Server Software:        Apache/2.2.19
+Server Hostname:        localhost
+Server Port:            80
+
+Document Path:          /test/mptest.py
+Document Length:        13 bytes
+
+Concurrency Level:      10
+Time taken for tests:   0.935 seconds
+Complete requests:      1000
+Failed requests:        0
+Write errors:           0
+Total transferred:      209000 bytes
+HTML transferred:       13000 bytes
+Requests per second:    1069.81 [#/sec] (mean)
+Time per request:       9.347 [ms] (mean)
+Time per request:       0.935 [ms] (mean, across all concurrent requests)
+Transfer rate:          218.35 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   1.0      0      11
+Processing:     1    9  28.5      5     416
+Waiting:        1    7  26.8      2     389
+Total:          1    9  29.0      5     427
+
+Percentage of the requests served within a certain time (ms)
+  50%      5
+  66%      7
+  75%      9
+  80%     10
+  90%     16
+  95%     21
+  98%     32
+  99%     40
+ 100%    427 (longest request)
+	</pre>
+	<h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Apache Cookbook 2ed, O'Reilly </li>
+            <li><em>mod_python</em> Web site</li>
+			<li><em>mod_python 3.3.1</em> against <em>apr-utl</em> 1.3.4 above <a href="https://bugzilla.redhat.com/show_bug.cgi?id=465246" target="_blank">bug</a> </li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/07/29
+</address>
+<script language="javascript">
+$(function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

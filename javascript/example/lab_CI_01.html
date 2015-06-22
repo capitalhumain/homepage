@@ -1,0 +1,44 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" src="lab01.js"></script>
+    <script type="text/javascript">
+    window.onload = function() {
+        var malobj = Qoo( 'Undefined', 10.5 );     // missing new
+        document.getElementById( 'malobj' ).innerHTML = (typeof malobj === 'undefined');
+        document.getElementById( 'thisname' ).innerHTML = this.name;
+        document.getElementById( 'thisprice' ).innerHTML = this.price;
+        document.getElementById( 'iswindow' ).innerHTML = ( this === window );
+        
+        var obj = new Qoo( 'Water', 20 );
+        document.getElementById( 'obj' ).innerHTML = (typeof obj === 'object');
+        document.getElementById( 'objname' ).innerHTML = obj.name;
+        document.getElementById( 'objprice' ).innerHTML = obj.price;
+    };
+    </script>
+</head>
+<body>
+    <pre style="font-family: 'Courier New';background-color: #EEEEEE;padding: 5px;">
+    var malobj = Qoo( 'Undefined', 10.5 );     // missing new
+    ...
+    var obj = new Qoo( 'Water', 20 );
+    </pre>
+    <fieldset>
+        <legend>About malobj</legend>
+        <div style="padding-left:5px">
+        typeof malobj is 'undefined': <span id="malobj"></span><br />
+        this.name: <span id="thisname"></span><br/>
+        this.price: <span id="thisprice"></span><br/>
+        this === window: <span id="iswindow"></span>
+        </div>
+    </fieldset>
+    <fieldset>
+        <legend>About obj</legend>
+        <div style="padding-left:5px">
+        typeof obj is 'object': <span id="obj"></span><br/>
+        obj.name: <span id="objname"></span><br/>
+        obj.price: <span id="objprice"></span><br/>
+        </div>
+    </fieldset>
+</body>
+</html>

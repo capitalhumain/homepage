@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Fatwire,Content Server,XMLPost" />
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script language="JavaScript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushBash.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet"/>
+    <title>Fatwire Content Server - XMLPost memo</title>
+</head>
+<body>
+<div>
+    <h1 class="header">XMLPost memo</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+    沒想到研究所畢業十年來，第一次在一個地方第一呆超過兩年是在敦陽。在敦陽除了創造許多個人工作習性上的特例之外，也強迫自己逐漸習慣在Linux下開發。哈 最近在windows console下常常打ls...
+    </p>
+    <p>
+    沒想到去年做eCare content移轉之後，今年新需求要做content移轉的時候會忘那麼大。還好這次只有basic asset type，flex asset type去年做過之後就忘了...做個簡單的memo以防萬一，基於職業道德只會紀錄跟Fatwire有關的東西。
+    </p>
+    <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 1.6.0_20</li>
+                <li>Groovy 1.7.3</li>
+                <li>Fatwire Content Server 7.0.3</li>
+            </ul>
+        </div>
+    <h2>Basic Asset Type</h2>
+    <p>
+    詳細的key說明請自己看developer's guide。對我而言XMLPost設定檔主要區分為兩大塊，首先上半部是跟XMLPost程式說有關ContentServer連線、認證和XMLPost運行等資訊和設定，其次以post<em>tagname</em>部份的設定則是用來讓XMLPost程式知道我們的assets有哪些attributes是要送上去Content Server的。
+    </p>
+    <p>
+    第二部份還可以針對每一個attribute要truncate的長度做設定，這邊的設定就必須和Asset Type ADF裡對應attribute一致或更少，否則RemoteContentPost執行asset.save會失敗。
+    </p>
+    <h3>Listing. XMLPost ini file</h3>
+    <pre name="code" class="plain:controls:firstline[1]">
+xmlpost.xmlfilenamefilter: xml
+xmlpost.url: http://CS_SERVER_ADDRESS/cs/ContentServer
+xmlpost.numargs: 6
+xmlpost.argname1: pagename
+xmlpost.argvalue1: OpenMarket/Xcelerate/Actions/RemoteContentPost
+xmlpost.argname2: AssetType
+xmlpost.argvalue2: YOUR_ASSET_TYPE
+xmlpost.argname3: authusername
+xmlpost.argvalue3: USER_NAME
+xmlpost.argname4: authpassword
+xmlpost.argvalue4: USER_PASSWORD
+xmlpost.argname5: inifile
+xmlpost.argvalue5: futuretense.ini
+xmlpost.argname6: publication
+xmlpost.argvalue6: YOUR_SITE
+xmlpost.success: Success
+xmlpost.failure: Error
+xmlpost.logfile: log.txt
+postname: y
+truncname: 32
+
+postdescription: y
+truncdescription: 128
+
+postsubtype: y
+truncsubtype: 24
+
+postcategory: y
+truncategory: 4
+
+postarea: y
+poststore: y
+postphone: y
+posttime: y
+postaddress: y
+postmap: y
+    </pre>
+    <p>要透過XMLPost來import assets的話，除了要準備ini configuration file之外，還要把assets做成一個一個的xml file。這邊就看開發人員自己搞定，印象中fatwire沒提供工具(我不把ContentServerExplorer，export assets to xml算在內，不過我想應該也是可以自己用匯出之後加上XSLT可以弄出可以餵給XMLPost吃的東東)</p>
+    <p>因為最近跟Groovy走比較近，所以1. 由staging db把別的asset type的assets轉出來和2. 從excel弄出一堆assets xml這兩個資料來源就都用groovy和groovy提供的SimpleTemplateEngine來搞。</p>
+    <p>接下來就是不會bash的人寫的愚蠢run.sh，我選擇把assets放在data這個子目錄裡面，所以使用-s<em>directory</em>的方式讓XMLPost進去那個目錄下找檔案。</p>
+    <h3>Listing. run.sh</h3>
+    <pre name="code" class="bash:controls:firstline[1]">
+#!/bin/sh
+
+CS_HOME="/media/E634BCF734BCCBB5/sti/TutorialJSK/ContentServer/7.0.3"
+CS_WEB_LIB="/media/E634BCF734BCCBB5/sti/TutorialJSK/App_Server/jboss-portal-2.6.1.GA/server/default/deploy/cs.war/WEB-INF/lib"
+
+CLASSPATH="$CS_HOME/cs.jar:$CS_HOME/MSXML.jar:$CS_HOME/commons-logging-1.1.jar:$CS_HOME/cs-core.jar:$CS_WEB_LIB/commons-codec-1.3.jar:$CS_WEB_LIB/commons-httpclient-3.0.1.jar:$CS_WEB_LIB/commons-lang-2.1.jar:j2ee.jar"
+
+java -cp $CLASSPATH COM.FutureTense.XML.Post.XMLPostMain -sdata -cXMLPOST_CONFIGURATION_FILE.ini
+    </pre>
+    <p>其他有的沒的的注意項目如下</p>
+    <h4>資料部份</h4>
+    <div>
+        <ul>
+            <li>category欄位如果有需要的時候，assets的xml file裡面要放Category table裡面屬於該asset type的category attribute的值</li>
+            <li>subtype也是要放asset type維護頁面drop down menu value的內容</li>
+            <li>如果需求是所有assets會屬於不同的publication則要多設定postpublication，在每個assets xml file裡也要有publication element</li>
+        </ul>
+    </div>
+    <h4>執行部份</h4>
+    <div>
+        <ul>
+            <li>Windows環境執行需要特別注意encoding的問題</li>
+            <li>XMLPost做出來的log，是一個xml file裡一個一個element做log出來</li>
+        </ul>
+    </div>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Fatwire Content Server Developer's Guide</li>
+            <li>Groovy Web Site</li>
+            <li>Groovy in Action, Second Edition</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2010/09/07
+</address>
+<script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+    };
+</script>
+</body>
+</html>

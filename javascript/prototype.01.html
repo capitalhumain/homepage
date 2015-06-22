@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Prototype 1</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Prototype 1</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>任何一個JavaScript function都有一個property叫<code>prototype</code>，預設是指向Object。透過constructor invocation pattern執行function產生的物件會有一個隱含的指標指向這個function的prototype物件。</p>
+        <h3>Listing 1. function prototype property</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var Adder = function Adder() {
+    this.name = 'adder';
+};
+
+console.log( 'Adder.prototype:', Adder.prototype);
+        </pre>
+        <h3>Listing 2. constructor invocation pattern的例子</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var Adder = function Adder() {
+    this.name = 'adder';
+};
+
+Adder.prototype.add = function(a, b) {
+    return a+b;
+};
+
+console.log( 'Adder.prototype:', Adder.prototype);
+
+var obj = new Adder();
+
+console.log( 'obj.__proto__:', obj.__proto__ );
+console.log( 'obj:', obj );
+        </pre>
+        <p>任何一個JavaScript物件，不論是literal object或者是透過constructor invocation pattern產生的物件都有一個隱含的property，代表prototype。在chrome就是__proto__。一般的literal object則是指向Object，透過constructor invocation pattern產生的物件的__proto__則是指向function prototype物件，只有Object的prototype是指向null。</p>
+        <h3>Listing 3. Object __proto__</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var obj1 = { attr1: 10 };
+
+console.log( obj1 );
+console.log( obj1.__proto__ );
+console.log( typeof(obj1.__proto__) );
+console.log( obj1.__proto__.__proto__ );
+        </pre>
+        <h3>執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence-mba:prototype tzuyichao$ node object_prototype_1.js 
+{ attr1: 10 }
+{}
+object
+null
+        </pre>
+        <h3>Listing 4. Constructor invocation pattern __proto__</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var Adder = function Adder() {
+    this.num = 0;
+};
+
+Adder.prototype.add = function(a, b) {
+    return a+b;
+};
+
+var obj = new Adder();
+
+console.log( 'obj:', obj );
+// instance prototype point to Adder class
+console.log( 'obj.__proto__:', obj.__proto__ );
+// Adder prototype is Object
+console.log( 'obj.__proto__.__proto__:', obj.__proto__.__proto__ );
+// Object prototype is null
+console.log( 'obj.__proto__.__proto__.__proto__:', obj.__proto__.__proto__.__proto__ );
+        </pre>
+        <h3>執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence-mba:prototype tzuyichao$ node custom_prototype_1.js 
+obj: { num: 0 }
+obj.__proto__: { add: [Function] }
+obj.__proto__.__proto__: {}
+obj.__proto__.__proto__.__proto__: null
+        </pre>
+        <p>使不使用prototype的差別，由於Prototypal Inheritance搜尋property的時候會到目前物件的prototype所指的物件搜尋，如果找不到就再往上搜尋。如果沒有使用prototype，如Listing 5，我們會看到log() method會在每一個產生的物件存在一份。反觀Listing 6. log() method則只會存在Util的prototype物件內。</p>
+        <h3>Listing 5. no prototype</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+// 想像我們在寫一個像jQuery的library
+// 在一個網頁執行的過程中我們可能產生很多很多核心物件
+// 如果這個library核心物件沒有使用prototype的時候可能
+// 會發生以下狀況
+var Util = function Util() {
+    this.name = 'Util',
+    this.log = function log(msg) {
+        console.log( msg );
+    }
+};
+
+// Usage:
+var i=0; l=10;
+for(i=0; i&lt;l; i++) {
+    var obj = new Util();
+    console.log( obj );
+}
+        </pre>
+        <h3>執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence-mba:prototype tzuyichao$ node prototype_does_matter_1.js 
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+{ name: 'Util', log: [Function: log] }
+        </pre>
+        <p></p>
+        <h3>Listing 6. prototype example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var Util = function Util() {
+    this.name = 'Util'
+};
+
+Util.prototype.log = function log(msg) {
+    console.log( msg );
+};
+
+// Usage:
+var i=0; l=10;
+for(i=0; i&lt;l; i++) {
+    var obj = new Util();
+    console.log( obj );
+}
+
+var obj = new Util();
+console.log( 'obj.__proto__:', obj.__proto__ );
+obj.log( 'logging from obj' );
+        </pre>
+        <h3>執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence-mba:prototype tzuyichao$ node prototype_does_matter_2.js 
+{ name: 'Util' }
+{ name: 'Util' }
+{ name: 'Util' }
+{ name: 'Util' }
+{ name: 'Util' }
+{ name: 'Util' }
+{ name: 'Util' }
+{ name: 'Util' }
+{ name: 'Util' }
+{ name: 'Util' }
+obj.__proto__: { log: [Function: log] }
+logging from obj
+        </pre>
+        <h5>The constructor property - 2013/07/16</h5>
+        <p>撰寫JavaScript物件導向程式時，假設需要使用prototypal inheritance的時候，必須要更改function object prototype property預設的物件。比如說下列程式碼</p>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+var MyUITableView = function MyUITableView() {
+};
+
+MyUITableView.prototype = new UITableView();
+        </pre>
+        <p>這是個正常的動作，而且不會有啥不正常的行為。要注意的是當我們換掉function object預設prototype property物件的之後，使用constructor invocation pattern產生的物件的constructor property就不會是我們預期的那個。以下面這個程式為例，可以看到第13行執行的結果並不是Foo。</p>
+        <h3>Listing 7. 換掉預設prototype物件的影響</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var Foo = function Foo() {
+};
+
+var Boo = function Boo() {
+};
+
+Foo.prototype = {};
+
+var obj_foo = new Foo();
+var obj_boo = new Boo();
+
+console.log( obj_foo.constructor === Foo );   // false
+console.log( obj_boo.constructor === Boo );   // true
+        </pre>
+        <p>如果constructor property對我們程式很重要的話，那就要自己將新的prototype物件的constructor property寫回正確的內容。</p>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var Foo = function Foo() {
+};
+
+var Boo = function Boo() {
+};
+
+Foo.prototype = { constructor: Foo };
+
+var obj_foo = new Foo();
+var obj_boo = new Boo();
+
+console.log( obj_foo.constructor === Foo );
+console.log( obj_boo.constructor === Boo );
+
+console.log( obj_foo.constructor );
+console.log( obj_boo.constructor );
+        </pre>
+        <p>如果我們把例子換成Foo繼承Boo的話，可能就這樣寫</p>
+        <pre name="code" class="javascript:controls:firstline[1]">
+var Foo = function Foo() {
+};
+
+var Boo = function Boo() {
+};
+
+var foo_parent = new Boo();
+foo_parent.constructor = Foo;
+
+Foo.prototype = foo_parent;
+
+var obj_foo = new Foo();
+
+console.log( obj_foo.name );
+
+Boo.prototype = {name: 'boo'};
+
+console.log( obj_foo.name );
+
+console.log( obj_foo.constructor );
+        </pre>
+        <p>這個例子順便講了另一件事情（第16行的動作），就是當我們透過constructor invocation pattern產生物件之後，再把function object的property換掉的話，並不影響已經產生的物件的prototype chain的物件。</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 5.1 Chapter 4</li>
+                <li>JavaScript Enlightenment</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, created: 2013/07/05, updated: 2013/07/16
+    </address>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

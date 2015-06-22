@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css"type="text/css"  rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.6.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <title>Node.js: The "Hello, World!"</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Node.js: The "Hello, World!"</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>大神清單一直增加...Ryan Lienhart Dahl...</p>
+		<p>也讓自己重新檢討自己對語言和應用的了解的標準...</p>
+		<h2>Environment</h2>
+		<div>
+		    <ul>
+			    <li>Ubuntu 11.04</li>
+				<li>Node.js v0.4.10</li>
+			</ul>
+		</div>
+        <h2>Simple "Hello, World"</h2>
+        <p>記得在寫HTML裡的javascirpt的時候在FF(現在IE也有)，有console.log可以將訊息寫到瀏覽器的console裡嗎?!這個東西在node.js一樣可以使用。因此最簡單的Hello, World!就是下列這樣。</p>
+		<pre name="code" class="javascript:controls:firstline[1]">
+(function() {
+    console.log( "Hello, Wrold!" );
+})();
+		</pre>
+		<pre class="console">
+terence@ubuntu:~/vmlab/nodejs$ node helloworld.js 
+Hello, Wrold!
+		</pre>
+		<h2>Simple "Hello, World" Server</h2>
+        <p>接著使用node.js的module我們可以使用以往熟悉的JavaScript寫出好玩的東西，先寫一個socket server，會送出"Hello, World!"給連線進來的client。</p>
+		<p>要使用network功能，因此透過<code>require()</code> function來說我們需要net module。記得spec說的，JavaScript需要Global object。<code>require()</code> function也是在Global objects裡面，除了可以用<code>require()</code>來load build-in modules之外，也可以用來load自己或其他人寫的javascript file。</p>
+		<p>如同一往寫JavaScript，我們可以在<code>createServer</code>的時候寫一個callback的connection handler，當有連線進來的時候就會呼叫這個callback。</p>
+		<p>接著就是透過<code>listen()</code>指定要綁到哪個網卡ip的哪個port。最後在console show出一段文字說server已經在執行中。</p>
+		<pre name="code" class="javascript:controls:firstline[1]">
+var net = require( 'net' );
+var server = net.createServer( function( c ) {
+    c.write( "Hello, World!\n" );
+} );
+server.listen( '8088', 'localhost' );
+console.log( "server is on, localhost:8088" );
+		</pre>
+		<p>可以透過telnet看看剛剛建立的Hello, World Server執行狀況<p>
+		<pre class="console">
+terence@ubuntu:~/vmlab/flexbison$ telnet localhost 8088
+Trying ::1...
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Hello, World!
+		</pre>
+		<p>除了telnet也可以用node.js的net寫client程式看看。我想要處理由server端接受到資料後的event，因此透過如第三~五行的方式，針對Event:'data'提供一個callback，用來把從server收到的資料在console印出來。</p>
+		<pre name="code" class="javascript:controls:firstline[1]">
+var net = require( 'net' );
+var conn = net.createConnection( 8088, 'localhost' );
+
+conn.on( 'data', function(data) {
+    console.log( "Receive: " + data );
+} );
+
+conn.end();
+        </pre>
+		<pre class="console">
+terence@ubuntu:~/vmlab/nodejs$ node net_connection.js 
+Receive: Hello, World!
+		</pre>
+		<h2>Simple "Hello, World" Web Server</h2>
+        <p>使用<code>http</code> module建立一個"Hello, World!" web server。</p>
+		<pre name="code" class="javascript:controls:firstline[1]">
+var http = require( 'http' );
+var server = http.createServer( function( req, res ) {
+    res.writeHead( 200, {'Content-Type': 'plain/text'} );
+    res.end( "Hello, World!\n" );
+} ).listen( '8080', 'localhost' );
+
+console.log( 'Server is running... http://localhost:8080' );
+		</pre>
+		<pre class="console">
+terence@ubuntu:~/vmlab/flexbison$ curl -v http://localhost:8080
+* About to connect() to localhost port 8080 (#0)
+*   Trying ::1... Connection refused
+*   Trying 127.0.0.1... connected
+* Connected to localhost (127.0.0.1) port 8080 (#0)
+> GET / HTTP/1.1
+> User-Agent: curl/7.21.7 (x86_64-unknown-linux-gnu) libcurl/7.21.7 OpenSSL/0.9.8o zlib/1.2.3.4 libidn/1.18
+> Host: localhost:8080
+> Accept: */*
+> 
+&lt; HTTP/1.1 200 OK
+&lt; Content-Type: plain/text
+&lt; Connection: keep-alive
+&lt; Transfer-Encoding: chunked
+&lt; 
+Hello, World!
+* Connection #0 to host localhost left intact
+* Closing connection #0
+		</pre>
+		<p>或者寫node.js的程式來發送request給"Hello, World" Web Server。</p>
+		<pre name="code" class="javascript:controls:firstline[1]">
+var http = require( 'http' )
+var options = {
+    host: 'localhost',
+    port: 8080,
+    path: '/',
+    method: 'GET'
+};
+
+var req = http.request( options, function( res ) {
+    console.log( 'Status: ' + res.statusCode );
+    console.log( 'Headers: ' + JSON.stringify( res.headers ) );
+    res.on( 'data', function( body ) {
+        console.log( 'Body: ' + body );
+    } );
+} );
+
+req.end();
+		</pre>
+		<pre class="console">
+terence@ubuntu:~/vmlab/nodejs$ node http_request.js 
+Status: 200
+Headers: {"content-type":"plain/text","connection":"close","transfer-encoding":"chunked"}
+Body: Hello, World!
+		</pre>
+		<p>簡單的三個"Hello, World!" application就這樣嚕。</p>
+        <h2>Resource</h2>
+        <div>
+            <ol>
+                <li>http://nodejs.org</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2011/08/15
+    </address>
+    <script type="text/javascript">
+    $( function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    } );
+    </script>
+</body>
+</html>

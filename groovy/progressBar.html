@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="groovy,SwingBuilder,progressBar" />
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>SwingBuilder - progressBar Demo</title>
+</head>
+<body>
+<div>
+    <h1 class="header">SwingBuilder - progressBar Demo</h1>
+</div>
+<div class="articlecontent">
+    <h2>碎碎唸</h2>
+    <p>
+    現在處於一個很奇怪的狀況。這一年多來太多特例的狀況讓自己覺得很奇怪...一整個怪。加上手上唯一的事情又有很快可以做完的感覺...大概又到了該xxx的週期了吧。哀
+    最近又買了很多技術書和閒書，很巧的有兩本閒書名竟然都有"被子"...大概快要可以出小胖的棉被整理術。哈哈哈哈
+    </p>
+    <h2>Preface</h2>
+    <p>
+    最近又在看SwingBuilder是因為在做DB Migration工作的時候想寫一個Swing的application來控制和觀測thread執行作業的狀況。反正groovy網站沒看到範例就自己順便玩一個範例。
+    </p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.7.1</li>
+            <li>Sun JDK 1.6.0_18</li>
+        </ul>
+    </div>
+    <h2>主題來了</h2>
+    <p>
+    這是個不像groovy也不像java的groovy SwingBuilder.progressBar的範例。主要是參考Java Tutorial有關ProgressBar的第一個範例，然後自己蠻幹做出來的東西。邪魔外道希望有參考價值。
+    </p>
+    <p>
+    這個範例的重點在於以下兩點
+    </p>
+    <div>
+        <ol>
+            <li>透過實作SwingWorker的Task，是實際做事情的人。他把做完的事情的比例設定給progress property</li>
+            <li>接著是PropertyChangeListener，註冊一個propert change listener給Task物件，當progress property有變動的時候改變progressBar的value</li>
+        </ol>
+    </div>
+    <h3>Listing. progressBar.01.groovy complete source code</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.swing.SwingBuilder
+import javax.swing.*
+import java.beans.PropertyChangeListener 
+import java.beans.PropertyChangeEvent
+import javax.swing.WindowConstants as WC
+
+class ProgressBarDemo implements PropertyChangeListener {
+    def task
+    def swing
+    
+    public void execute() {
+        swing = new SwingBuilder()
+        def frame = swing.frame( title: 'progressBar demo', 
+                                 size: [300, 100], 
+                                 defaultCloseOperation: WC.EXIT_ON_CLOSE ) {
+            panel {
+                progressBar( id: 'pb', 
+                             minimum: 0, 
+                             maximum: 100, 
+                             value: 0, 
+                             stringPainted: true )
+                button( id: 'startBtn', 
+                        text:'Start', 
+                        enabled: true, 
+                        actionPerformed: { event ->
+                    startBtn.enabled = false
+                    task = new Task()
+                    task.addPropertyChangeListener( this );
+                    task.execute()
+                } )
+            }
+        }
+        
+        frame.show()
+    }
+    
+    public void propertyChange(PropertyChangeEvent evt) {
+        if( "progress" == evt.getPropertyName() ) {
+            def progress = (Integer) evt.getNewValue()
+            swing.pb.value = progress
+        }
+    }
+    
+    class Task extends SwingWorker&lt;Void, Void&gt; {
+        public Void doInBackground() {
+            setProgress(0)
+            for(i in 0..100) {
+                setProgress(i)
+                Thread.sleep(500)
+            }
+            return
+        }
+        
+        public void done() {
+            swing.startBtn.enabled = true
+        }
+    }
+}
+
+def main = new ProgressBarDemo()
+main.execute()
+    </pre>
+    <h3>Figure. 執行結果</h3>
+    <img src="../images/groovy/progressBar_1.png" />
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Groovy Web Site</li>
+            <li>Groovy in Action, First Edition</li>
+            <li>Java Tutorial</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2010/04/30
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

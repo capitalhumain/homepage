@@ -1,0 +1,407 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Groovy - Sql</title>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+    };
+    </script>
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+</head>
+<body>
+<div>
+    <h1 class="header">Groovy - Sql</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+針對自己的小作業複習Groovy，所以把Groovy Sql看看。因為小作業需要ResultSet 
+Metadata，所以第一步搞定資料庫連線之後，第二步就開始搞看看ResultSet Metadata，最後就寫一個簡單的程式用comboBox
+帶出所有的Basic AssetType然後用table帶出該AssetType的ResultSet Metadata。一切隨性，下了班玩自己喜歡的東西好玩就好。
+    </p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.6.3</li>
+            <li>Sun JDK 1.6.0_10</li>
+            <li>Oracle 10gR2</li>
+        </ul>
+    </div>
+    <h2>第一步:建立資料庫連線，簡單的Query</h2>
+    <p>
+第一步就是取得資料庫連線，然後下一個簡單的Query查詢FTCS的publication。當然也要記得classpath要有該有的jdbc driver
+的jar檔。取得資料庫連線的方法就是使用Sql.newInstance()。
+    </p>
+    <h3>Listing. db01.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.sql.Sql
+
+db = Sql.newInstance(
+        'jdbc:oracle:thin:@localhost:ftcsstg',
+        'fwuser',
+        'fwpwd',
+        'oracle.jdbc.OracleDriver'
+)
+
+db.eachRow( 'select id, name from publication' ) { line ->
+    println line.id + " " + line.name
+}
+    </pre>
+    <p>
+把查到的結果透過SwingBuilder table來呈現資料。
+    </p>
+    <h3>Listing. db2.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.sql.Sql
+import groovy.swing.SwingBuilder
+import javax.swing.WindowConstants as WC
+
+db = Sql.newInstance(
+        'jdbc:oracle:thin:@localhost:1521:orcl',
+        'fwuser',
+        'fwpwd',
+        'oracle.jdbc.OracleDriver'
+)
+
+def data = [
+]
+
+db.eachRow( '''select id, name from template 
+               where status <> 'VO' order by id''' ) { 
+    line ->
+    data.add([id: line.id, name: line.name])
+}
+
+
+swing = new SwingBuilder()
+frame = swing.frame(title: 'Tab Demo for all template',
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    scrollPane {
+        table() {
+            tableModel(list: data) {
+                propertyColumn(header: 'Asset Id', propertyName: 'id')
+                propertyColumn(header: 'Template Name', propertyName: 'name')
+            }
+        }
+    }
+}
+
+frame.pack()
+frame.show()
+    </pre>
+    <h3>Figure. 程式執行結果</h3>
+    <img class="screenshoot" src="../images/groovy/sql_1_01.PNG" />
+    <h2>第二步:取得Metadata的資訊</h2>
+    <p>
+以取得ResultSet Metadata作為範例，這裡就以取得FTCS的ecArticle這個Basic Assettype的metadata為目標，
+一樣將結果透過SwingBuilder的table來呈現。
+    </p>
+    <h3>Listing. FTCS_ecArticle_Metadata.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.sql.Sql
+
+import groovy.swing.SwingBuilder
+import javax.swing.WindowConstants as WC
+
+db = Sql.newInstance(
+        'jdbc:oracle:thin:@localhost:1521:orcl',
+        'fwuser',
+        'fwpwd',
+        'oracle.jdbc.OracleDriver'
+)
+
+def data = [
+]
+
+db.query( 'select * from ecArticle where rownum=1' ) { rs ->
+    def meta = rs.metaData
+    if(meta.columnCount <= 0) return
+    for( i in 1..meta.columnCount) {
+        data.add( [colName: meta.getColumnName(i), 
+                   colTypeName: meta.getColumnTypeName(i),
+                   colLen: meta.getColumnDisplaySize(i),
+                   colScale: "(" + meta.getPrecision(i) + "," + meta.getScale(i) + ")"] ) 
+    }
+}
+
+
+swing = new SwingBuilder()
+frame = swing.frame(title: 'MetaData for ecArticle (XMLPost ini file generator)',
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    scrollPane {
+        table() {
+            tableModel(list: data) {
+                propertyColumn(header: 'Column Name', propertyName: 'colName')
+                propertyColumn(header: 'Type Name', propertyName: 'colTypeName')
+                propertyColumn(header: 'Length', propertyName: 'colLen')
+                propertyColumn(header: 'Scale', propertyName: 'colScale')
+            }
+        }
+    }
+}
+
+frame.pack()
+frame.show()
+    </pre>
+    <h3>Figure. 程式執行結果</h3>
+    <img class="screenshoot" src="../images/groovy/sql_1_02.PNG" />
+    <h2>第三步:搞一個好玩點的Applicaton</h2>
+    <p>
+結合查詢AssetType這個Table針對Basic Assettype，做一個ResultSet Metadata稍微可動一點的版本。這個版本也不管
+Swing Event Dispatching Thread也不管Binding這些東西，單純蠻幹的方式搞一個desktop application來玩看看。
+    </p>
+    <p>
+大概趕著洗澡睡覺，程式寫的有問題。這是修改後的版本。主要是改在comboBox的action closure，修正table
+的行為正常的變更model的資料和sql statement取得正確的資料。
+    </p>
+    <p>
+第二次修正，這次修正comboBoxAction裡面db.eachRow()裡的SQL statement的做法，這個是同事說的解法，
+因為需要用到GString，但是如果我們在db.eachRow()使用GString變動的地方是table name這些地方就會產生
+Exception，原因應該從下面Groovy source code裡的Sql.java找出端倪。GString會使用Line 637那個eachRow(GString sql, Closure closure)
+而呼叫而這個method從GString instance裡面把parameter部分取出來，然後呼叫Line 605的eachRow(String sql, List params, Closure closure)
+而這裡面會使用PreparedStatement，因此可以知道如果我們取代的位置在table name那些地方就會產生<strong>『其實可預期』</strong>的錯誤。
+所以，矇著眼鏡的解決方法是在Groovy程式裡把GString to String成java String。因為此時我們使用的應該會是Line 574的eachRow()
+也就是會使用Statement的executeQuery(sql: String)嚕。
+    </p>
+    <h3>Listing. Sql.java (This file is from Groovy Source Code, Groovy 1.6.3在/src/main/groovy/sql/裡)</h3>
+    <pre name="code" class="java:nocontrols:firstline[554]">
+    /**
+     * Performs the given SQL query calling the closure with each row of the
+     * result set.
+     *
+     * @param sql     the sql statement
+     * @param closure called for each row with a GroovyResultSet
+     * @throws SQLException if a database access error occurs
+     */
+    public void eachRow(String sql, Closure closure) throws SQLException {
+        eachRow(sql, (Closure) null, closure);
+    }
+    
+    /**
+     * Performs the given SQL query calling closures for metadata and each row
+     *
+     * @param sql         the sql statement
+     * @param metaClosure called for meta data (only once after sql execution)
+     * @param rowClosure  called for each row with a GroovyResultSet
+     * @throws SQLException if a database access error occurs
+     */
+    public void eachRow(String sql, Closure metaClosure, Closure rowClosure) throws SQLException {
+        Connection connection = createConnection();
+        Statement statement = getStatement(connection, sql);
+        configure(statement);
+        ResultSet results = null;
+        try {
+            log.fine(sql);
+            results = statement.executeQuery(sql);
+
+            if (metaClosure != null) metaClosure.call(results.getMetaData());
+
+            GroovyResultSet groovyRS = new GroovyResultSetProxy(results).getImpl();
+            while (groovyRS.next()) {
+                rowClosure.call(groovyRS);
+            }
+        } catch (SQLException e) {
+            log.log(Level.FINE, "Failed to execute: " + sql, e);
+            throw e;
+        } finally {
+            closeResources(connection, statement, results);
+        }
+    }
+
+    /**
+     * Performs the given SQL query calling the closure with the result set.
+     *
+     * @param sql     the sql statement
+     * @param params  a list of parameters
+     * @param closure called for each row with a GroovyResultSet
+     * @throws SQLException if a database access error occurs
+     */
+    public void eachRow(String sql, List params, Closure closure) throws SQLException {
+        Connection connection = createConnection();
+        PreparedStatement statement = null;
+        ResultSet results = null;
+        try {
+            log.fine(sql);
+            statement = getPreparedStatement(connection, sql);
+            setParameters(params, statement);
+            configure(statement);
+            results = statement.executeQuery();
+
+            GroovyResultSet groovyRS = new GroovyResultSetProxy(results).getImpl();
+            while (groovyRS.next()) {
+                closure.call(groovyRS);
+            }
+        }
+        catch (SQLException e) {
+            log.log(Level.FINE, "Failed to execute: " + sql, e);
+            throw e;
+        }
+        finally {
+            closeResources(connection, statement, results);
+        }
+    }
+
+    /**
+     * Performs the given SQL query calling the closure with the result set.
+     *
+     * @param gstring a GString containing the SQL query with embedded params
+     * @param closure called for each row with a GroovyResultSet
+     * @throws SQLException if a database access error occurs
+     */
+    public void eachRow(GString gstring, Closure closure) throws SQLException {
+        List params = getParameters(gstring);
+        String sql = asSql(gstring, params);
+        eachRow(sql, params, closure);
+    }
+    </pre>
+    <div class="revise">
+	<ul>
+		<li><strong>Revise 7/20:</strong> comboBoxAction裡db.each從原本的字串串接改成用GString。</li>
+	</ul>
+    </div>
+    <h3>Listing. Metadata1.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.sql.Sql
+
+import java.awt.BorderLayout
+import groovy.swing.SwingBuilder
+import javax.swing.WindowConstants as WC
+
+def db = Sql.newInstance(
+    'jdbc:oracle:thin:@localhost:1521:orcl',
+    'fwuser',
+    'fwpwd',
+    'oracle.jdbc.OracleDriver'
+)
+
+def swing = new SwingBuilder()
+
+def combodata = [ '' ]
+
+@Bindable def data = []
+
+db.eachRow( "select assettype from assettype where logic <> 'com.openmarket.assetframework.complexasset.ComplexAsset'" ) { line ->
+    combodata.add( line.assettype )
+}
+
+comboBoxAction = swing.action( name: 'Execute', closure: {
+    if( swing.assettype.selectedItem != '' ) {
+        data.clear()
+        def qry = "select * from $swing.assettype.selectedItem where rownum=1"
+        db.query( qry.toString() ) { rs ->
+            def meta = rs.metaData
+            if(meta.columnCount <= 0) return
+            for( i in 1..meta.columnCount) {
+                data.add( [colName: meta.getColumnName(i), 
+                    colTypeName: meta.getColumnTypeName(i),
+                    colLen: meta.getColumnDisplaySize(i),
+                    colScale: "( " + meta.getPrecision(i) + "," + 
+                              meta.getScale(i) + ")"] ) 
+            }
+        }
+        swing.metatable.revalidate()
+    }
+})
+
+frame = swing.frame(title: 'comboBox Demo',
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    panel(layout: new BorderLayout()) {
+        hbox(constraints: BorderLayout.NORTH) {
+			label 'Basic Asset Type: '
+			comboBox( id: 'assettype', items: combodata ) {
+				action(comboBoxAction) 
+			}
+		}
+        scrollPane(constraints: BorderLayout.CENTER) {
+            table(id: 'metatable') {
+                tableModel(list: data) {
+                    propertyColumn(header: 'Column Name', propertyName: 'colName')
+                    propertyColumn(header: 'Type Name', propertyName: 'colTypeName')
+                    propertyColumn(header: 'Length', propertyName: 'colLen')
+                    propertyColumn(header: 'Scale', propertyName: 'colScale')
+                }
+            }
+        }
+    }
+}
+
+frame.pack()
+frame.show()
+    </pre>
+    <h3>Figure. 程式執行結果</h3>
+    <img class="screenshoot" src="../images/groovy/sql_1_03.PNG" />
+    <p>
+走到第三步看起來差不多可以搞定蠻幹版的FTCS XMLPost Basic Assettype ini file的小工具。雖然使用XMLPost麻煩的地方
+其實是再把content內容產生一堆XML file不是在ini configuration file，藉由這個機會練習一下SwingBuilder搞一個小東西
+建立一下信心，更深入之後希望可以搞懂Griffon。
+    </p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Groovy Web Site</li>
+            <li>Groovy in Action, First Edition</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/07/16
+</address>
+</body>
+</html>

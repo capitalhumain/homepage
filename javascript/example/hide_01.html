@@ -1,0 +1,64 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script language="JavaScript" type="text/javascript">
+var Book = (function() {
+    // private attribute
+    var numOfBook = 0;
+    // private function
+    function checkIsbn( isbn ) {
+        if( isbn.length === 10 )
+            return true;
+        return false;
+    };
+    
+    return function( isbn, title, author ) {
+        if( checkIsbn( isbn ) ) {
+            this.isbn = isbn;
+            this.title = title;
+            this.author = author;
+            numOfBook += 1;
+        } else {
+            throw {
+                name: 'DataValidateError',
+                message: 'ISBN code not valid'
+            } // throw
+        } // else
+        
+        this.getTitle = function() {
+            return this.title;
+        };
+        
+        this.getNumOfBook = function() {
+            return numOfBook;
+        };
+    };
+})();
+
+window.onload = function() {
+    var book = new Book( '1847194141', 'Object Oriented JavaScript', 'Stoyan Stefanov' );
+    document.getElementById( 'getTitle' ).innerHTML = book.getTitle();
+    document.getElementById( 'nobprop' ).innerHTML = book.numOfBook;                // undefined 真讚
+    document.getElementById( 'getNumOfBook' ).innerHTML = book.getNumOfBook();
+    document.getElementById( 'checkIsbn' ).innerHTML = (typeof book.checkIsbn);     // 也是undefined
+    var book2 = new Book( '047022780X', 'Professional JavaScript for Web Developers', 'Nicholas C. Zakas' );
+    alert( 'num of books: ' + book.getNumOfBook() );
+    try {
+        var book2 = new Book( 'notvalid', 'N/A', 'N/A' );
+    } catch(e) {
+        alert( 'create book2 failed: ' + e.message );
+    } // catch
+    // alert( book.checkIsbn( '1111111111111111' ) );   // error: could not know checkIsbn() function
+    // alert( book.constructor );
+};
+</script>
+</head>
+<body>
+<div>
+    call getTitle(): <span id="getTitle"></span><br/>
+    access numOfBook property: <span style="color: #cc0000;" id="nobprop"></span><br/>
+    typeof checkIsbn: <span style="color: #cc0000;" id="checkIsbn"></span><br/>
+    call getNumOfBook(): <span id="getNumOfBook"></span><br/>
+</div>
+</body>
+</html>

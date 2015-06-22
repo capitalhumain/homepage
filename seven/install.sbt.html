@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Io" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>    
+    <title>Scala > install and using SBT</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Scala > install and using Simple Build Tool (SBT)</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>主要都是Refernce裡那位在MacOX的作法，我在ubuntu再做一次，沒遇到啥問題</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/Downloads$ sudo mv sbt-launch-0.7.7.jar /usr/local/bin/sbt-launcher.jar
+[sudo] password for terence: 
+terence@terence-Latitude-E6410:~/Downloads$ echo "java -Xmx512M -jar /usr/local/bin/sbt-launcher.jar \"\$@\"" | sudo tee /usr/local/bin/sbt
+java -Xmx512M -jar /usr/local/bin/sbt-launcher.jar "$@"
+terence@terence-Latitude-E6410:~/Downloads$ sudo chmod +x /usr/local/bin/sbt
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>http://chrismoos.com/2010/02/10/getting-started-with-scala-using-sbt/</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2011/06/24
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

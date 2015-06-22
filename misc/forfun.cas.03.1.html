@@ -1,0 +1,185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="CAS,Single-Sign On,SSO" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>JA-SIG CAS - 3-1: 增加Captcha功能</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">JA-SIG CAS - 3-1: 增加Captcha功能</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>目標</h2>
+        <p>
+        首先先確立目標，這次目標是想在cas-server-webapp登入頁面增加captcha功能。所以就大概trace一下cas source code感覺cas-server-core這個module裡的org.jasig.cas.web.flow.AuthenticationViaFormAction這個程式是可以輕鬆努力的地方。
+        </p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 6</li>
+                <li>Apache Maven 2.2.1</li>
+                <li>Apache Tomcat 6</li>
+                <li>JA-SIG CAS 3.4.2.1</li>
+            </ul>
+        </div>
+        <h2>jCaptcha</h2>
+        <p>
+        有關jCaptch則是也是先選輕鬆把功能先搞出來的方法。因為信心缺乏症候群，所以先用簡單蠻幹的東西建立信心。信心建立以後在想其他問題。
+        </p>
+        <h3>Listing. cas-server-core pom.xml add jcaptcha dependency</h3>
+        <pre name="code" class="xml:controls:firstline[192]">
+        <!-- jCaptcha -->
+        <dependency>
+            <groupId>com.octo.captcha</groupId>
+            <artifactId>jcaptcha</artifactId>
+            <version>1.0</version>
+        </dependency>
+        </pre>
+        <p>接著根據jcaptch網站『快快樂樂使用jCaptcha』的文章寫一個產生唯一default image captcha service instance的class和產生圖的servlet。程式都是抄jCaptcha網站滴。</p>
+        <h3>Listing. CaptchaServiceSingleton.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package org.jasig.cas.captcha;
+
+import com.octo.captcha.service.image.ImageCaptchaService;
+import com.octo.captcha.service.image.DefaultManageableImageCaptchaService;
+
+public class CaptchaServiceSingleton {
+    private static ImageCaptchaService instance = new DefaultManageableImageCaptchaService();
+
+    public static ImageCaptchaService getInstance() {
+        return instance;
+    }
+}
+        </pre>
+        <h3>Listing. ImageCaptchaServlet.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package org.jasig.cas.captcha;
+
+import com.octo.captcha.service.CaptchaServiceException;
+import com.sun.image.codec.jpeg.JPEGCodec;
+import com.sun.image.codec.jpeg.JPEGImageEncoder;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+
+public class ImageCaptchaServlet extends HttpServlet {
+
+
+    public void init(ServletConfig servletConfig) throws ServletException {
+        super.init(servletConfig);
+    }
+
+
+    protected void doGet(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws ServletException, IOException {
+
+       byte[] captchaChallengeAsJpeg = null;
+       // the output stream to render the captcha image as jpeg into
+        ByteArrayOutputStream jpegOutputStream = new ByteArrayOutputStream();
+        try {
+        // get the session id that will identify the generated captcha.
+        //the same id must be used to validate the response, the session id is a good candidate!
+        String captchaId = httpServletRequest.getSession().getId();
+        // call the ImageCaptchaService getChallenge method
+            BufferedImage challenge =
+                    CaptchaServiceSingleton.getInstance().getImageChallengeForID(captchaId,
+                            httpServletRequest.getLocale());
+
+            // a jpeg encoder
+            JPEGImageEncoder jpegEncoder =
+                    JPEGCodec.createJPEGEncoder(jpegOutputStream);
+            jpegEncoder.encode(challenge);
+        } catch (IllegalArgumentException e) {
+            httpServletResponse.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        } catch (CaptchaServiceException e) {
+            httpServletResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
+        }
+
+        captchaChallengeAsJpeg = jpegOutputStream.toByteArray();
+
+        // flush it in the response
+        httpServletResponse.setHeader("Cache-Control", "no-store");
+        httpServletResponse.setHeader("Pragma", "no-cache");
+        httpServletResponse.setDateHeader("Expires", 0);
+        httpServletResponse.setContentType("image/jpeg");
+        ServletOutputStream responseOutputStream =
+                httpServletResponse.getOutputStream();
+        responseOutputStream.write(captchaChallengeAsJpeg);
+        responseOutputStream.flush();
+        responseOutputStream.close();
+    }
+}
+        </pre>
+        <p>
+        在cas-server-webapp module裡面要使用captcha servlet就必須在web.xml設定servlet，另外在/WEB-INF/view/jsp/default/ui/casLogingView.jsp這個jsp就可以加上img element就可以看到captcha image。
+        </p>
+        <h2>AuthenticationViaFormAction Modification</h2>
+        <p>蠻幹小胖的手腳是動在submit()這個method，根據jCaptch網站的資訊要使用validateReponseForID()要取得session id，正好在AuthenticationViaForm#doBind()可以看到CAS有寫一個WebUtil class可以從Spring WebFlow的RequestContext中取得HttpServletRequest物件。因此我們可以輕鬆拿來利用一下。</p>
+        <h3>Listing. AuthenticationViaFormAction#submit() captcha validate 程式片段</h3>
+        <pre name="code" class="java:controls:firstline[66]">
+        final HttpServletRequest request = WebUtils.getHttpServletRequest(context);      // for captcha
+        Boolean isResponseCorrect = Boolean.FALSE;                                       // for captcha
+        String enterCaptchaId = request.getParameter( "j_captcha_response" );            // for captcha
+        String captchaId = request.getSession().getId();                                 // for captcha
+        // for captcha check input and expect value begin
+        try {
+            isResponseCorrect = CaptchaServiceSingleton.getInstance().validateResponseForID(captchaId, enterCaptchaId);
+        } catch (CaptchaServiceException e) {
+            //should not happen, may be thrown if the id is not valid
+        }
+        // for captcah input and expect value end
+        </pre>
+        <h3>Listing. AuthenticationViaFormAction#submit() 增加流程的程式片段</h3>
+        <pre name="code" class="java:controls:firstline[97]">
+            if( Boolean.TRUE.equals(isResponseCorrect) ) {	// for captcha
+                WebUtils.putTicketGrantingTicketInRequestScope(context, this.centralAuthenticationService.createTicketGrantingTicket(credentials));
+                putWarnCookieIfRequestParameterPresent(context);
+                return "success";
+            } else {           // for captcha
+                // for captcha, captcha validate failed
+                return "warn"; // for captcha 
+            }                  // for captcha
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ul>
+                <li>JA-SIG CAS User Manual (web site)</li>
+                <li>jCaptcha web site</li>
+            </ul>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home" style="display:none;"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/09/02
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

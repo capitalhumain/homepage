@@ -1,0 +1,31 @@
+<html>
+<head>
+<script language="JavaScript">
+window.onload = function() {
+    var arr = [ 'glycine', 'alanine', 'valine' ];
+    var i = 0;
+
+    for( i=0; i<arr.length; i++ ) {
+        var theaa = arr[i];
+    } // for
+
+    document.getElementById( 'result1' ).innerHTML = theaa;     // 不是undefined喔，而是valine
+    
+    document.getElementById( 'btn' ).onclick = function() {
+        var theaa2 = 'aspartate';
+        alert( theaa2 );
+    };
+    
+    // could not access theaa2 variable
+    alert( 'is theaa2 undefined? ' + (typeof theaa2 === 'undefined') );    //  theaa2 is undefined
+}; // window.onload()
+</script>
+</head>
+<body style="font-family: 'courier new'">
+    <p>
+    JavaScript沒有block scope的變數這種東西，只有function scope。
+    </p>
+    variable theaa is declare in for block, 在for執行完之後取theaa的值為: <span id='result1'></span><br/>
+    btn1 onclick callback function scope has variable 'theaa2': <input type="button" id="btn" value="btn1" />
+</body>
+</html>

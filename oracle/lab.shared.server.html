@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Lab - Oracle Tips - Shared Server</title>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+    };
+    </script>
+</head>
+<body>
+    <div>
+        <h1 class="header">Lab - Oracle Tips - Shared Server</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        本來以為config shared server是很輕鬆寫意的事情，在自己機器上測過之後也天真的以為是這樣。果然Onion cooker 
+        Certified Professional就是比較遜。
+        </p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Oracle 10gr2 on Solaris</li>
+                <li>Oracle 10gr2 on Windows XP</li>
+            </ul>
+        </div>
+        <h2>Configuration</h2>
+        <h4>SHARED_SERVER</h4>
+        <p>
+        shared server process數目<a href="http://download.oracle.com/docs/cd/B13789_01/server.101/b10739/manproc.htm#sthref560"><em>doc</em></a>
+        </p>
+        <p>
+        開啟shared server只要設定shared_servers一個非零的值，要關閉也只要把這個參數設為零。
+        </p>
+        <pre name="code" class="sql:controls:firstline[1]">
+// 設定shared server
+alter system set shared_servers = 20 scope=both;
+
+// 關閉shared server
+alter system set shared_servers = 0 scope=both;
+        </pre>
+        <h4>DISPATCHERS</h4>
+        <p>
+        用來管理connections數目如<a href="http://download.oracle.com/docs/cd/B13789_01/server.101/b10739/manproc.htm#sthref574"><em>doc</em></a>
+        </p>
+        <pre name="code" class="sql:controls:firstline[1]">
+alter system set DISPATCHERS="(INDEX=0)(PROTOCOL=TCP)(DISPATCHERS=2)(POOL=on)" scope=both;
+alter system set DISPATCHERS="(INDEX=1)(PROTOCOL=TCP)(DISPATCHERS=2)(POOL=on)" scope=both;
+        </pre>
+        <p>
+        然而如果listener設定machine name而Oracle instance相關設定不一樣的時候，透過Oracle Client連線的時候有可能會發生ORA-12545的錯誤。
+        解決方法就是要設定一致，我是選擇都使用ip，因此listener.ora也設定成ip，而dispatcher也要設定address。
+        </p>
+        <pre name="code" class="sql:controls:firstline[1]">
+alter system set DISPATCHERS="(INDEX=0)(ADDRESS=(PROTOCOL=TCP)(HOST=192.168.1.100))(DISPATCHERS=2)(POOL=on)" scope=both;
+alter system set DISPATCHERS="(INDEX=1)(ADDRESS=(PROTOCOL=TCP)(HOST=192.168.1.100))(DISPATCHERS=2)(POOL=on)" scope=both;
+        </pre>
+        <p>
+        關閉dipatcher方法指令如下，附帶一提dispatch還有很多參數可以設，自己查oracle文件
+        </p>
+        <pre name="code" class="sql:controls:firstline[1]">
+// 關閉Dispatch
+ALTER SYSTEM SHUTDOWN IMMEDIATE 'D001';
+        </pre>
+        <h2>Verify</h2>
+        <p>
+        dedicate server和shared server除了SGA使用狀況之外，用dedicate server的話每一個連線就會起一個server process，在Unix/Linux就會看到多一個process。因此可以透過看OS process數和V$SESSION的數目比較看看。
+        </p>
+        <h3>Listing. X系列OS，比較os process數目和V$SESSION的session數</h3>
+        <pre class="console">
+ps -ef | grep 'oracle' | wc -l
+        </pre>
+        <pre name="code" class="sql:nocontrols:firstline[1]">
+select count(*) from v$session;
+        </pre>
+        <h4>V$SESSION</h4>
+        <p>
+        這個view有一個server欄位紀錄每個session連線到資料庫的模式。這個欄位和status有關係，如果設定好查詢這個view
+        發現除了SYS走DEDICATED server之外，其他看到都是NONE，那是因為除了系統的之外其他的session status都是INACTIVE。
+        如果運氣不好沒觀察到server欄位是SHARED的話，寫一個比較長作業的程式在跑一次就會看到。        
+        </p>
+        <h3>Listing. testing groovy code</h3>
+        <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.sql.Sql
+
+def db = Sql.newInstance(
+    'jdbc:oracle:thin:@192.168.1.100:1521:orcl',
+    'logviewer',
+    'logviewer',
+    'oracle.jdbc.OracleDriver'
+)
+db.execute( 'alter session set nls_language=American' )
+    
+for( i in 1..10000) {
+    db.execute( "insert into test values (" + i + ", '" + i + "')" )
+}
+        </pre>
+        <h3>Listing. Query V$SESSION</h3>
+        <pre name="code" class="sql:controls:firstline[1]">
+col schemaname for a30
+select schemaname, server, status, count(*) from v$session group by schemaname, server, status;
+        </pre>
+        <pre class="console">
+SCHEMANAME                     SERVER             STATUS             COUNT(*)
+------------------------------ ------------------ ---------------- ----------
+LOGVIEWER                      NONE               INACTIVE                  1
+SYS                            DEDICATED          ACTIVE                   17
+LOGVIEWER                      SHARED             ACTIVE                    1
+
+3 rows selected.
+        </pre>
+        <h4>V$DISPATCHER_CONFIG</h4>
+        <pre name="code" class="sql:controls:firstline[1]">
+        select conf_indx, dispatchers, sessions, pool, connections ,network from v$dispatcher_config;
+        </pre>
+        <h4>V$CIRCUIT</h4>
+        <h4>V$SHARED_SERVER</h4>
+        <pre name="code" class="sql:controls:firstline[1]">
+select name, idle, busy, requests from v$shared_server;
+        </pre>
+        <h4>V$DISPATCHER</h4>
+        <pre name="code" class="sql:controls:firstline[1]">
+select name, idle, busy, status from v$dispatcher;
+        </PRE>
+        <h4>V$SHARED_SERVER_MONITOR</H4>
+        <pre name="code" class="sql:controls:firstline[1]">
+select * from v$shared_server_monitor;
+        </PRE>
+        <h4>V$QUEUE</h4>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Oracle 10g Administrator's Guide</li>
+                <li>Oracle 10g Reference (b14237)</li>
+            </ol>
+        </div>
+    </div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+    <address>
+    Terence Chao, 2010/04/08
+    </address>
+</body>
+</html>

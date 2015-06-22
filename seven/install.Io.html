@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Io" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>    
+    <title>Install Io</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Install Io</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>如果把當初寫maven antlr那篇preface寫的東西用prolog的<em>facts</em>和<em>rules</em>來描述的話，這個簡單的knowledge base的prolog程式應該如下</p>
+        <h3>Listing. basic.pl</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+direction(company, hardware_sales).
+direction(company, hardware_config_consult).
+direction(company, software_product_sales).
+direction(company, software_product_config_consult).
+direction(company, software_development_magniloquent).
+direction(self, software_development).
+
+match(X, Y) :- \+(X = Y), direction(X, Z), direction(Y, Z).
+        </pre>
+        <p>上面的<code>facts</code>是公司只要有人挖洞就好，不在乎怎樣挖洞，可以賺燈光和設定燈光控制軟體的錢就好做出來的knowledge base，如果你/妳又是想在挖洞那塊發展的話，可以問看看prolog會說啥答案。</p>
+        <p>把這個程式餵給prolog吃之後，跟prolog詢問之後，血淋淋答案就會跑出來</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/prolog$ gprolog
+GNU Prolog 1.3.0
+By Daniel Diaz
+Copyright (C) 1999-2007 Daniel Diaz
+| ?- ['basic.pl'].
+compiling /home/terence/lab/prolog/basic.pl for byte code...
+/home/terence/lab/prolog/basic.pl compiled, 8 lines read - 1508 bytes written, 9 ms
+
+yes
+| ?- match(self, company).
+
+no
+| ?- halt.
+terence@M1210:~/lab/prolog$
+        </pre>
+        <p>哈哈，回來Io，當初會控制不住敗Bruce這本書的因素之一，就是在試讀章節知道Io是除了javascript之外，另一個prototypal inheritance的語言。因此就壓制不住敗家的欲望…</p>
+        <p></p>
+        <h2>Environment</h2>
+        <ul>
+            <li>Ubuntu</li>
+            <li>Io (2010.06.06)</li>
+        </ul>
+        <h2>Context</h2>
+        <p>主要還是透過裡面的README.txt和build.sh來安裝，首先，<strong>要確定自己的ubuntu有安裝cmake</strong>。接著可以直接執行build.sh或者如README.txt裡面說的一樣的步驟。</p>
+        <ol>
+            <li>進入解開後目錄</li>
+            <li>mkdir build, cd build</li>
+            <li>cmake -DCMAKE_INSTALL_PREFIX="/usr/local" ..</li>
+            <li>make all</li>
+            <li>sudo make install</li>
+        </ol>
+        <p>安裝完成後，輸入io執行io interpreter，就發生libbasekit.so找不到的error message。但是去/usr/local/lib裡面已經有build出來那些library，而使用io_static是可以執行的。因此我這種Linux菜鳥的作法就是</p>    
+        <pre name="code" class="plain:controls:firstline[1]">
+sudo ln /usr/local/lib/libbasekit.so /usr/lib/libbasekit.so
+sudo ln /usr/local/lib/libcoroutine.so /usr/lib/libcoroutine.so
+sudo ln /usr/local/lib/libgarbagecollector.so /usr/lib/libgarbagecollector.so
+sudo ln /usr/local/lib/libiovmall.so /usr/lib/libiovmall.so
+        </pre>
+        <p>建立link之後，就可以順利執行io</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/prolog$ io
+Io 20090105
+Io> 
+        </pre>
+        <p>這樣並沒有幫addon建立link，猜想如果有用到可能又會趴吧…</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Seven Languages in Seven Weeks, Chapter 3</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2011/02/08
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

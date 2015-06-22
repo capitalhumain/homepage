@@ -1,0 +1,26 @@
+<html>
+<head>
+    <title>Test for arguments</title>
+    <script type="text/javascript" language="javascript">
+    var bla = function() {
+        var i, sum=0;
+        alert( typeof arguments.push );     // undefined
+        document.getElementById( 'tp' ).innerHTML = typeof arguments;
+        document.getElementById( 'ctrl' ).innerHTML = arguments.constructor;
+        for(i=0; i<arguments.length; i+=1) {
+            sum += arguments[i];
+        } // for
+        return sum;
+    };
+    
+    window.onload = function() {
+        document.getElementById( 'sum' ).innerHTML =  bla(1, 2, 3);
+    };
+    </script>
+</head>
+<body>
+typeof of arguments: <span id="tp"></span><br/>
+constructor of arguments: <span id="ctrl" style="color: #cc0000;"></span><br/>
+sum: <span id="sum"></span><br/>
+</body>
+</html>

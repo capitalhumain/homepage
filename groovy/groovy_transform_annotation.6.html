@@ -1,0 +1,241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script language="JavaScript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <title>WithReadLock & WithWriteLock</title>
+</head>
+<body>
+<div>
+    <h1 class="header">WithReadLock & WithWriteLock</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>Concurrency programming很好玩，且不論自己是否具備玩這個遊戲的資格。這個主題學好玩的也是很爽的事情。</p>
+    <p>shared memory (shared objects)的保護一向是concurrency programming的重點之一。從Java 5.0開始除了java本身的lock機制之外，還有一堆utililties可以使用，在那個時候比較特殊的是這些東東的效能據說比java本身lock機制好很多。在Java 6調整過本身lock機制的效能之後，兩者效能的差距已經不大。（ref 2）</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.8.0</li>
+            <li>Sun JDK 1.6.0_24</li>
+        </ul>
+    </div>
+    <h2><code>java.util.concurrent.locks.ReentrantLock</code></h2>
+    <p></p>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
+
+class ReentrantLockExample1 {
+    private static final lock = new ReentrantLock()
+    static int i = 0
+
+    static void greet(msg) {
+        if(lock.isLocked() && !lock.isHeldByCurrentThread()) {
+            println "[$msg] reentrantLock is holding by other thread " + lock.getOwner()
+        }
+        lock.lock()
+        try {
+            println "$msg greeting " + i++
+        } finally {
+            lock.unlock()
+        }
+    }
+}
+
+def executorService = Executors.newFixedThreadPool(5)
+def genTask(id) {
+    new Runnable() {
+        public void run() {
+            int i = 5
+            while(i > 0) {
+                ReentrantLockExample1.greet(id)
+                i--
+            }
+        }
+    }
+}
+
+try {
+    executorService.submit( genTask("1") )
+    executorService.submit( genTask("2") )
+    executorService.submit( genTask("3") )
+    executorService.submit( genTask("4") )
+    executorService.submit( genTask("5") )
+} catch(e) {
+    println e
+} finally {
+    executorService.shutdown()
+}
+    </pre>
+    <p>這個程式是用來和前一個annotation的例子比較。</code>
+    <h2><code>java.util.concurrent.locks.ReadWriteLock</code></h2>
+    <p><code>ReadWriteLock</code>必須維護兩個locks，一個是讀取的lock；另一個是寫入的lock。</p>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import java.util.concurrent.locks.ReentrantReadWriteLock
+
+public class ResourceProvider {
+    private final Map&lt;String, String> data = new HashMap&lt;String, String>()
+    private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock()
+
+    public String getResource(String key) {
+        rwl.readLock().lock()
+        try {
+            return data.get(key)
+        } finally {
+            rwl.readLock().unlock()
+        }
+    }
+
+    public void refresh() throws Exception {
+        // reload resources into memory
+        rwl.writeLock().lock()
+        try {
+            // load resource from file, db ... etc
+            data.put("Ala", "Alanine")
+            data.put("Gly", "Glycine")
+        } finally {
+            rwl.writeLock().unlock()
+        }
+    }
+}
+    </pre>
+    <p>看了<code>java.util.concurrent</code>這些東東，想想C#的<code>System.Threading</code>裡的東東。和Java 1.5之前學的那些concurrency patterns。</p>
+    <h2>Groovy的<code>WithReadLock</code> & <code>WithWriteLock</code></h2>
+    <p></p>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.WithReadLock
+import groovy.transform.WithWriteLock
+
+class ResourceProvider {
+    private final Map&lt;String, String> data = new HashMap&lt;String, String>()
+
+    @WithReadLock
+    public String getResource(String key) {
+        return data.get(key)
+    }
+
+    @WithWriteLock
+    public void refresh() throws Exception {
+        data.put("Ala", "Alanine")
+        data.put("Gly", "Glycine")
+    }
+}
+    </pre>
+    <p>反組譯groovyc產生的ResourceProvider.class</p>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.codehaus.groovy.runtime.ScriptBytecodeAdapter;
+import org.codehaus.groovy.runtime.callsite.CallSite;
+import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
+
+public class ResourceProvider
+  implements GroovyObject
+{
+  private final Map&lt;String, String> data;
+  private final ReentrantReadWriteLock $reentrantlock;
+
+  public ResourceProvider()
+  {
+    ResourceProvider this;
+    CallSite[] arrayOfCallSite = $getCallSiteArray(); Object localObject1 = arrayOfCallSite[0].callConstructor($get$$class$java$util$HashMap()); this.data = ((Map)ScriptBytecodeAdapter.castToType(localObject1, $get$$class$java$util$Map())); Object localObject2 = arrayOfCallSite[1].callConstructor($get$$class$java$util$concurrent$locks$ReentrantReadWriteLock()); this.$reentrantlock = ((ReentrantReadWriteLock)ScriptBytecodeAdapter.castToType(localObject2, $get$$class$java$util$concurrent$locks$ReentrantReadWriteLock())); MetaClass localMetaClass = $getStaticMetaClass(); this.metaClass = localMetaClass;
+  }
+
+  public String getResource(String key) {
+    CallSite[] arrayOfCallSite = $getCallSiteArray(); arrayOfCallSite[2].call(arrayOfCallSite[3].call(this.$reentrantlock));
+    try { Object localObject1 = arrayOfCallSite[4].call(this.data, key);
+      return (String)ScriptBytecodeAdapter.castToType(localObject1, $get$$class$java$lang$String()); } finally { arrayOfCallSite[9].call(arrayOfCallSite[10].call(this.$reentrantlock)); } return null;
+  }
+
+  public void refresh() throws Exception
+  {
+    CallSite[] arrayOfCallSite = $getCallSiteArray(); arrayOfCallSite[11].call(arrayOfCallSite[12].call(this.$reentrantlock));
+    try { arrayOfCallSite[13].call(this.data, "Ala", "Alanine");
+      arrayOfCallSite[14].call(this.data, "Gly", "Glycine"); arrayOfCallSite[15].call(arrayOfCallSite[16].call(this.$reentrantlock)); } finally { arrayOfCallSite[17].call(arrayOfCallSite[18].call(this.$reentrantlock));
+    }
+  }
+
+  static
+  {
+    __$swapInit();
+    Long localLong1 = (Long)DefaultTypeTransformation.box(0L);
+    __timeStamp__239_neverHappen1307442140397 = DefaultTypeTransformation.longUnbox(localLong1);
+    Long localLong2 = (Long)DefaultTypeTransformation.box(1307442140397L);
+    __timeStamp = DefaultTypeTransformation.longUnbox(localLong2);
+  }
+}
+    </pre>
+    <p>很混亂對吧，我們需要callsitearray裡面的東東才能知道那是三小，才能解讀是不是跟javadoc寫的一樣，另外看一下<code>CallSite</code> interface的JavaDoc可以找到一些幫助追蹤的methods。</p>
+    <p>先看<code>getResouce()</code>吧，先format一下反組譯的程式碼。</p>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+  public String getResource(String key) {
+    CallSite[] arrayOfCallSite = $getCallSiteArray(); 
+    arrayOfCallSite[2].call(arrayOfCallSite[3].call(this.$reentrantlock));
+    try { 
+      Object localObject1 = arrayOfCallSite[4].call(this.data, key);
+      return (String)ScriptBytecodeAdapter.castToType(localObject1, $get$$class$java$lang$String()); 
+    } finally { 
+      arrayOfCallSite[9].call(arrayOfCallSite[10].call(this.$reentrantlock)); 
+    } 
+    return null;
+  }
+    </pre>
+    <p>在第三行，最裡面先透過arrayOfCallSite[3].call呼叫$reentrantlock物件上的arrayOfCallSite[3].getName()的function，然後在呼叫那個function回傳物件的arrayOfCallSite[2].getName()的function。用下面的script看一下她呼叫的method是啥碗糕吧</p>
+    <pre name="code" class="groovy:nocontrols:firstline[1]">
+def obj = new ResourceProvider()
+
+println "callsitearray[3]: " + obj.$getCallSiteArray()[3].getName()             // 結果是：readLock
+println "callsitearray[2]: " + obj.$getCallSiteArray()[2].getName()             // 結果是：lock
+println "callsitearray[10]: " + obj.$getCallSiteArray()[10].getName()           // 結果是：readLock
+println "callsitearray[9]: " + obj.$getCallSiteArray()[9].getName()             // 結果是：unlock
+// 接下來看 12, 11, 18, 17 => WithWriteLock部份
+    </pre>
+    <p>依照這樣的作法，我們可以知道加了<code>WithReadLock</code>之後，在<code>ResourceProvider</code> class增加了<code>ReentrantReadWriteLock</code>的attribute之外，解讀<code>getResouce()</code>幹得「壞事」如下</p>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+  public String getResource(String key) {
+    this.$reentrantlock.readLock().lock();
+    try { 
+      Object localObject1 = arrayOfCallSite[4].call(this.data, key);
+      return (String)ScriptBytecodeAdapter.castToType(localObject1, $get$$class$java$lang$String()); 
+    } finally { 
+      this.$reentrantlock.readLock().unlock(); 
+    } 
+    return null;
+  }
+    </pre>
+    <p>是不是跟之前我們在用<code>java.util.concurrent.locks.ReentrantReadWriteLock</code>一樣哩，解讀<code>WithWriteLock</code>部份就不貼了。</p>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Groovy 1.8 API JavaDoc about <code>WithReadLock</code>、<code>WithWriteLock</code> and <code>CallSite</code></li>
+            <li>Java Concurrency in Practice</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/05/31
+</address>
+<script language="javascript">
+$(function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="oracle10g,DBMS_SERVER_ALERT" />
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Lab - Oracle Tips - DBMS_SERVER_ALERT</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Lab - Oracle Tips - DBMS_SERVER_ALERT</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        果然如預料破百之後困難重重...自我了斷的機率大增...快變成Chaotic Evil模式。反正本來就是一個多餘的垃圾，應該沒差。
+        </p>
+        <p>
+        透過EM可以設定metric threshold，而DBMS_SERVER_ALERT這個package就是達成設定threshold功能的package。透過這個packge可以設定查詢metric設定的threshold，也可以查詢alert發生的message。
+        </p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Oracle 10.2.0.1.0 with Windows XP sp3</li>
+            </ul>
+        </div>
+        <h2>About threshold</h2>
+        <p>
+        設定metric的threshold使用DBMS_SERVER_ALERT.SET_THRESHOLD這個procedure。參數如下表(下表來自Oracle官方文件)
+        </p>
+<table rules="groups" frame="hsides" width="100%" cellspacing="0" cellpadding="3" border="1" dir="ltr" summary="This table describes Parameters used by the DBMS_SERVER_ALERT.SET_THRESHOLD subprogram." title="SET_THRESHOLD Procedure Parameters " class="Formal">
+<thead>
+<tr valign="top" align="left">
+<th valign="bottom" align="center" id="r1c1-t8">Parameter</th>
+<th valign="bottom" align="center" id="r1c2-t8">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r2c1-t8">
+<p><code>metrics_id</code></p>
+</td>
+<td align="left" headers="r2c1-t8 r1c2-t8">
+<p>The internal name of the metric.</p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r3c1-t8">
+<p><code>warning_operator</code></p>
+</td>
+<td align="left" headers="r3c1-t8 r1c2-t8">
+<p>The operator for the comparing the actual value with the warning threshold (such as <code>OPERATOR_GE</code>).</p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r4c1-t8">
+<p><code>warning_value</code></p>
+</td>
+<td align="left" headers="r4c1-t8 r1c2-t8">
+<p>The warning threshold value. This is <code>NULL</code> if no warning threshold is set. A list of values may be specified for <code>OPERATOR_CONTAINS</code>.</p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r5c1-t8">
+<p><code>critical_operator</code></p>
+</td>
+<td align="left" headers="r5c1-t8 r1c2-t8">
+<p>The operator for the comparing the actual value with the critical threshold.</p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r6c1-t8">
+<p><code>critical_value</code></p>
+</td>
+<td align="left" headers="r6c1-t8 r1c2-t8">
+<p>The critical threshold value. This is <code>NULL</code> if not set. A list of values may be specified for <code>OPERATOR_CONTAINS</code>.</p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r7c1-t8">
+<p><code>observation_period</code></p>
+</td>
+<td align="left" headers="r7c1-t8 r1c2-t8">
+<p>The period at which the metric values are computed and verified against the threshold setting. The valid range is 1 to 60 minutes.</p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r8c1-t8">
+<p><code>consecutive_occurrences</code></p>
+</td>
+<td align="left" headers="r8c1-t8 r1c2-t8">
+<p>The number of observation periods the metric value should violate the threshold value before the alert is issued.</p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r9c1-t8">
+<p><code>instance_name</code></p>
+</td>
+<td align="left" headers="r9c1-t8 r1c2-t8">
+<p>The name of the instance for which the threshold is set. This is <code>NULL</code> for database-wide alerts.</p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r10c1-t8">
+<p><code>object_type</code></p>
+</td>
+<td align="left" headers="r10c1-t8 r1c2-t8">
+<p></p>
+</td>
+</tr>
+<tr valign="top" align="left">
+<td align="left" headers="r1c1-t8" id="r11c1-t8">
+<p><code>object_name</code></p>
+</td>
+<td align="left" headers="r11c1-t8 r1c2-t8">
+<p>The name of the object. This is <code>NULL</code> for <code>SYSTEM</code>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+        <h3>Listing. setup LOGONS_CURRENT metric threhold</h3>
+        <pre name="code" class="sql:controls:firstline[1]">
+exec dbms_server_alert.set_threshold( dbms_server_alert.LOGONS_CURRENT,
+                                      dbms_server_alert.OPERATOR_GE, 
+                                      80, 
+                                      dbms_server_alert.OPERATOR_GE, 
+                                      90, 
+                                      15, 
+                                      2, 
+                                      'orcl', 
+                                      dbms_server_alert.OBJECT_TYPE_SYSTEM, 
+                                      null);
+        </pre>
+        <p>
+        使用GET_THRESHOLD來取得特定metric設定的資訊，這個procedure可以取得的參數如下面PL/SQL Block定義的那些變數。
+        </p>
+        <h3>Listing. get LOGONS_CURRENT metric threhold</h3>
+        <pre name="code" class="sql:controls:firstline[1]">
+set serveroutput on
+declare
+    wop    binary_integer;       /* warn operator */
+    wval   varchar2(30);         /* warn value */
+    cop    binary_integer;       /* critical operator */
+    cval   varchar2(30);         /* critical operator */
+    period binary_integer);      /* observation period */
+    cont   binary_integer;       /* consecutive occurrences */
+begin
+    dbms_server_alert.get_threshold( dbms_server_alert.LOGONS_CURRENT, wop, wval, cop, cval, period, cont, 'orcl', dbms_server_alert.OBJECT_TYPE_SYSTEM, null);
+    
+    dbms_output.put_line( 'Threshold of LOGONS_CURRENT metric' );
+    case wop
+        when dbms_server_alert.OPERATOR_CONTAINS then 
+                dbms_output.put_line( 'Warn Operator: OPERATOR_CONTAINS' );
+        when dbms_server_alert.OPERATOR_DO_NOT_CHECK then 
+                dbms_output.put_line( 'Warn Operator: OPERATOR_DO_NOT_CHECK' );
+        when dbms_server_alert.OPERATOR_EQ then 
+                dbms_output.put_line( 'Warn Operator: OPERATOR_EQ' );
+        when dbms_server_alert.OPERATOR_GE then 
+                dbms_output.put_line( 'Warn Operator: OPERATOR_GE' );
+        when dbms_server_alert.OPERATOR_GT then 
+                dbms_output.put_line( 'Warn Operator: OPERATOR_GT' );
+        when dbms_server_alert.OPERATOR_LE then 
+                dbms_output.put_line( 'Warn Operator: OPERATOR_LE' );
+        when dbms_server_alert.OPERATOR_LT then 
+                dbms_output.put_line( 'Warn Operator: OPERATOR_LT' );
+        when dbms_server_alert.OPERATOR_NE then 
+                dbms_output.put_line( 'Warn Operator: OPERATOR_NE' );
+        else dbms_output.put_line( 'Unknown Warn Operator' );
+    end case;
+    dbms_output.put_line( 'Warn Value: ' || wval );
+    
+    case cop
+        when dbms_server_alert.OPERATOR_CONTAINS then 
+                dbms_output.put_line( 'Critical Operator: OPERATOR_CONTAINS' );
+        when dbms_server_alert.OPERATOR_DO_NOT_CHECK then 
+                dbms_output.put_line( 'Critical Operator: OPERATOR_DO_NOT_CHECK' );
+        when dbms_server_alert.OPERATOR_EQ then 
+                dbms_output.put_line( 'Critical Operator: OPERATOR_EQ' );
+        when dbms_server_alert.OPERATOR_GE then 
+                dbms_output.put_line( 'Critical Operator: OPERATOR_GE' );
+        when dbms_server_alert.OPERATOR_GT then 
+                dbms_output.put_line( 'Critical Operator: OPERATOR_GT' );
+        when dbms_server_alert.OPERATOR_LE then 
+                dbms_output.put_line( 'Critical Operator: OPERATOR_LE' );
+        when dbms_server_alert.OPERATOR_LT then 
+                dbms_output.put_line( 'Critical Operator: OPERATOR_LT' );
+        when dbms_server_alert.OPERATOR_NE then 
+                dbms_output.put_line( 'Critical Operator: OPERATOR_NE' );
+        else dbms_output.put_line( 'Unknown Critical Operator' );
+    end case;
+    dbms_output.put_line( 'Critical Value: ' || cval );
+    dbms_output.put_line( 'Observation Period (min): ' || period );
+    dbms_output.put_line( 'Consecutive Occurrences: ' || cont );
+end;
+/
+        </pre>
+        <h3>執行結果</h3>
+        <pre class="console">
+Threshold of LOGONS_CURRENT metric
+Warn Operator: OPERATOR_GE
+Warn Value: 80
+Critical Operator: OPERATOR_GE
+Critical Value: 90
+Observation Period (min): 1
+Consecutive Occurrences: 2
+
+PL/SQL procedure successfully completed.
+        </pre>
+        <p>
+        發生問題的時候透過EXPAND_MESSAGE兜出訊息，主要是查詢DBA_ALERT_ARGUMENTS這個view。這個view存的東西可以區分為兩大塊，一是發生原因的訊息id和替換arguments value；另一個是建議action message id和arguments value。
+        </p>
+        <h3>Listing. show message by EXPAND_MESSAGE() procedure</h3>
+        <pre name="code" class="sql:controls:firstline[1]">
+declare 
+  msg varchar2(1000);
+  v_alertargs dba_alert_arguments%ROWTYPE;
+  cursor c1 is select * from dba_alert_arguments;
+begin
+  open c1;
+  loop
+    fetch c1 into v_alertargs;
+    exit when c1%NOTFOUND;
+    msg := dbms_server_alert.expand_message( user_language=>1, 
+                                             message_id=>v_alertargs.reason_message_id, 
+                                             argument_1=>v_alertargs.reason_argument_1, 
+                                             argument_2=>v_alertargs.reason_argument_2, 
+                                             argument_3=>v_alertargs.reason_argument_3, 
+                                             argument_4=>v_alertargs.reason_argument_4, 
+                                             argument_5=>v_alertargs.reason_argument_5);
+    dbms_output.put_line( 'Reson Msg: ' || msg );
+    msg := dbms_server_alert.expand_message( user_language=>1, 
+                                             message_id=>v_alertargs.action_message_id, 
+                                             argument_1=>v_alertargs.action_argument_1, 
+                                             argument_2=>v_alertargs.action_argument_2, 
+                                             argument_3=>v_alertargs.action_argument_3, 
+                                             argument_4=>v_alertargs.action_argument_4, 
+                                             argument_5=>v_alertargs.action_argument_5);
+    dbms_output.put_line( 'Action Msg: ' || msg );
+  end loop;
+end;
+/
+        </pre>
+        <h3>執行結果</h3>
+        <pre class="console">
+Reson Msg: Metrics "Current Logons Count" is at 120
+Action Msg: Run ADDM to get more performance analysis about your system.
+
+PL/SQL procedure successfully completed.
+        </pre>
+        <p>
+        附帶一提，這是用來製造違反自己定的LOGONS_CURRENT metric上限的groovy程式。(這是新版程式和這篇整理文章第一次發布版本不一樣)寫的不是很完整應該要確認DataSource這個class能不能responseTo對應的function，之後在invoke對應function這樣考慮才比較周全點。
+        </p>
+        <h3>Listing. Show me more connection</h3>
+        <pre name="code" class="groovy:controls:firstline[1]">
+package migration
+
+import groovy.swing.SwingBuilder
+import javax.swing.WindowConstants as WC
+import script.DataSource as DS
+
+def swing = new SwingBuilder()
+
+def frame = swing.frame( title: 'Show Me More Connectiion',
+                         size: [300, 100],
+                         defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    panel {
+        comboBox( id: 'connName', items:['Target', 'Repository'] )
+        button( id: 'genBtn', text: 'Generate', actionPerformed: {
+                genBtn.enabled = false;
+                connName.enabled = false;
+                
+                def methodName = "get" + connName.selectedItem + "Connection"
+                def conn = []
+
+                for(i in 1..100) {
+                    conn << DS.invokeMethod(methodName, null)
+                }
+
+                println "100 connection to $connName.selectedItem completed."
+        })
+    }
+}
+
+frame.show()
+        </pre>
+        <p>
+        執行之後就可以產生100條connection，可以透過V$SESSION看到確實增加的connection。過了設定的觀測週期就可以透過下面的view或EXPAND_MESSAGE procedure看到相關的資訊。
+        </p>
+        <p>
+        附帶一提，上面隨便寫的groovy程式拿了connection沒有close也是很不好的示範。
+        </p>
+        <h2>Dynamic View Information</h2>
+        <div>
+            <ul>
+                <li>DBA_THRESHOLDS
+                    <div>每個metric設定的threshold可以透過這個view查詢</div>
+                </li>
+                <li>DBA_ALERT_HISTORY
+                    <div>解除後的alert可以在這個view查詢到</div>
+                </li>
+                <li>DBA_ALERT_ARGUMENTS
+                    <div>用於EXPAND_MESSAGE看訊息，當狀況解決之後這個view會被清除。</div>
+                </li>
+            </ul>
+        </div>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Oracle 10g Reference (b14237)</li>
+                <li>Oracle 10g PL/SQL Packages and Types Reference (b14258)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/05/04
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

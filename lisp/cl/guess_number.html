@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="LISP" />
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/style.css" />
+    <title>筆記： Guess Number</title>
+</head>
+<body>
+<div>
+    <h1 class="header">筆記： Guess Number</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>一切都失控了，現實世界失控連學習的計畫也失控了。因為控制不住敗了Bruce那本書，結果就是Programming Language考古之旅開始…從Ada, Prolog開始，玩到第二老的high-level language～哈 還好Ada的毒在tutorial停下來應該到Ada 2012出來才會併發。</p>
+    <p>雖然最近一切都不走運，但是所幸挑Conrad Barski這本，當成LISP的第一本書目前看起來是相當正確的選擇。希望還沒開封的Programming in Prolog和Flex & Bison也有相同的好運。</p>
+    <p>LISP據說是數學家搞出來的玩意，還好functional programming在之前看Haskell已經被炸過一次，這次看LISP覺得沒有被炸的感覺，比之前看Haskell更有fu 哈！</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Utbuntu 10.04</li>
+            <li>GNU CLISP 2.44.1
+                <div>或許過一陣子會開始研究另一個lisp dialect Clojure，呵 我想如果想要自稱為一個Lisper，至少要能用自己的語言說出這兩個lisp dialect的差異吧！</div>
+            </li>
+        </ul>
+    </div>
+    <h2>使用<em>read-eval-print loop</em>(REPL)</h2>
+    <p>在Ubuntu使用<code>sudo apt-get install clisp</code>安裝clisp之後，在command line輸入<code>clisp</code>就可以執行CLISP。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/lisp$ clisp
+  i i i i i i i       ooooo    o        ooooooo   ooooo   ooooo
+  I I I I I I I      8     8   8           8     8     o  8    8
+  I  \ `+' /  I      8         8           8     8        8    8
+   \  `-+-'  /       8         8           8      ooooo   8oooo
+    `-__|__-'        8         8           8           8  8
+        |            8     o   8           8     o     8  8
+  ------+------       ooooo    8oooooo  ooo8ooo   ooooo   8
+
+Welcome to GNU CLISP 2.44.1 (2008-02-23) &lt;http://clisp.cons.org/>
+
+Copyright (c) Bruno Haible, Michael Stoll 1992, 1993
+Copyright (c) Bruno Haible, Marcus Daniels 1994-1997
+Copyright (c) Bruno Haible, Pierpaolo Bernardi, Sam Steingold 1998
+Copyright (c) Bruno Haible, Sam Steingold 1999-2000
+Copyright (c) Sam Steingold, Bruno Haible 2001-2008
+
+Type :h and hit Enter for context help.
+
+[1]> 
+
+    </pre>
+    <p>接下來就可以跟lisp溝通溝通了</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[6]> (expt 2 (expt 2 3))
+256
+[7]> (ash 11 1)
+22
+[8]> (ash 11 -1)
+5
+[9]> 
+    </pre>
+    <p><code>expt</code>是指數的function，<code>(expt 2 3)</code>的意思就是算二的三次方。因此上面第一行最終是算二的八次方，結果就是256。<code>ash</code>則是bitwise shift的function，第二個是正的時候代表往左邊移；負的代表往右邊移。而整數內容則代表移動的bit。以前寫組合語言用<code>shr</code>、<code>shl</code>在lisp用<code>ash</code>，有一點比喻錯誤…畢竟組合語言會因為register大小可能移到最後不見得結果和<code>ash</code>一樣。</p>
+    <p>想離開REPL的話直接輸入<code>(quit)</code>或<code>(exit)</code>就可以離開REPL環境。</p>
+    <p>如果想load寫好的lisp程式碼可以透過<code>(load "file_name")</code>。可以省略或不省略".lsp"這個副檔名都可以。就可以看到clisp載入檔案的訊息可能如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[5]> (load "guess_number")
+;; Loading file /home/terence/lab/lisp/guess_number.lsp ...
+;; Loaded file /home/terence/lab/lisp/guess_number.lsp
+T
+[6]> 
+    </pre>
+    <p></p>
+    <h2>猜數字</h2>
+    <p>跟lisp玩猜數字，跟一般習題不一樣的點是由lisp來猜我們心中的數字。</p>
+    <h4>Global Variable</h4>
+    <pre name="code" class="plain:nocontrols:firstline[13]">
+    (defparameter *small* 1)
+    (defparameter *big* 100)
+    </pre>
+    <p>global variables名稱前後用*標示是因為慣例，如果不使用也不會有問題（如下面例子）。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[22]> (defparameter g_var 5)
+G_VAR
+[23]> (+ g_var (ash g_var 1))
+15
+[24]> (princ g_var)
+5
+5
+[25]> 
+    </pre>
+    <p><code>princ</code>重複出現g_var的值，我的說法是第一個是<code>princ</code>執行後印出來的值，第二個是那個list執行完的最後的值會被REPL印出來。比如說第23行list算完的結果REPL會秀在畫面上。</p>
+    <p>重新給global variable值的寫法跟Erlang一樣都不是用等號。lisp是透過<code>setf</code>來設定值。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[12]> (defparameter g_var1 5)
+G_VAR1
+[13]> (+ g_var1 (ash g_var1 2))
+25
+[14]> (princ g_var1)
+5
+5
+[15]> (setf g_var1 (+ g_var1 (ash g_var1 2)))
+25
+[16]> (princ g_var1)
+25
+25
+[17]>
+    </pre>
+    <p></p>
+    <h4>Global Function</h4>
+    <p>接下來就是製作lisp猜數字的策略，就是猜的當時的最大值和最小值的平均數。因此可以寫出<code>guess-my-number</code> function如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defun guess-my-number ()
+    (ash (+ *small* *big*) -1))
+    </pre>
+    <p>下面這個簡單的例子就是一個自己定義的global function add接受兩個參數，而function本身則是將兩個參數相加。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[40]> (defun add(x y) (+ x y))
+ADD
+[41]> (add 10 20)
+30
+[42]>
+    </pre>
+    <p>接著就是我們要寫兩個function跟lisp說大還是小，重點在於lisp要能夠在這裡調整<code>*small*</code>和<code>*big*</code>的值。這樣才能和<code>guess-my-number</code>搭配使用，這個猜數字的策略才能夠順利進行。</p>
+    <pre name="code" class="plain:nocontrols:firstline[4]">
+(defun smaller ()
+    (setf *big* (1- (guess-my-number)))
+    (guess-my-number))
+
+(defun bigger ()
+    (setf *small* (1+ (guess-my-number)))
+    (guess-my-number))
+    </pre>
+    <p>最後，我們需要一個function說「Play Game！」，這裡除了讓lisp開始猜之外，還要設定要猜的數字的區間，因此global variable的宣告在這個function做掉。</p>
+    <pre name="code" class="plain:nocontrols:firstline[12]">
+(defun start-over ()
+    (defparameter *small* 1)
+    (defparameter *big* 100)
+    (guess-my-number))
+    </pre>
+    <p>完整的程式如下</p>
+    <pre name="code" class="plain:controls:firstline[1]">
+(defun guess-my-number ()
+    (ash (+ *small* *big*) -1))
+
+(defun smaller ()
+    (setf *big* (1- (guess-my-number)))
+    (guess-my-number))
+
+(defun bigger ()
+    (setf *small* (1+ (guess-my-number)))
+    (guess-my-number))
+
+(defun start-over ()
+    (defparameter *small* 1)
+    (defparameter *big* 100)
+    (guess-my-number))
+    </pre>
+    <p>程式執行情形如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (load "guess_number")
+;; Loading file /home/terence/lab/lisp/guess_number.lsp ...
+;; Loaded file /home/terence/lab/lisp/guess_number.lsp
+T
+[2]> (start-over)
+50
+[3]> (smaller)
+25
+[4]> (bigger)
+37
+[5]> 
+    </pre>
+    <p></p>
+    <h2>有的沒的</h2>
+    <p></p>
+    <h4>Local Variable</h4>
+    <p>定義local variable的方法是透過<code>let</code>寫法如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+    (let ( variables_declaration )
+     ... body)
+    </pre>
+    <p>書本上的例子，跑完之後嘗試印出a就會吃到REPL的錯誤訊息，說A沒有value。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[23]> (let ( (a 5) (b 6) )
+(+ a b))
+11
+[28]> (princ a)
+
+*** - EVAL: variable A has no value
+The following restarts are available:
+USE-VALUE      :R1      You may input a value to be used instead of A.
+STORE-VALUE    :R2      You may input a new value for A.
+ABORT          :R3      Abort main loop
+Break 1 [29]> :R3
+    </pre>
+    <p>下面是global function裡面有自己的local variable的範例</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[30]> (defun foo(x)
+    (let ( (a 5) ) 
+         (+ x a) ) )
+FOO
+[31]> (foo 9)
+14
+    </pre>
+    <p></p>
+    <h4>Local Function</h4>
+    <p>定義local function的寫法是透過<code>flet</code>。而大致的結構如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(flet ( (function_name (arguments)
+          ... local function body ...) )
+    ... body ...)
+    </pre>
+    <p>書本上的範例改寫如下，跟local variable類似的是在那個list之外呼叫addTen就會收到undefined function的錯誤。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[32]> (flet ( (addTen (n)
+         (+ n 10)))
+    (addTen 3))
+13
+[33]> (addTen 5)
+
+*** - EVAL: undefined function ADDTEN
+The following restarts are available:
+USE-VALUE      :R1      You may input a value to be used instead of (FDEFINITION 'ADDTEN).
+RETRY          :R2      Retry
+STORE-VALUE    :R3      You may input a new value for (FDEFINITION 'ADDTEN).
+ABORT          :R4      Abort main loop
+Break 1 [34]> :R4
+    </pre>
+    <p>要注意看的還有跟<code>let</code>可以宣告多個local variables一樣，<code>flet</code>也可以一次宣告多個local function。</p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Land of LISP, Chapter 2</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/02/22
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

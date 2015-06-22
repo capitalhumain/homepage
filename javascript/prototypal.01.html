@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>Prototypal Inheritance - 01</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Prototypal Inheritance - 01</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        有關Inheritance ECMA-262給我的感覺是JavaScript是一個重視物件能作哪些事而非重視這個物件的親屬關係。
+        Prototypal Inheritance和熟悉Java這類Classic Inheritance相當不同。在JavaScript則是透過function object的
+        prototype property來設定兩個物件的關係。以下面這個簡單的例子來看我把Dog的prototype設定一個object literal
+        如果這個參數沒有設定會設定Object。
+        </p>
+        <h3>Listing. prototype.01.js</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+        var Dog = function( name ) {
+            this.name = name;
+        };
+
+        Dog.prototype = {
+            fly: function() {
+                alert( 'I am flying...' );
+            }
+        };
+
+        Dog.prototype.say = function() {
+            alert( 'Waoo~' );
+        };
+
+        var PyreneanMountain = function( name ) {
+            this.name = name;
+        };
+
+        PyreneanMountain.prototype = new Dog();
+
+        var doggie = new PyreneanMountain( 'Lucky' );
+        doggie.fly();
+
+        </pre>
+        <img src="../images/javascript/prototypal.01.png"></img>
+        <p>
+        當透過Constructor Invocation Pattern呼叫PyreneanMountain function object產生的物件，然後呼叫fly() function
+        的時候，雖然情況是很虎濫的，可以看到一隻自以為會飛的大白熊犬。
+        </p>
+        <h2>Firefox __proto__ property (and Safari)</h2>
+        <p>
+        在FireFox和Safari都有讓我們可以看到__proto__這個property。除了下面的寫法之外，也可以透過Firebug觀察物件的
+        __proto__ property的內容。
+        </p>
+        <a href="example/__proto__.01.html" target="_blank">Run Example</a>
+        <h3>Listing. __proto__.01.html</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[4]">
+        var Oolong = function() {
+        };
+        
+        Oolong.prototype = {
+            oxidation: 'Medium',
+            brewing: function() {
+                return 'Tea time~'
+            }
+        };
+        
+        Oolong.prototype.maturing = function() {
+            return 'OOO....';
+        };
+        
+        var DongDing = function() {
+            this.location = 'Taiwan';
+        };
+        
+        DongDing.prototype = new Oolong();
+        
+        var obj = new DongDing();
+        var prop;
+        if( obj.__proto__ ) {
+            for( prop in obj.__proto__ ) {
+                document.writeln( prop + ': ' + obj.__proto__[prop] + '</br>');
+            }
+        } else {
+            alert( 'This Browser do not expose __proto__ property' );
+        }
+        </pre>
+        <p>
+        接著在Oolong function object的prototype property加上brewing() function，觀察看看結果。可以看到obj
+        由prototype chain可以呼叫到的brewing() function是Oolong function object定義的brewing() function。
+        </p>
+        <a href="example/__proto__.02.html" target="_blank">Run Example</a>
+        <h3>Listing. __proto__.02.html</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[18]">
+        Oolong.prototype.brewing = function() {
+            return 'Oolong Tea Time....';
+        };
+        </pre>
+        <h5>2010/05/11補充</h5>
+        <p>
+        在Firefox, Chrome, Safari, Opera既然都有暴露__proto__這個property，也就是說不需要透過prototypal inheritence可以寫出下列程式
+        </p>
+        <h3>Listing. test.__proto__.exposed.2.html</h3>
+        <pre name="code" class="javascript:controls:firstline[19]">
+        window.onload = function() {
+            var book1 = {
+                title: 'High Performance JavaScript',
+                author: 'Nicholas'
+            };
+            var book2 = {
+                title: 'JavaScript: The Good Parts',
+                author: 'Douglas'
+            };
+            var doc = document;
+            var result1 = doc.getElementById( 'result1' );
+            var result2 = doc.getElementById( 'result2' );
+            
+            // alert( 'toString' in book2 );   // all true
+            if( book1.__proto__ ) {
+                result1.innerHTML = 'TRUE';     // firefox , safari, chrome, Opera
+                result2.innerHTML = book1.__proto__.constructor;
+                book1.__proto__.sayTitle = function() {
+                    alert( this.title );
+                };
+                book2.sayTitle();
+            } else {
+                result1.innerHTML = 'FALSE';    // IE
+            }
+        };
+        </pre>
+        <p>
+        因為book1, book2這兩個物件都共用Object這個protoype的物件，也就是說當我們針對book1的__proto__這個property存放的物件變動property的時候，book2一樣可以使用變更後的property。
+        </p>
+        <p>
+        也就是說像上面的範例第39行的book2可以成功invoke sayTitle()。如果要通吃這裡當然就只能用規格書規定而且大家都有實作的方法寫。
+        </p>
+        <h3>Listing. test.__proto__.exposed.3.html</h3>
+        <pre name="code" class="javascript:controls:firstline[19]">
+        window.onload = function() {
+            var Book = function( obj ) {
+                var prop;
+                for(prop in obj) {
+                    this[ prop ] = obj[ prop ];
+                }
+            };
+            
+            Book.prototype.sayTitle = function() {
+                alert(this.title);
+            };
+            
+            var book1 = new Book({
+                title: 'High Performance JavaScript',
+                author: 'Nicholas'
+            });
+            var book2 = new Book({
+                title: 'JavaScript: The Good Parts',
+                author: 'Douglas'
+            });
+            var doc = document, 
+                result1 = doc.getElementById( 'result1' ), 
+                result2 = doc.getElementById( 'result2' ), 
+                result3 = doc.getElementById( 'result3' );
+            
+            // alert( 'toString' in book2 );   // all true
+            if( book1.__proto__ ) {
+                result1.innerHTML = 'TRUE';     // firefox , safari, chrome, Opera
+                result2.innerHTML = book1.__proto__.constructor;
+                result3.innerHTML = book1.__proto__.__proto__.constructor;
+            } else {
+                result1.innerHTML = 'FALSE';    // IE
+            }
+            book2.sayTitle();
+        };
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>JavaScript: The Good Parts</li>
+                <li>Object-Oriented JavaScript</li>
+                <li>High Performance JavaScript</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2009/09/07
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

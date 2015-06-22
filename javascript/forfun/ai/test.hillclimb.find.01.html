@@ -1,0 +1,31 @@
+<html>
+<head>
+<title>Test Suite</title>
+<script type="text/javascript" src="core.js"></script>
+<script type="text/javascript" src="hillclimbing.js"></script>
+<script type="text/javascript">
+function assert( value, desc ) {
+    var li = document.createElement("li");
+    li.className = value ? "pass" : "fail";
+    li.appendChild( document.createTextNode( desc ) );
+    document.getElementById("results").appendChild( li );
+}
+
+window.onload = function(){
+    var hill = new HillClimbing();
+    
+    hill.addFlightInfo( 'Taipei', 'Taichung', 200 );
+    hill.addFlightInfo( 'Taipei', 'Taoyuan', 50 );
+    hill.addFlightInfo( 'Taipei', 'Yi', 76 );
+    assert( hill.find( 'Taipei' ).distance === 200, "Testing for HillClimbing.find() ..." );
+};
+</script>
+<style>
+    #results li.pass { color: green; }
+    #results li.fail { color: red; }
+</style>
+</head>
+<body>
+    <ul id="results"></ul>
+</body>
+</html>

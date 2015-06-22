@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>SwingBuilder - table</title>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+    };
+    </script>
+</head>
+<body>
+<div>
+    <h1 class="header">SwingBuilder - table</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+寫FTCS XMLPost tool和看書進度緩慢，這個算是寫FTCS XMLPost tool想用的東西。主要的想法是有一塊用JTable來呈現
+該Basic Asset Type table的Metadata，然後我可以用勾選的方式，最後產生XMLPost執行的ini設定檔。^^純粹是初步想法
+希望會堅持下去用SwingBuilder做完，而不會做到一半覺得改用Wicket做比較快(雖然對我而言是事實)。
+    </p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.6.3</li>
+            <li>Sun JDK 1.6.0_10</li>
+        </ul>
+    </div>
+    <h2>最初版本和想法</h2>
+    <p>
+最初是Groovy in Action裡面有關table的範例，作者使用了propertyColumn展示這個componet的做法和功能。以我這個Swing門
+外漢想的到，距離心理想要做的東西，針對table還要玩出下列兩項
+    </p>
+    <div>
+    <ol>
+        <li>closureColumn</li>
+        <li>cellRenderer, cellEditor</li>
+    </ol>
+    </div>
+    <p>測試用的殼</p>
+    <h3>Listing. GroovyTest.java</h3>
+    <pre name="code" class="java:controls:firstline[1]">
+package script;
+
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+
+public class GroovyTest {
+    public static void main(String[] args) throws ScriptException, FileNotFoundException {
+        if(args.length != 1) {
+            System.err.println("Missing Required Parameter");
+            System.exit(-1);
+        } // if
+        
+        ScriptEngineManager manager = new ScriptEngineManager();
+        
+        ScriptEngine engine = manager.getEngineByName("groovy");
+        
+        engine.eval(new InputStreamReader(ClassLoader.getSystemResourceAsStream(args[0])));
+    } // main()
+} // GroovyTest class
+    </pre>
+    <h2>closureColumn property</h2>
+    <p>
+就只是根據書上的範例多的data加一個欄位，用closureColumn來呈現，特別用selected順便在下一個可以用checkbox來
+呈現和設定這欄的資料。
+    </p>
+    <h3>Listing. tabDemo0.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+/**
+ * @author Terry
+ *
+ */
+import groovy.swing.SwingBuilder
+import java.awt.BorderLayout
+import javax.swing.JCheckBox
+import javax.swing.DefaultCellEditor
+import javax.swing.WindowConstants as WC
+
+def data = [
+    [nick:'MrG', full:'Guillaume Laforge', selected: false],
+    [nick:'jez', full:'Jeremy Rayner', selected: false],
+    [nick:'fraz', full:'Franck Rasolo', selected: false],
+    [nick:'sormuras', full:'Christian Stein', selected: false],
+    [nick:'blackdrag', full:'Jochen Theodorou', selected: false]
+]
+
+swing = new SwingBuilder()
+
+generateAction = swing.action( name: 'Execute', closure: {
+    for (Map row : data) {
+        println row
+    }
+})
+
+frame = swing.frame(title: 'SwingBuilder - table 踹踹係',
+        defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    panel(layout: new BorderLayout()) {
+        scrollPane(constraints: BorderLayout.CENTER) {
+            table() {
+                tableModel(list: data) {
+                    propertyColumn(header: 'Nickname', propertyName: 'nick')
+                    propertyColumn(header: 'Full Name', propertyName: 'full')
+                    closureColumn(header: 'Import ?', 
+                            read: { row -> return row.selected }, 
+                            write: { row, newValue -> 
+                                    row.selected = newValue })
+                }
+            }
+        }
+        hbox(constraints: BorderLayout.SOUTH) {
+            button( 'Execute' ) {
+                action(generateAction)
+            }
+        }
+    }
+}
+frame.pack()
+frame.show()
+    </pre>
+    <h3>Figure. 程式執行結果</h3>
+    <img class="screenshoot" src="../images/groovy/swingbuilder_table_01.png" />
+    <h2>cellRenderer, cellEditor property</h2>
+    <p>
+對Groovy還沒有到那種感覺的程度，所以就只能按照對Swing的了解用Java的方法搞。所以寫了
+一個TableCellRenderer。所以先看到的是CheckCellRenderer.groovy之後在tabDemo.groovy裡面
+cellRenderer property就設定這個自訂TableCellRenderer，至於CellEdtor則使用DetaulCellEditor
+餵給他JCheckBox的物件就可以了。
+    </p>
+    <h3>Listing. CheckCellRenderer.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import java.awt.Component
+import javax.swing.JTable
+import javax.swing.JCheckBox
+import javax.swing.border.EmptyBorder
+import javax.swing.table.TableCellRenderer
+
+class CheckCellRenderer extends JCheckBox implements TableCellRenderer {
+    
+    CheckCellRenderer() {
+        super()
+        setOpaque(true)
+        setBorderPainted(true)
+        setBorder(new EmptyBorder(1, 1, 1, 1))
+        setHorizontalAlignment(JCheckBox.CENTER)
+    }
+    
+    public Component getTableCellRendererComponent(JTable table, 
+                                                   Object value, 
+                                                   boolean isSelected, 
+                                                   boolean hasFocus, 
+                                                   int row, 
+                                                   int column) {
+        setSelected(value)
+        setForeground(table.getForeground())
+        setBackground(table.getBackground())
+        return this
+    }
+}
+    </pre>
+    <h3>Listing. tabDemo.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+/**
+ * @author Terry
+ *
+ */
+import groovy.swing.SwingBuilder
+import java.awt.BorderLayout
+import javax.swing.JCheckBox
+import javax.swing.DefaultCellEditor
+import javax.swing.WindowConstants as WC
+
+def data = [
+    [nick:'MrG', full:'Guillaume Laforge', selected: false],
+    [nick:'jez', full:'Jeremy Rayner', selected: true],
+    [nick:'fraz', full:'Franck Rasolo', selected: false],
+    [nick:'sormuras', full:'Christian Stein', selected: false],
+    [nick:'blackdrag', full:'Jochen Theodorou', selected: false]
+]
+
+swing = new SwingBuilder()
+
+generateAction = swing.action( name: 'Execute', closure: {
+    for (Map row : data) {
+    	println row
+    }
+})
+
+frame = swing.frame(title: 'SwingBuilder - table 踹踹係',
+        defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    panel(layout: new BorderLayout()) {
+        scrollPane(constraints: BorderLayout.CENTER) {
+            table(cellSelectionEnabled: false) {
+                tableModel(list: data) {
+                    propertyColumn(header: 'Nickname', propertyName: 'nick')
+                    propertyColumn(header: 'Full Name', propertyName: 'full')
+                    closureColumn(header: 'Import ?', 
+                            cellRenderer: new CheckCellRenderer(),
+                            cellEditor: new DefaultCellEditor(checkBox(horizontalAlignment: JCheckBox.CENTER)),
+                            read: { row -> return row.selected }, 
+                            write: { row, newValue -> 
+                                     row.selected = newValue } )
+                }
+            }
+        }
+        hbox(constraints: BorderLayout.SOUTH) {
+            button( 'Execute' ) {
+                action(generateAction)
+            }
+        }
+    }
+}
+frame.pack()
+frame.show()
+    </pre>
+    <h3>Figure. 程式執行結果</h3>
+    <img class="screenshoot" src="../images/groovy/swingbuilder_table_02.png" />
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Groovy Web Site</li>
+            <li>Groovy in Action, First Edition</li>
+            <li>Swing, Second Edition</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/07/14
+</address>
+</body>
+</html>

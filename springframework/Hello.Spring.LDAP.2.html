@@ -1,0 +1,556 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Spring LDAP" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css"rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <title>Hello, Spring LDAP - Step 2</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Hello, Spring LDAP - Step 2</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>莊周老大說：「道惡乎隱而有真偽？言惡乎隱而有是非？道惡乎往而不存？言惡乎存而不可？道隱於小成，言隱於榮華。故有儒墨之是非，以是其所非而非其所是。欲是其所非而非其所是，則莫若以明。」</p>
+        <p>借來的天同、天梁，果然是借來的，善良、平易近人...完全不像我，我都是發完狂牛脾氣之後，再回家慢慢後悔。工作模式到是有點像，需要在忙碌的生活中「穿插休閒」來讓自己滿足。對錢不太提得起興趣，但不表示不愛錢。有趣的東西...</p>
+        <p>回到現實面，既然不知道要做東西的範圍，就按照自己的步調先把Spring LDAP官方文件玩過一次再說吧。接下來三個章節主要是圍繞在<strong>LdapTemplate</strong>提供的其他可用method的進一步說明。這三個章節有一些東西無法體會(比如說除了signed, paged result之外，想一個使用Control的好玩的例子)，希望後續幾個章節這個現象不會擴大。</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 1.6.0_20</li>
+                <li>Maven 2.2.1</li>
+                <li>Spring LDAP 1.3.0.RELEASE</li>
+                <li>OpenDS 2.2</li>
+            </ul>
+        </div>
+        <h2>Part 1: DirContextAdapter</h2>
+        <p>先建立類別之間的關係，<strong>DirContextAdapter</strong> implement <strong>DirContextOperations</strong> interface，而<strong>DirContextOperations</strong>則是繼承自javax.naming.directory.DirContext。</p>
+        <h4>Search</h4>
+        <p>就如同basic operation裡簡單的查詢範例，透過<strong>AttributeMapper</strong>處理想要處理的attribute，然而根據mapFromAttributes()的signature也表示我們可以在這裡由attribute內容產生相對應的object。除了<strong>AttributeMapper</strong>之外，還有另一個可以使用的<strong>ContextMapper</strong>來協助由attributes產生object的動作。<strong>ContextMapper</strong>這個interface則定義mapFromContext()讓我們實作將context內的attribute產生domain object的動作。</p>
+        <p>此外Spring LDAP還提供了一個abstract adapter class <strong>AbstractContextMapper</strong>，繼承這個abstract class只需要實做template method <em>public object doMapFromContext (ctx : DirContextOperations)</em>。在<strong>AbstractContextMapper</strong>的mapFromContext()就只是單純的將ctx argument cast成<strong>DirContextOperations</strong>，然後呼叫doMapFromContext()。也因此javadoc才會寫通常ctx這個argument會是<strong>DirContextAdapter</strong>；但是如果使用custom <Strong>DirObjectFactory</Strong>而產生的物件，在傳進去之後無法cast成<strong>DirContextOperations</strong>就會發生ClassCastException。</p>
+        <p>首先，先玩玩<strong>ContextMapper</strong></p>
+        <h3>Listing 1. PersonContextMapper class (PersonDaoImpl class's inner class)</h3>
+        <pre name="code" class="java:controls:firstline[32]">
+    public static class PersonContextMapper implements ContextMapper {
+        // JavaDoc says Map a single LDAP Context to an object.
+        public Object mapFromContext (Object ctx) {
+            DirContextAdapter context = (DirContextAdapter) ctx;
+            Person p = new Person();
+            p.setUsername( context.getStringAttribute( "cn" ) );
+            p.setUid( context.getStringAttribute( "uid" ) );
+            p.setEmployeeNumber( context.getStringAttribute( "employeeNumber" ) );
+            return p;
+        } // mapFromContext method
+    } // PersonContextMapper class definition
+        </pre>
+        <p>follow文件寫一個findByPrimaryKey()，unit test code如下</p>
+        <h3>Listing 2. PersonDaoTest#testFindByPrimaryKey</h3>
+        <pre name="code" class="java:controls:firstline[24]">
+    @Test
+    public void testFindByPrimaryKey () {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        Person p = personDAO.findByPrimaryKey( "user001" );
+        assertNotNull( p );
+        assertEquals( p.getUsername(), "Aaccf" );
+    }
+        </pre>
+        <p>而findByPrimaryKey()實作如下</p>
+        <h3>Listing 3. PersonDaoImpl#findByPrimaryKey(uid: String)</h3>
+        <pre name="code" class="java:controls:firstline[61]">
+    public Person findByPrimaryKey (String uid) {
+        Name dn = buildDn( uid );
+        // About LdapTemplate#lookup(dn: Name, mapper: ContextMapper)
+        // Convenience method to lookup a specified DN and automatically pass the found object to a ContextMapper.
+        return (Person) ldapTemplate.lookup( dn, new PersonContextMapper() );
+    } // findByPrimaryKey
+        </pre>
+        <p>繼承<strong>AbstractContextMapper的範例如下</strong></p>
+        <h3>Listing 4. PersonContextMapper2 class</h3>
+        <pre name="code" class="java:controls:firstline[44]">
+    public static class PersonContextMapper2 extends AbstractContextMapper {
+        public Object doMapFromContext (DirContextOperations ctx) {
+            DirContextAdapter context = (DirContextAdapter) ctx;
+            Person p = new Person();
+            p.setUsername( context.getStringAttribute( "cn" ) );
+            p.setUid( context.getStringAttribute( "uid" ) );
+            p.setEmployeeNumber( context.getStringAttribute( "employeeNumber" ) );
+            return p;
+        } // doMapFromContext method
+    } // PersonContextMapper2 class definition
+        </pre>
+        <h4>Bind & Update</h4>
+        <p>在LDAP server新增一筆entry，除了提供distinguished name和<strong>Attributes</strong>物件之外，還可以選擇餵給LdapTemplate#bind()這個method一個<strong>DirContextOperations</strong> instance這條路。</p>
+        <h3>Listing 5. 第一代的create()</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+    public void create (Person p) {
+        Name dn = buildDn( p );
+        DirContextAdapter context = new DirContextAdapter( dn );
+        
+        // before extract method, use this way
+        context.setAttributeValues( "objectclass", new String[] { "top", "organizationalperson", "inetorgperson", "person" } );
+        context.setAttributeValue( "cn", p.getUsername() );
+        context.setAttributeValue( "sn", p.getUsername() );
+        context.setAttributeValue( "uid", p.getUid() );
+        context.setAttributeValue( "userPassword", p.getPassword() );
+        context.setAttributeValue( "employeeNumber", p.getEmployeeNumber() );
+        
+        ldapTemplate.bind( context );
+    } // create
+        </pre>
+        <p>相同的LdapTemplate#modifyAttributes()也有可以吃<strong>DirContextOperations</strong> instance的overload function。</p>
+        <h3>Listing 6. 第一代的update()</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+    public void update (Person p) {
+        Name dn = buildDn( p );
+        DirContextOperations context = ldapTemplate.lookupContext( dn );
+        
+        // before extract method, use this way
+        context.setAttributeValues( "objectclass", new String[] { "top", "organizationalperson", "inetorgperson", "person" } );
+        context.setAttributeValue( "cn", p.getUsername() );
+        context.setAttributeValue( "sn", p.getUsername() );
+        context.setAttributeValue( "uid", p.getUid() );
+        context.setAttributeValue( "userPassword", p.getPassword() );
+        context.setAttributeValue( "employeeNumber", p.getEmployeeNumber() );
+        
+        ldapTemplate.modifyAttributes( context );
+    }
+        </pre>
+        <p>很礙眼的東西出現了，重複的程式碼...無敵礙眼的東西，所以馬上處理他。</p>
+        <h3>Listing 7. 拉出來的mapToContext()</h3>
+        <pre name="code" class="java:controls:firstline[185]">
+    protected void mapToContext (Person p, DirContextOperations context) {
+        context.setAttributeValues( "objectclass", new String[] { "top", "organizationalperson", "inetorgperson", "person" } );
+        context.setAttributeValue( "cn", p.getUsername() );
+        context.setAttributeValue( "sn", p.getUsername() );
+        context.setAttributeValue( "uid", p.getUid() );
+        context.setAttributeValue( "userPassword", p.getPassword() );
+        context.setAttributeValue( "employeeNumber", p.getEmployeeNumber() );
+    } // mapToContext
+        </pre>
+        <h3>Listing 8. 第二代的create() and update()</h3>
+        <pre name="code" class="java:controls:firstline[86]">
+    public void create (Person p) {
+        Name dn = buildDn( p );
+        DirContextAdapter context = new DirContextAdapter( dn );
+        
+        // before extract method, use this way
+        //context.setAttributeValues( "objectclass", new String[] { "top", "organizationalperson", "inetorgperson", "person" } );
+        //context.setAttributeValue( "cn", p.getUsername() );
+        //context.setAttributeValue( "sn", p.getUsername() );
+        //context.setAttributeValue( "uid", p.getUid() );
+        //context.setAttributeValue( "userPassword", p.getPassword() );
+        //context.setAttributeValue( "employeeNumber", p.getEmployeeNumber() );
+        mapToContext( p, context );
+        
+        ldapTemplate.bind( context );
+    } // create
+    
+    public void update (Person p) {
+        Name dn = buildDn( p );
+        DirContextOperations context = ldapTemplate.lookupContext( dn );
+        mapToContext( p, context );
+        ldapTemplate.modifyAttributes( context );
+    }
+        </pre>
+        <h3>Listing 9. unit test for create() and update()</h3>
+        <pre name="code" class="java:controls:firstline[34]">
+    @Test
+    public void testCreate () {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        Person p = new Person();
+        p.setUsername( "test" );
+        p.setUid( "user003" );
+        p.setEmployeeNumber( "0" );
+        p.setPassword( "password" );
+        personDAO.create( p );
+        
+        Person added = personDAO.findByPrimaryKey( "user003" );
+        assertNotNull( p );
+        assertEquals( p.getUsername(), added.getUsername() );
+        
+        personDAO.delete( p );
+    }
+    
+    @Test
+    public void testUpdate () {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        Person p = new Person();
+        p.setUsername( "test" );
+        p.setUid( "user003" );
+        p.setEmployeeNumber( "0" );
+        p.setPassword( "password" );
+        personDAO.create( p );
+        
+        p.setUsername( "test0" );
+        p.setEmployeeNumber( "1" );
+        personDAO.update( p );
+        
+        Person added = personDAO.findByPrimaryKey( "user003" );
+        assertNotNull( p );
+        assertEquals( "test0", added.getUsername() );
+        assertEquals( "1", added.getEmployeeNumber() );
+        
+        personDAO.delete( p );
+    }
+        </pre>
+        <h2>Part 2: SearchExecutor and ContextExecutor</h2>
+        <p></p>
+        <h4>SearchExecutor</h4>
+        <p>從<strong>LdapTemplate</strong>的javadoc看下來，在search()這個method有一個類型是還不熟悉的如下（DirContextProcessor後面會講暫時當成沒看到）</p>
+        <pre name="code" class="java:nocontrols:firstline[1]">
+    public List search (SearchExecutor se, NameClassPairCallbackHandler handler) 
+        </pre>
+        <p>透過delegate <strong>SearchExecutor</strong> instance來查詢資料，而查詢到的每一個<strong>NameClassPair</strong> instance會丟給後面的callback hander instance處理。</p>
+        <p>而callback handler既然要根據ldap entry產生對應object就會有之前提到的AttributesMapper和ContextMapper這兩個東西可以用。等下會用到東西的class diagram如下圖</p>
+        <h3>Figure 1. Some class diagram about NameClassPairCallbackHandler</h3>
+        <img src="../images/spring.ldap/NameClassPairCallbackHandler.png" />
+        <h3>Listing 10. PersonAttributesMapper.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.ldap.adapter;
+
+import javax.naming.NamingException;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.Attribute;
+import org.springframework.ldap.core.AttributesMapper;
+
+public class PersonAttributesMapper implements AttributesMapper {
+    public Object mapFromAttributes (Attributes attrs) {
+        Attribute cn = attrs.get( "cn" );
+        Attribute uid = attrs.get( "uid" );
+        Attribute en = attrs.get( "employeeNumber" );
+        
+        Person p = new Person();
+        try {
+            p.setUid( (String) uid.get() );
+            p.setUsername( (String) cn.get() );
+            p.setEmployeeNumber( (String) en.get() );
+        
+            return p;
+        } catch(NamingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    } // mapFromAttributes
+} // PersonAttributesMapper class
+        </pre>
+        <h3>Listing 11. PersonDaoImpl#searchResultHandleByAttributesMapper</h3>
+        <pre name="code" class="java:controls:firstline[113]">
+    /**
+     * 多筆的狀況, final 的目的是要在inner class使用啊啊啊
+     * 這是用AttributesMapper把結果弄成Person物件的方法
+     **/
+    public List searchResultHandleByAttributesMapper (final Name base, final String filter, final String[] params, final SearchControls ctls) {
+        SearchExecutor executor = new SearchExecutor() {
+            public NamingEnumeration executeSearch (DirContext ctx) {
+                try {
+                    return ctx.search( base, filter, params, ctls );
+                } catch( NamingException e ) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+        };
+        
+        // 準備handler
+        CollectingNameClassPairCallbackHandler handler = new AttributesMapperCallbackHandler( new PersonAttributesMapper() );
+        // 找東西去
+        ldapTemplate.search( executor, handler );
+        return handler.getList();
+    } // searchResultHandleByAttributesMapper
+        </pre>
+        <p>至於<strong>ContextMapper</strong>就用之前的class就好。</p>
+        <h3>Listing 12. PersonDaoImpl#searchResultHandleByAttributesMapper</h3>
+        <pre name="code" class="java:controls:firstline[156]">
+    public List searchResultHandleByContextMapper (final Name base, final String filter, final String[] params, final SearchControls ctls) {
+        SearchExecutor executor = new SearchExecutor() {
+            public NamingEnumeration executeSearch (DirContext ctx) {
+                try {
+                    return ctx.search( base, filter, params, ctls );
+                } catch( NamingException e ) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+        };
+        
+        CollectingNameClassPairCallbackHandler handler = new ContextMapperCallbackHandler( new PersonContextMapper() );
+        ldapTemplate.search( executor, handler );
+        return handler.getList();
+    } // searchResultHandleByContextMapper
+        </pre>
+        <h3>Listing 13. Unit Test</h3>
+        <pre name="code" class="java:controls:firstline[77]">
+    @Test
+    public void testSearchResultHandleByAttributesMapper() {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        DistinguishedName dn = new DistinguishedName();
+        dn.add("ou", "People");
+        
+        SearchControls sc = new SearchControls();
+        // scope要設對啊
+        sc.setSearchScope( SearchControls.ONELEVEL_SCOPE );
+        sc.setCountLimit( 100 );
+        sc.setTimeLimit( 3000 );
+        sc.setReturningAttributes( new String[] {"cn", "uid", "employeeNumber"} );
+        sc.setDerefLinkFlag( true );
+        sc.setReturningObjFlag( true );
+        
+        List result = personDAO.searchResultHandleByAttributesMapper( (Name)dn, "(objectClass=person)", new String[] {}, sc );
+        assertNotNull( result );
+        assertEquals( 5, result.size() );
+        for( Object p : result ) {
+            Person person = (Person) p;
+            System.out.println( person.getUsername() + "/" + person.getUid() );
+        }
+    }
+    
+    @Test
+    public void testSearchResultHandleByContextMapper() {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        DistinguishedName dn = new DistinguishedName();
+        dn.add("ou", "People");
+        
+        SearchControls sc = new SearchControls();
+        sc.setSearchScope( SearchControls.ONELEVEL_SCOPE );
+        sc.setCountLimit( 100 );
+        sc.setTimeLimit( 3000 );
+        sc.setReturningAttributes( new String[] {"cn", "uid", "employeeNumber"} );
+        sc.setDerefLinkFlag( true );
+        sc.setReturningObjFlag( true );
+        
+        List result = personDAO.searchResultHandleByContextMapper( (Name)dn, "(objectClass=person)", new String[] {}, sc );
+        assertNotNull( result );
+        assertEquals( 5, result.size() );
+        for( Object p : result ) {
+            Person person = (Person) p;
+            System.out.println( person.getUsername() + "/" + person.getUid() );
+        }
+    }
+        </pre>
+        <h4>ContextExecutor</h4>
+        <p>除了search使用<strong>SearchExecutor</strong>對<strong>DirContext</strong>執行search之外，其他的動作可以透過<strong>ContextExecutor</strong> interface來搞。javadoc可以看到使用DirContex#lookup的片段程式碼，在文件裡面可以看到另一個例子。</p>
+        <p>在<strong>LdapTemplate</strong>可以透過下列兩個方法來執行<strong>ContextExecutor</strong></p>
+        <pre name="code" class="java:nocontrols:firstline[1]">
+    public Object executeReadOnly (ContextExecutor ce);
+    public Object executeReadWrite (ContextExecutor ce);
+        </pre>
+        <p>差別在於<strong>ContextExecutor</strong> instance在執行executeWithContext拿到的是ReadOnly/ReadWrite的<strong>DirContext</strong> instance。</p>
+        <h3>Listing 14. PersonDaoImpl#lookupLink</h3>
+        <pre name="code" class="java:controls:firstline[68]">
+    /**
+     * 根據javadoc講DirContext#lookupLink這個method找到的物件根據我們敢給怎樣的distinguished name，甚至有可能拿到null
+     **/
+    public Object lookupLink( final Name name ) {
+        ContextExecutor executor = new ContextExecutor() {
+            public Object executeWithContext (DirContext ctx) {
+                try {
+                    return ctx.lookupLink( name );
+                } catch(NamingException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+        };
+        
+        return ldapTemplate.executeReadOnly( executor );
+    } // lookupLink
+        </pre>
+        <h2>Part 3: DirContextProcessor</h2>
+        <p>跟LDAP Protocol不熟，不曉得Control的使用目的，除了javax.naming.ldap package的javadoc講的SignedResultsControl和PagedResultsControl之外，所以想不出啥好玩的使用狀況。</p>
+        <p>根據文件和javadoc可以知道DirContextProcessor interface還有其他的abstract adapter class可以使用。鑑於眼前程度不夠無法體會用處，因此只是寫一個dummy DirContextProcessor來看看被呼叫的情形。</p>
+        <h3>Listing 15. DummyDirContextProcessor.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.ldap.adapter;
+
+import org.springframework.ldap.core.DirContextProcessor;
+
+import javax.naming.directory.DirContext;
+import javax.naming.ldap.InitialLdapContext;
+import javax.naming.ldap.Control;
+import javax.naming.NamingException;
+
+public class DummyDirContextProcessor implements DirContextProcessor {
+    public void preProcess (DirContext ctx) {
+        System.out.println( "DummyDirContextProcessor#preProcess called " + ctx );
+        /*
+        try {
+            InitialLdapContext context = (InitialLdapContext) ctx;
+            Control[] ctls = context.getConnectControls();
+            for( Control control : ctls ) {
+                System.out.println( "Control: id=" + control.getID() + ";"  );
+            }
+        } catch(NamingException e) {
+            e.printStackTrace();
+        }
+        * */
+    }
+    
+    public void postProcess (DirContext ctx) {
+        System.out.println( "DummyDirContextProcessor#postProcess called " + ctx );
+    }
+}
+        </pre>
+        <h3>Listing 16. 吃DirContextProcessor的PersonDaoImpl#searchResultHandleByAttributesMapper</h3>
+        <pre name="code" class="java:controls:firstline[136]">
+    /**
+     * 使用DirContextProcessor的版本
+     **/
+    public List searchResultHandleByAttributesMapper (final Name base, final String filter, final String[] params, final SearchControls ctls, DirContextProcessor processor) {
+        SearchExecutor executor = new SearchExecutor() {
+            public NamingEnumeration executeSearch (DirContext ctx) {
+                try {
+                    return ctx.search( base, filter, params, ctls );
+                } catch( NamingException e ) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+        };
+        
+        CollectingNameClassPairCallbackHandler handler = new AttributesMapperCallbackHandler( new PersonAttributesMapper() );
+        ldapTemplate.search( executor, handler, processor );    // 不同點
+        return handler.getList();
+    } // searchResultHandleByAttributesMapper
+        </pre>
+        <p>這裡看到的就是多吃<strong>DirContextProcessor</strong> instance的search method。</p>
+        <h3>Listing 17. Unit Test</h3>
+        <pre name="code" class="java:controls:firstline[]">
+@Test
+    public void testLookupLink() {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        DistinguishedName dn = new DistinguishedName();
+        dn.add( "ou", "People" );
+        dn.add( "uid", "user001" );
+        
+        // 這樣的 distinguished name 找到的是 DirContextAdpater object
+        Object adapter = personDAO.lookupLink( dn );
+        assertNotNull( adapter );
+        
+        DirContextAdapter context = (DirContextAdapter) adapter;
+        Person p = new Person();
+        p.setUsername( context.getStringAttribute( "cn" ) );
+        p.setUid( context.getStringAttribute( "uid" ) );
+        p.setEmployeeNumber( context.getStringAttribute( "employeeNumber" ) );
+        assertEquals( "Aaccf", p.getUsername() );
+    }
+    
+    @Test
+    public void testLookupLinkReturnNull() {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        DistinguishedName dn = new DistinguishedName();
+        dn.add( "ou", "People" );
+        dn.add( "uid", "user9999" );   // user9999應該不在吧 哈哈
+        
+        Object result = personDAO.lookupLink( dn );
+        assertNull( result );
+        // 雖然結果如預期，但是不是我想要的執行路線，
+        // 應該是在ctx.lookup的時候catch NamingException下來處理的結果
+        // javax.naming.NameNotFoundException: 
+        // [LDAP: error code 32 - The search base entry 'uid=user9999,ou=People,dc=example,dc=com' does not exist]; 
+        // remaining name 'uid=user9999,ou=People'
+        // 發生在
+        // at javax.naming.InitialContext.lookupLink(InitialContext.java:476)
+        // at net.greenrivers.ldap.adapter.PersonDaoImpl$1.executeWithContext(PersonDaoImpl.java:70)
+        // 我想看到的是正常執行lookupLink，但是 return null的狀況...偶還是太菜了
+    }
+        </pre>
+        <h4>Paged Search Results</h4>
+        <p>這是分頁的control的使用，也是官方文件提到的例子。只是官方文件的範例有錯誤，所以改了一下（哈 眼睛沒看到能動的會不安）。因為手建資料很累，所以只有在OpenDS建立五筆資料，所以page size設定為2。</p>
+        <h3>figure 2. OpenDS data</h3>
+        <img src="../images/spring.ldap/opends.data.png" />
+        <h3>Listing 18. PersonDaoImpl#getAllPersons</h3>
+        <pre name="code" class="java:controls:firstline[175]">
+    public PagedResult getAllPersons (PagedResultsCookie cookie) {
+        PagedResultsRequestControl control = new PagedResultsRequestControl( PAGE_SIZE, cookie );
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope( SearchControls.SUBTREE_SCOPE );
+        
+        List persons = ldapTemplate.search( "", "objectclass=person", searchControls, new PersonAttributesMapper(), control );
+        
+        return new PagedResult( persons, control.getCookie() );
+    } // getAllPersons
+        </pre>
+        <p>跟文件上片段程式碼不同的在於javadoc沒看到那樣signature的search method，所以我用下面這個</p>
+        <pre name="code" class="java:nocontrols:firstline[1]">
+    public List search (String base, String filter, SearchControls controls, NameClassPairCallbackHandler handler, DirContextProcessor processor);
+        </pre>
+        <h3>Listing 19. Unit Test</h3>
+        <pre name="code" class="java:controls:firstline[199]">
+    @Test
+    public void testPagedSearchResults() {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        List result = null;
+        PagedResultsCookie cookie = null;
+        
+        // first run
+        PagedResult pr = personDAO.getAllPersons( cookie );
+        cookie = pr.getCookie();
+        result = pr.getResultList();
+        assertNotNull( cookie );
+        assertEquals( 2, result.size() );
+        for( Object p : result ) {
+            Person person = (Person) p;
+            System.out.println( "Paged 1: " + person.getUid() );
+        }
+        
+        // second run
+        pr = personDAO.getAllPersons( cookie );
+        cookie = pr.getCookie();
+        result = pr.getResultList();
+        assertNotNull( cookie );
+        assertEquals( 2, result.size() );
+        for( Object p : result ) {
+            Person person = (Person) p;
+            System.out.println( "Paged 2: " + person.getUid() );
+        }
+    }
+        </pre>
+        <h2>後續</h2>
+        <p>覺得很虛...只是按照文件順過順便看看相關API的JavaDoc...剩最後四章<em>Transaction, Java 5 support, configuration and pool</em>。</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Spring LDAP 1.3.0.RELEASE Document Chapter 3 ~ 5</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/10/05
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

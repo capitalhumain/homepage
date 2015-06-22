@@ -1,0 +1,27 @@
+<html>
+<head>
+    <script type="text/javascript" language="javascript">
+    var bla = function() {
+        var arr = [1, 2, 3];
+        return arr.concat(arguments);
+    };
+    var blabla = function() {
+        var arr = [1, 2, 3];
+        return arr.concat( Array.prototype.slice.apply( arguments ) );
+    };
+    
+    window.onload = function() {
+        document.getElementById( 'result' ).innerHTML = bla( 'a', 'b', 'c' );
+        document.getElementById( 'result2' ).innerHTML = bla( ['a', 'b', 'c'] );
+        document.getElementById( 'result3' ).innerHTML = blabla( 'a', 'b', 'c' );
+        document.getElementById( 'result4' ).innerHTML = blabla( ['a', 'b', 'c'] );
+    };
+    </script>
+</head>
+<body>
+    bla( 'a', 'b', 'c' ) result: <span id="result" style="color: #cc0000;"></span><br/>
+    bla( ['a', 'b', 'c'] ) result: <span id="result2" style="color: #cc0000;"></span><br/>
+    blabla( 'a', 'b', 'c' ) result: <span id="result3" style="color: #cc0000;"></span><br/>
+    blabla( ['a', 'b', 'c'] ) result: <span id="result4" style="color: #cc0000;"></span><br/>
+</body>
+</html>

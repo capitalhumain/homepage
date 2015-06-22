@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>AI Based Problem Solving JavaScript實作</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">AI Based Problem Solving JavaScript實作</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        首先core.js先定義FlightInfo和AISearch，分別用來存放航線資訊和提供基本search的method。透過prototypal 
+        inheritance讓depth first, hill climbing and least cost可以繼承AISearch。另外這邊和書上的範例的做法
+        不一樣的地方還有，我把解題的function在global scope定義。
+        </p>
+        <h3>Listing. core.js</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+/*
+ * 根據The Art of C++/The Art of Java有關AI Based Problem Solving
+ * 在JavaScript的實作
+ * version: 0.1
+ * 
+ */
+var FlightInfo = function(f, t, d) {
+    this.from = f;
+    this.to = t;
+    this.distance = d;
+    this.skip = false;
+};
+
+var AISearch = function() {
+    // for store flight information
+    this.flights = [];
+    // backtrack stack
+    this.btStack = [];
+};
+
+AISearch.prototype.addFlightInfo = function(f, t, d) {
+    this.flights.push( new FlightInfo(f, t, d) );
+};
+
+// 查詢是否有符合的路線
+// 有符合的路線則會回傳該路線的distance；否則會回傳0
+AISearch.prototype.matchFlight = function(f, t) {
+    var i;
+    for( i=0; i &lt; this.flights.length; i++ ) {
+        if( this.flights[i].from === f && 
+            this.flights[i].to === t && 
+            !this.flights[i].skip ) {
+            this.flights[i].skip = true;
+            return this.flights[i].distance;
+        }
+    }
+    return 0;
+};
+
+AISearch.prototype.reset = function() {
+    var i;
+    for( i=0; i&lt;this.flights.length; i++ ) {
+        this.flights[i].skip = false;
+    }
+    this.btStack = [];
+};
+
+AISearch.prototype.resetSolution = function() {
+    this.btStack = [];
+};
+
+// btStack是用來放解答的Stack
+// arguments.callee是用來做recursive call使用
+var solve = function(obj, f, t) {
+    var dist;
+    var tmp;
+        
+    dist = obj.matchFlight(f, t);
+    if( dist !== 0 ) {
+        obj.btStack.push( new FlightInfo( f, t, dist ) );
+        return;
+    }
+        
+    tmp = obj.find( f );
+    if( tmp !== undefined ) {
+        obj.btStack.push( new FlightInfo( tmp.from, tmp.to, tmp.distance ) );
+        arguments.callee( obj, tmp.to, t );
+    } else if( obj.btStack.length &gt; 0 ) {
+        tmp = obj.btStack.pop();
+        arguments.callee( obj, tmp.from, t );
+    }
+};
+
+        </pre>
+        <h3>Listing. depth.js</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+/*
+ * Description: 深度優先演算法
+ * Required: core.js and inheritance AISearch
+ */
+
+var Depth = function() {
+    this.find = function(f) {
+        var i;
+        for( i=0; i &lt; this.flights.length; i++) {
+            if( this.flights[i].from === f && !this.flights[i].skip ) {
+                this.flights[i].skip = true;
+                return new FlightInfo( this.flights[i].from, 
+                                       this.flights[i].to, 
+                                       this.flights[i].distance );
+            }
+        }
+    };
+};
+
+Depth.prototype = new AISearch();
+
+        </pre>
+        <h3>Listing. hillclimbing.js</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+/*
+ * Description: hill climbing 
+ * Required: core.js and inheritance AISearch
+ */
+var HillClimbing = function() {
+    // 從最遠的開始考慮來規劃路線
+    // 有找到的話會回傳該路線資訊的物件
+    // 在JavaScript function沒寫return就是表示return undefined
+    this.find = function( f ) {
+        var dist = 0;
+        var pos = -1;
+        var i;
+        
+        with( this ) {
+            for( i=0; i&lt;flights.length; i++ ) {
+                if( flights[i].from === f && !flights[i].skip ) {
+                    if( flights[i].distance &gt; dist ) {
+                        pos = i;
+                        dist = flights[i].distance;
+                    }
+                }
+            }
+            
+            if( pos !== -1 ) {
+                flights[pos].skip = true;
+                return new FlightInfo( flights[pos].from, 
+                                       flights[pos].to, 
+                                       flights[pos].distance );
+            }
+        }
+    };
+
+};
+
+HillClimbing.prototype = new AISearch();
+
+        </pre>
+        <h3>Listing. leastcost.js</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+/*
+ * Description: Least Cost
+ * Required: core.js
+ */
+var LeastCost = function() {
+    this.find = function( f ) {
+        var pos = -1;
+        var dist = 10000; // 必需大於最長的路徑
+        var idx = 0;
+        
+        with( this ) {
+            // 從最短的開始安排路徑
+            for( idx=0; idx&lt;flights.length; idx++) {
+                if( flights[idx].from === f && !flights[idx].skip ) {
+                    if( flights[idx].distance &lt; dist) {
+                        pos = idx;
+                        dist = flights[idx].distance;
+                    }
+                }
+            }
+            
+            if( pos !== -1 ) {
+                flights[pos].skip = true;
+                return new FlightInfo( flights[pos].from,
+                                       flights[pos].to,
+                                       flights[pos].distance );
+            }
+        }
+    };
+};
+
+LeastCost.prototype = new AISearch();
+
+        </pre>
+        <a href="forfun/ai/multiple.solution.01.html" target="_blank">Multiple Solution Example</a>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>JavaScript: The Good Parts</li>
+                <li>The Art of Java</li>
+                <li>The Art of C++</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2009/11/09
+    </address>
+        <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../../js/shBrushPlain.js" ></script>
+    <link href="../../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../../css/style.css" rel="stylesheet"/>
+    <title>Clojure: At a glance</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Clojure: At a glance</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>Clojure是一個在JVM上運行的Lisp dialect並且提供Software transactional memory(STM)的concurreny programming model。應該是很有趣的語言吧，而且又在既有platform上。</p>
+    <blockquote id="toc">
+        <fieldset style="width: 300px;">
+            <legend>Contents</legend>
+            <ol>
+                <li><a href="#repl">REPL</a></li>
+                <li><a href="#namespace">Namespace</a></li>
+                <li><a href="#boolean">Boolean</a></li>
+                <li><a href="#binding">Binding</a></li>
+                <li><a href="#function">Function</a></li>
+                <li><a href="#condition">Condition</a></li>
+                <li><a href="#loop">Loop</a></li>
+                <li><a href="#document">Document</a></li>
+            </ol>
+        </fieldset>
+    </blockquote>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Ubuntu 10.10</li>
+            <li>Clojure 1.2.0</li>
+        </ul>
+    </div>
+    <h2>REPL</h2>
+    <p>下載clojure 1.2.0的時候順便一起下載clojure contrib 1.2.0</p>
+    <h3>Listing. repl.sh</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+#!/bin/bash
+
+java -cp .:clojure-contrib-1.2.0.jar:clojure.jar clojure.main
+    </pre>
+    <h3>Listing. repl.bat</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+java -cp .;.\clojure.jar;.\clojure-contrib-1.2.0.jar clojure.main
+    </pre>
+    <p></p>
+    <h2>Namespace</h2>
+    <a id="namespace"></a>
+    <p>一進入clojure REPL會看到下面的提示符號，表示現在是在user這個namespace。在這裡建立的binding都是屬於user namespace。在下面展示裡面可以看到<code>v1</code>是在user namespace下面。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/lab/lisp/clojure$ ./repl.sh 
+Clojure 1.2.0
+user=> 
+user=> (def v1 10)
+#'user/v1
+    </pre>
+    <p>我們可以透過<code>in-ns</code>建立並進入另一個namespace，以下面例子先建立一個myapp的namespace，然後binding myapp namespace的<code>v1</code>。然後給和<code>'user/v1<code>不同的值。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (in-ns 'myapp)
+#&lt;Namespace myapp>
+myapp=> (def v1 100)
+#'myapp/v1
+myapp=> v1
+100
+myapp=> (in-ns 'user)
+#&lt;Namespace user>
+user=> v1
+10
+    </pre>
+    <h2>Boolean</h2>
+    <a id="boolean"></a>
+    <p>跟Common Lisp不一樣的在於empty list在clojure是true不是false。</p>
+    <p></p>
+    <h2>Function</h2>
+    <a id="function"></a>
+    <p>定義一個clojure function的寫法是</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defn function-name
+    "document for this function"
+    [arguments]
+    (body))
+    </pre>
+    <p>在reference 2的Chapter 7 Day 1在defining functions小節舉了下面兩個例子，第一個是沒有任何arguments、另一個是接受一個argument。</p>
+    <h3>Listing. version 1 <code>force-it</code></h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defn force-it
+    "The first function a young jedi needs"
+    [] 
+    (str "Use the force, Luke"))
+    </pre>
+    <h3>Listing. version 2 <code>force-it</code></h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defn force-it
+    "The first function a young jedi needs"
+    [jedi] 
+    (str "Use the force, " jedi))
+    </pre>
+    <p>此時如果在第二個版本之後，呼叫<code>(force-it)</code>就會收到錯誤訊息。因為此時的<code>force-it</code>需要一個參數。如果我們需要同時提供上面兩個例子的<code>force-it</code>可以用下面的寫法。</p>
+    <h3>Listing. version 3 <code>force-it</code></h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defn force-it
+    "The first function a young jedi needs"
+    ([] 
+        (str "Use the force, Luke"))
+    ([jedi]
+        (str "Use the force, " jedi)))
+    </pre>
+    <p></p>
+    <h4>Anonymous Functions</h4>
+    <p>在clojure定義anonymous function的方法有兩種寫法，第一個是透過<code>fn</code>結構如<code>(fn [parameters*] body)</code>、第二種寫法是用<code>#</code>。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (defn twice [x] (* 2 x))
+#'user/twice
+user=> (def v [1 2 3 4])
+#'user/v
+user=> (map twice v)
+(2 4 6 8)
+    </pre>
+    <p>用anonymous function改寫如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (map (fn [x] (* 2 x)) v)
+(2 4 6 8)
+user=> (map #(* 2 %) v)
+(2 4 6 8)
+    </pre>
+    <p></p>
+    <h2>Condition</h2>
+    <a id="condition"></a>
+    <p>在clojure condition syntax就只有<code>if</code> special form，<code>cond</code>或其他相關的都是clojure macro。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (defn big [st n]
+          (if (> (.length st) n) true false))
+#'user/big
+user=> (big "abc" 2)
+true
+user=> (big "abc" 5)
+false
+    </pre>
+    <p></p>
+    <h2>Loop</h2>
+    <a id="loop"></a>
+    <p>一般而言，functional programming language語言本身沒有（不需要）loop的語法，因為Tail Call Optimization (TCO)，所以functional programming language兄弟姊妹可以依靠recursion完成loop語法的目的。</p>
+    <p>說到recursion，通常不是fibonacci就是factorial。以factorial而言，一般會用類似下面範例的寫法</p>
+    <h3>Listing. <code>fact</code> version 1</h3>
+    <pre name="code" class="plain:controls:firstline[1]">
+(defn fact [n] 
+    (if (= n 0) 1 (* n (fact (dec n)))))
+    </pre>
+    <h4>Tail recursion</h4>
+    <p>本質上還是recursive，但是因為不需要處理回傳值（以上面範例而言，需要呼叫完<code>fact</code>的回傳值進行計算才能得到最終結果。），一種寫法是如下面這個將結果</p>
+    <h3>Listing. <code>fact</code> version 2</h3>
+    <pre name="code" class="plain:controls:firstline[1]">
+(defn fact [n]
+    (letfn [(factorial [i acc]
+             (if (zero? i) acc (factorial (dec i) (* acc i))) )]
+        (factorial n 1)))
+    </pre>
+    <p>即使如此也不代表clojure遇到大數不會stack overflow</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (fact 30000)
+java.lang.StackOverflowError (NO_SOURCE_FILE:0)
+    </pre>
+    <p>不管是不是如書上說的JVM本身不是設計給functional programming，所以...。重要的是在clojure有一些做法可以解決這個問題，如下面講到的<code>recur</code>或者clojure提供的sequence library...等。</p>
+    <h4>self recursion with <code>recur</code></h4>
+    <p></p>
+    <h3>Listing. <code>fact</code> version 3</h3>
+    <pre name="code" class="plain:controls:firstline[1]">
+(defn fact [n]
+    (letfn [(factorial [i acc]
+               (if (zero? i) acc (recur (dec i) (* acc i))))]
+        (factorial n 1)))
+    </pre>
+    <p>使用<code>recur</code>這樣在沒有調整任何JVM參數的狀況下，可以算出<code>(fact 30000)</code></p>
+    <h4>Lazy Sequeces</h4>
+    <p>另一招是用clojure強大的sequence library</p>
+    <h3>Listing. <code>fact</code> version 4</h3>
+    <pre name="code" class="plain:controls:firstline[1]">
+(defn fact [n]
+    (letfn [(lazy-seq-fact
+               ([] (concat [1 1] (lazy-seq-fact 1 2)))
+               ([a b] (let [n (* a b)] (lazy-seq (cons n (lazy-seq-fact n (inc b)))))))]
+        (nth (lazy-seq-fact) n)))
+    </pre>
+    <p>一步一步拆解來看，第一步就是用<code>lazy-seq</code> macro來建立lazy sequence。所以要建立一個function，以factorial例子而言，這個macro主要就是描述出factorial數列。記得clojure的sequence是zero based，剛好每個element的位置放得就是element index的factorial值。因此在第二行我們把0, 1的factorial value設定好，然後就是產生接下來的值，就要透過第三行的程式。a放得是前一個的factorial value，b代表要算的位置。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defn lazy-seq-fact
+     ([] (concat [1 1] (lazy-seq-fact 1 2)))
+     ([a b] (let [n (* a b)] (lazy-seq (cons n (lazy-seq-fact n (inc b)))))))
+
+(take 10 (lazy-seq-fact))
+
+(nth (lazy-seq-fact) 100000)
+    </pre>
+    <p>建立好產生sequence function之後，可以透過<code>take</code>來取得前面n筆的值來看看這個數列產生的正不正確，而在我們的<code>fact</code>需要用到的是<code>nth</code>，這個function可以讓我們由sequence中取得第n個的值。因此第四版的<code>fact</code>就會長成這樣子。</p>
+    <p>好像扯遠了回來看loop，即使functional programming language不需要loop syntax，在clojure有<code>loop</code> special form可以用。</p>
+    <p><code>loop</code> special form的寫法是<code>(loop [binding*] body)</code></p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (loop [x 1] x)
+1
+user=>
+    </pre>
+    <p>很意外吧，跟一般的loop syntax不同的是在clojure除了binding、和執行body內容之外，最主要是設立一個recursion point，需要搭配<code>recur</code> special form才能完成loop的目的。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(loop [x 10 acc 0] 
+    (if (zero? x) 
+        acc 
+        (recur (dec x) (+ acc x))))
+    </pre>
+    <h2>Document</h2>
+    <a id="document"></a>
+    <p>在clojure REPL環境下使用<code>doc</code>就可以查看相關creatures的文件。下面執行範例分別查詢<code>if</code>、<code>cond</code>和<code>lazy-seq</code>。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (doc if)
+-------------------------
+if
+Special Form
+  Please see http://clojure.org/special_forms#if
+nil
+user=> (doc cond)
+-------------------------
+clojure.core/cond
+([& clauses])
+Macro
+  Takes a set of test/expr pairs. It evaluates each test one at a
+  time.  If a test returns logical true, cond evaluates and returns
+  the value of the corresponding expr and doesn't evaluate any of the
+  other tests or exprs. (cond) returns nil.
+nil
+user=> (doc lazy-seq)
+-------------------------
+clojure.core/lazy-seq
+([& body])
+Macro
+  Takes a body of expressions that returns an ISeq or nil, and yields
+  a Seqable object that will invoke the body only the first time seq
+  is called, and will cache the result and return it on all subsequent
+  seq calls.
+nil
+user=> 
+    </pre>
+    <p>我們自己定義的clojure creatures如果有寫document也可以透過<code>doc</code>在repl環境下查詢相關資訊。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (defn greeting 
+         "greeting to world"
+         [name]
+         (str "Hello, " name))
+#'user/greeting
+user=> (greeting "Terence")
+"Hello, Terence"
+user=> (doc greeting)
+-------------------------
+user/greeting
+([name])
+  greeting to world
+nil
+    </pre>
+    <p>如果用之前的<code>force-it</code>為例，執行狀況如下，會標示出<code>force-it</code> function有兩種arguments list形式。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+user=> (defn force-it
+    "The first function a young jedi needs"
+    ([] 
+        (str "Use the force, Luke"))
+    ([jedi]
+        (str "Use the force, " jedi)))
+#'user/force-it
+user=> (doc force-it)
+-------------------------
+user/force-it
+([] [jedi])
+  The first function a young jedi needs
+nil
+    </pre>
+    <p></p>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Programming Clojure</li>
+            <li>Seven Languages in Seven Weeks</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/04/01
+</address>
+<script language="javascript">
+$(function() {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Spring LDAP" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css"rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <title>Hello, Spring LDAP - Basic Operation</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Hello, Spring LDAP - Basic Operation</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>司馬光老大說：「君子寡欲，則不役於物，可以直道而行；小人寡欲，則能謹身節用，遠罪豐家。」</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 1.6.0_20</li>
+                <li>Maven 2.2.1</li>
+                <li>Spring LDAP 1.3.0.RELEASE</li>
+                <li>OpenDS 2.2</li>
+            </ul>
+        </div>
+        <h2>Part 1: Connection to OpenDS server</h2>
+        <p>有Spring LDAP的協助，就不需要自己寫程式initial DirContext來連線到LDAP server。而且也可以有類似HibernateTemplate的LdapTemplate可以用。而要需要和LDAP server溝通的程式只需要注入LdapTemplate的instance即可。</p>
+        <h3>Listing 1. appContext.xml</h3>
+        <pre name="code" class="xml:controls:firstline[13]">
+&lt;bean id="contextSource" class="org.springframework.ldap.core.support.LdapContextSource">
+    &lt;property name="url" value="ldap://localhost:1389" />
+    &lt;property name="base" value="dc=example,dc=com" />
+    &lt;property name="userDn" value="cn=Directory Manager" />
+    &lt;property name="password" value="password" />
+&lt;/bean>
+
+&lt;bean id="ldapTemplate" class="org.springframework.ldap.core.LdapTemplate">
+    &lt;constructor-arg ref="contextSource" />
+&lt;/bean>
+        </pre>
+        <h2>Part 2: Read (search)</h2>
+        <p>因為測試Spring LDAP連的OpenDS是我測試CAS使用的那個OpenDS Server，employeeNumber被我借用來當成status欄位。因此下列的查詢語法對我而言是查詢出所有可以登入CAS的使用者的cn。下面的程式就只是拿回cn attribute value的List；透過mapFromAttributes我們也可以傳回自己想要的物件的List，以這個例子而言，可以傳回Person物件的List。</p>
+        <h3>Listing 2. PersonDaoImpl#getAllPersonNames</h3>
+        <pre name="code" class="java:controls:firstline[25]">
+    public List getAllPersonNames() {
+        return ldapTemplate.search( "", "(&(objectclass=person)(employeeNumber=0))",
+            new AttributesMapper() {
+                public Object mapFromAttributes(Attributes attrs) throws NamingException {
+                    return attrs.get("cn").get();
+                }
+            } );
+    }
+        </pre>
+        <h2>Part 3: Create (bind)</h2>
+        <p>接著是嘗試透過Spring LDAP在OpenDS上建立一個新的使用者資訊，而目的是建立的使用者可以透過測試sso的webapp可以使用那個使用者登入系統。</p>
+        <p>開始使用bind, rebind...等功能之前，由Spring LDAP Java Doc看一下LdapTemplate。可以看到這些basic operation要用的method都有一種接受Name物件在LDAP tree中定出位置的signature。因此先寫一個建立distinguished name的method備用。</p>
+        <h3>Listing 3. PersonDaoImpl#buildDn</h3>
+        <pre name="code" class="java:controls:firstline[70]">
+    protected Name buildDn(Person p) {
+        // 這個不用喔 因為contextSource有設他會加進去
+        // 按照範例加了會爆掉
+        //DistinguishedName dn = new DistinguishedName(BASE_DN);
+        DistinguishedName dn = new DistinguishedName();
+        dn.add("ou", "People");
+        dn.add("uid", p.getUid());
+        return dn;
+    }
+        </pre>
+        <p>有了buildDb()之後，我們還需要一個method幫我們從Person物件產生javax.naming.directory.Attributes的物件。除了必要欄位之外，我只多做跟之前修改後CAS登入需要的userPassword和employeeNumber這兩個attributes。</p>
+        <h3>Listing 4. PersonDaoImpl#buildAttributes</h3>
+        <pre name="code" class="java:controls:firstline[80]">
+    private Attributes buildAttributes(Person p) {
+        Attributes attrs = new BasicAttributes();
+        BasicAttribute ocattr = new BasicAttribute("objectclass");
+        ocattr.add("top");
+        ocattr.add("organizationalperson");
+        ocattr.add("inetorgperson");
+        ocattr.add("person");
+        
+        attrs.put(ocattr);
+        attrs.put("cn", p.getUsername());
+        attrs.put("sn", p.getUsername());
+        attrs.put("uid", p.getUid());
+        attrs.put("userPassword", p.getPassword());
+        attrs.put("employeeNumber", p.getEmployeeNumber());
+        return attrs;
+   }
+        </pre>
+        <p>準備工作做好create person的工作就很單純。</p>
+        <h3>Listing 5. PersonDaoImpl#create</h3>
+        <pre name="code" class="java:controls:firstline[34]">
+    /**
+     * bind to ldap
+     **/
+    public void create(Person p) {
+        Name dn = buildDn(p);
+        ldapTemplate.bind(dn, null, buildAttributes(p));
+    }
+        </pre>
+        <p>一開始以為要自己把userPassword加密好，不想研究OpenDS預設的加鹽的SHA(SSHA)。因此寫了一個加密程式，沒想到程式寫完跑unit test程式的結果竟然是測試程式寫錯，測試之後並不需要自己雞婆做這一段（看測試報告會知道OpenDS會抱怨說你不用雞婆把userPassword attribute加密給他，讓他很難做事），因此<strong>只要把clear text設定到userPasswrod attribute，在建立之後userPassword就是已經用OpenDS預設的SSHA加密。</strong></p>
+        <h3>Listing 6. Unit test code for create method</h3>
+        <pre name="code" class="java:controls:firstline[23]">
+    @Test
+    public void testCreate() {
+        Person p = new Person();
+        p.setUsername( "test" );
+        p.setUid( "user003" );
+        p.setEmployeeNumber( "0" );
+        // 其實不用雞婆加密勒....
+        // p.setPassword( SHA.makeLDAPEncodeString( "password" ) );
+        p.setPassword( "password" );
+        
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        personDAO.create( p );
+    }
+        </pre>
+        <p>unit test成功之後，就是用SimpleWeb2+CAS來測試是否可用test/password登入。</p>
+        <h2>Part 4: Update (rebind & modifyAttributes)</h2>
+        <p>update ldap上的資料在chapter 2講了兩種作法，一個是使用rebind method，另一個是使用modifyAttributes method。</p>
+        <p><strong>rebind(dn: Name, obj: Object, attributes: Attributes)</strong>: 的行為是從LDAP tree上刪除一筆entry，然後再存一筆新的entry進去。</p>
+        <p><strong>modifyAttributes(dn: Name, mods: ModificationItem[])</strong>: 由mods裡的attributes去update LDAP tree上dn所指的那個entry的資料。</p>
+        <h3>Listing 7. PersonDaoImpl#update and PersonDaoImpl#modifyEmployeeNumber</h3>
+        <pre name="code" class="java:controls:firstline[42]">
+    /**
+     * update by rebind to ldap
+     * all attribute should provide
+     **/
+    public void update(Person p) {
+        Name dn = buildDn(p);
+        ldapTemplate.rebind(dn, null, buildAttributes(p));
+    }
+    
+    /**
+     * update employeeNumber by modifyAttributes
+     * 只會改你叫她改得，這才是乖孩子
+     **/
+    public void modifyEmployeeNumber(Person p) {
+        Name dn = buildDn( p );
+        Attribute attr = new BasicAttribute( "employeeNumber", p.getEmployeeNumber() );
+        ModificationItem item = new ModificationItem( DirContext.REPLACE_ATTRIBUTE, attr );
+        ldapTemplate.modifyAttributes( dn, new ModificationItem[] { item } );
+    }
+        </pre>
+        <h3>Listing 8. Unit test for rebind and modifyAttributes</h3>
+        <pre name="code" class="java:controls:firstline[39]">
+    @Test
+    public void testUpdate() {
+        Person p = new Person();
+        p.setUsername( "test1" );
+        p.setUid( "user003" );
+        // 把setEmployeeNumber comment掉看看會不會不見 
+        // => org.springframework.ldap.InvalidAttributeValueException: 'employeeNumber' has no values.; nested exception is javax.naming.directory.InvalidAttributeValueException: 'employeeNumber' has no values.; remaining name 'uid=user003,ou=People'
+        p.setEmployeeNumber( "1" );
+        p.setPassword( "password" );
+        
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        personDAO.update( p );
+    }
+    
+    @Test
+    public void testUpdateEmployeeNumber() {
+        Person p = new Person();
+        // 不會被改到
+        p.setUsername( "test2" );
+        p.setUid( "user003" );
+        p.setEmplyeeNumber( "0" );
+        // 不會被改到
+        p.setPassword( "password1" );
+        
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        personDAO.modifyEmployeeNumber( p );
+    }
+        </pre>
+        <h2>Part 5: Delete (unbind)</h2>
+        <p>由『快快樂樂用Spring LDAP』（哈 我是指Spring LDAP官方文件）的basic operation部份只有用LpdaTemplate#unbind( dn: Name )，要用這個method來unbind ldap tree上的entry，必須這個entry沒有任何的child node；否則就要改用LdapTemplate#unbind( dn: Name, recursive: boolean)這個method。</p>
+        <h3>Listing 9. PersonDaoImpl#delete</h3>
+        <pre name="code" class="java:controls:firstline[62]">
+    /**
+     * delete (unbind)
+     **/
+    public void delete(Person p) {
+        Name dn = buildDn( p );
+        ldapTemplate.unbind( dn );
+    }
+        </pre>
+        <p></p>
+        <h3>Listing 10. Unit test for delete person</h3>
+        <pre name="code" class="java:controls:firstline[71]">
+    @Test
+    public void testDelete() {
+        Person p = new Person();
+        p.setUsername( "test2" );
+        // 故意給錯也不會跟你說她砍不到東西勒 真是讚
+        // p.setUid( "user003a" );
+        p.setUid( "user003" );
+        p.setEmplyeeNumber( "55" );
+        p.setPassword( "password1" );
+        
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDaoImpl personDAO = (PersonDaoImpl) ctx.getBean( "personDao" );
+        
+        personDAO.delete( p );
+    }
+        </pre>
+        <h2>後續</h2>
+        <p>搞定basic operation，後續還有下列大塊要努力</p>
+        <div>
+            <ol>
+                <li>from DirContextAdapter to DirContext</li>
+                <li>Transaction, configuration and pool</li>
+            </ol>
+        </div>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Spring LDAP 1.3.0.RELEASE Document Chapter 1 & 2</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/10/01
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

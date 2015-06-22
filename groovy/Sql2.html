@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Groovy - Sql 2 - Batch Insert</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Groovy - Sql 2 - Batch Insert</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+    最近上演了一下multithread with single dml vs single thread with batch dml...，還好沒有寫完multithread with batch dml版本。不然最後結果會讓自己吐血。
+    </p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.7.2</li>
+            <li>Sun JDK 1.6.0_10</li>
+            <li>Oracle 10gR2</li>
+        </ul>
+    </div>
+    <h2>Batch SQL</h2>
+    <p>
+    在groovy使用batch sql的寫法如下，下面程式是從自己寫的某個thread節錄下來，這是Worker(或稱為Consumer) Thread的部分程式碼。
+    </p>
+    <p>
+    worker負責從queue裡面取出要負責寫入資料庫的資料，而batchSize則是用來控制要多少筆DML做一次batch dml。
+    </p>
+    <h3>Listing. Batch Insert</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+def target = Sql.newInstance(
+            '${target.db.url}',
+            '${target.db.user}',
+            '${target.db.pwd}',
+            'oracle.jdbc.OracleDriver'
+        )
+    )
+    
+def insertCnts = target.withBatch { stmt ->
+    for( i in 1..batchSize ) {
+        def param = queue.poll()
+        if( param != null ) {
+            def sql = "insert into test ( id, name) values ($param.id, $param.name)"
+            stmt.addBatch( sql )
+        
+        }
+    }
+}
+    </pre>
+    <p>
+    呼叫Sql的static factory method取得物件那邊很怪是因為我選擇用maven的resource filtering把那些資訊弄進去。
+    </p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Groovy Web Site</li>
+            <li>Groovy in Action, First Edition</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2010/04/26
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

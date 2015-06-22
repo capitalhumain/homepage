@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>Lab - Function 04 - Scope</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Lab - Function 04 - Scope</h1>
+</div>
+<div class="articlecontent">
+    <h2>碎碎唸</h2>
+    <p>
+    職場上有許多偉大的人物，有的人是因為對社會、企業或人類的知識有一定貢獻而讓人覺得偉大；
+    有的是因為自己能力很強而表現出偉大的態勢；有的是因為所在的公司或機構偉大而自認為自己很偉大而有許多自以為偉大的言論，
+    通常這類人最常掛在嘴邊的就是『他X的！把xxx當成什麼』(xxx請換成那種傢伙呆的公司)之類的話。
+    </p>
+    <h2>Preface</h2>
+    <p>
+    或許是名稱、或許是語法看起來類似一開始很天真的認為在這個議題JavaScript跟Java語法沒太大差別。
+    ...還真是愚蠢的傢伙。
+    </p>
+    <h2>Scope</h2>
+    <p>
+    寫程式的時候我們會很在乎變數生命週期這個議題，因為像Java這些語言變數可以短暫的生存在{}包起來的block裡面，
+    因此我們會認為變數在要使用的時候才進行宣告、定義是比較好的寫法；但是這個良好的寫作習慣在JavaScript
+    卻不見得成立。
+    </p>
+    <p>
+    如Java, C這些語言而言，都有block scope的變數。如下面簡單的Java程式。在for-each block宣告使用的elem
+    變數在for-each之外，是無法使用的。
+    </p>
+    <h3>Listing. Java block scope example</h3>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+    int[] arr = {1, 2, 3, 4};
+    for(int elem : arr) {
+        System.out.println(elem);
+    }
+    // System.out.println(elem);    // elem cannot resolved
+    </pre>
+    <p>
+    在JavaScript寫一個類似的東西會發現，JavaScript沒有block scope的變數這種東西。因此為了避免變數造成潛在的Bug
+    比較好的做法應該是在程式一開始就宣告要使用的變數。
+    </p>
+    <a href="example/scope_01.html" target="_blank">Run Scope Example 1</a>
+    <h3>Listing. JavaScript Example for test block scope</h3>
+    <pre name="code" class="javascript:nocontrols:firstline[5]">
+    var arr = [ 'glycine', 'alanine', 'valine' ];
+    var i = 0;
+
+    for( i=0; i&lt;arr.length; i++ ) {
+        var theaa = arr[i];
+    } // for
+    
+    document.getElementById( 'result1' ).innerHTML = theaa;     // 不是undefined喔，而是valine
+    </pre>
+    <p>
+    儘管JavaScript沒有block scope，但是有function block。接著在scope_01.html裡有一個簡單的範例看看這點。
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[14]">
+    document.getElementById( 'btn' ).onclick = function() {
+        var theaa2 = 'aspartate';
+        alert( theaa2 );
+    };
+    
+    // could not access theaa2 variable
+    alert( 'is theaa2 undefined? ' + (typeof theaa2 === 'undefined') );    //  theaa2 is undefined
+    </pre>
+    <p>
+    如下面程式片段，呈現另一個簡單的例子
+    </p>
+    <a href="example/scope_03.html" target="_blank">Run Example 2</a>
+    <pre name="code" class="javascript:nocontrols:firstline[5]">
+    var f1 = function() {
+        var a = 1;
+        return f2();
+    };
+    var f2 = function() {
+        return a;
+    };
+    </pre>
+    <h2>Information Hidden</h2>
+    <p>
+    根據對JavaScript的scope的了解，當我們再提供一些服務的時候，有一些內部狀態不希望給外界使用者可以輕易變更，
+    這個時候就可以透過類似的方法來將某些property (variable or function...)隱藏在function object裡面。
+    下面寫一個簡單的function object來代表一本書，做到information hidden的關鍵在於<strong>create and invoke anoymous functioin 
+    object</strong>和<strong>return new function object</strong>。
+    </p>
+    <a href="example/hide_01.html" target="_blank">Run Example 1</a>
+    <pre name="code" class="javascript:nocontrols:firstline[5]">
+    var Book = (function() {
+        // private attribute
+        var numOfBook = 0;
+        // private function
+        function checkIsbn( isbn ) {
+            if( isbn.length === 10 )
+                return true;
+            return false;
+        };
+        
+        return function( isbn, title, author ) {
+            if( checkIsbn( isbn ) ) {
+                this.isbn = isbn;
+                this.title = title;
+                this.author = author;
+                numOfBook += 1;
+            } else {
+                throw {
+                    name: 'DataValidateError',
+                    message: 'ISBN code not valid'
+                } // throw
+            } // else
+            
+            this.getTitle = function() {
+                return this.title;
+            };
+            
+            this.getNumOfBook = function() {
+                return numOfBook;
+            };
+        };
+    })();
+    </pre>
+    <p>
+    因此當我們使用Constructor Invocation Pattern呼叫Book function object的時候，拿到的物件是無法直接存取
+    <strong>private static variables</strong>和<strong>private static functions</strong>。
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[37]">
+    window.onload = function() {
+        var book = new Book( '1847194141', 'Object Oriented JavaScript', 'Stoyan Stefanov' );
+        document.getElementById( 'getTitle' ).innerHTML = book.getTitle();
+        // undefined 真讚
+        document.getElementById( 'nobprop' ).innerHTML = book.numOfBook;                
+        document.getElementById( 'getNumOfBook' ).innerHTML = book.getNumOfBook();
+        // 也是undefined
+        document.getElementById( 'checkIsbn' ).innerHTML = (typeof book.checkIsbn);     
+        var book2 = new Book( '047022780X', 
+                              'Professional JavaScript for Web Developers', 
+                              'Nicholas C. Zakas' );
+        alert( 'num of books: ' + book.getNumOfBook() );
+        try {
+            var book2 = new Book( 'notvalid', 'N/A', 'N/A' );
+        } catch(e) {
+            alert( 'create book2 failed: ' + e.message );
+        } // catch
+        // error: could not know checkIsbn() function
+        // alert( book.checkIsbn( '1111111111111111' ) );   
+        // alert( book.constructor );
+    };
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>ECMA-262</li>
+            <li>JavaScript: The Good Parts</li>
+            <li>Object-Oriented JavaScript</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/08/19
+</address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

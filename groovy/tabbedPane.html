@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+    <title>SwingBuilder - tabbedPane</title>
+</head>
+<body>
+<div>
+    <h1 class="header">SwingBuilder - tabbedPane</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+因為Groovy in Action 2Ed的Pre-Order活動，又把之前敗的Groovy in Action拿出來復習一下。最近剛好想寫一個
+XMLPost的小工具，雖然沒寫過Desktop程式，想突發奇想用SwingBuilder做看看。這個是結合Groovy網站資料
+和自己踹tabbedPane的雜記
+    </p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.6.3</li>
+            <li>Sun JDK 1.6.0_10</li>
+        </ul>
+    </div>
+    <h2>tabbedPane attributes</h2>
+    <p>
+SwingBuilder的tabbedPane產物就是一個JTabbedPane的物件。可以使用的attribute整理如下
+    </p>
+    <table style="width: 700px;border: 1px solid #C3C3C3; margin: 10px;" cellpadding="2" cellspacing="0">
+    <tr style="">
+        <th>Name</th>
+        <th>Description</th>
+        <th>Example</th>
+    </tr>
+    <tr>
+        <td>tabPlacement</td>
+        <td>
+        設定Tab的位置，可以設定的值如下
+        <ul>
+            <li>JTabbedPane.TOP</li>
+            <li>JTabbedPane.BOTTOM</li>
+            <li>JTabbedPane.LEFT</li>
+            <li>JTabbedPane.RIGHT</li>
+        </ul>
+        </td>
+        <td><a href="#tabPlacement">Example</a></td>
+    </tr>
+    <tr>
+        <td>tabLayoutPolicy</td>
+        <td>
+        設定當tab數目太多超過一行能呈現的時候要怎麼處理，可以設定的值如下
+        <ul>
+            <li>JTabbedPane.WRAP_TAB_LAYOUT: 會用多行來呈現tabs</li>
+            <li>JTabbedPane.SCROLL_TAB_LAYOUT: 會用一行來呈現tabs，在右邊會出一個scroll可以移動看的到的tabs</li>
+        </ul>
+        </td>
+        <td><a href="#tabLayoutPolicy">Example</a></td>
+    </tr>
+    <tr>
+        <td>selectedIndex</td>
+        <td>
+        設定預設被selected的Tab，這個attribute不可以和selectedComponent一起使用。這個參數是0 based。
+        </td>
+        <td><a href="#selectedIndex">Example</a></td>
+    </tr>
+    <tr>
+        <td>selectedComponent</td>
+        <td>
+        設定預設被selected的Tab，這個attribute不可以和selectedIndex一起使用。
+        </td>
+        <td><a href="#selectedComponent">Example</a></td>
+    </tr>
+    </table>
+    <h2>tabbedPane Content</h2>
+    <p>待補</p>
+    <h2>SwingBuilder.tabbedPane Examples</h2>
+    <a name="tabPlacement"></a>
+    <p>這是來自Groovy官方網站的程式，主要是製作Tab在左邊的JTabbedPane。</p>
+    <h3>Listing. tabPlacementLeft.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.swing.SwingBuilder
+import javax.swing.JTabbedPane
+import javax.swing.*
+import java.awt.BorderLayout as BL
+import javax.swing.BorderFactory as BF
+import javax.swing.WindowConstants as WC
+
+swing = new SwingBuilder()
+def frame = swing.frame(title: 'Demo', 
+                    size: [500, 300],
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    borderLayout()
+    tabbedPane(tabPlacement: JTabbedPane.LEFT, constraints: BL.CENTER) {
+          label('One', title:'One1', tabToolTip:'Uno!')
+          label('Green', title:'Green1', tabBackground:java.awt.Color.GREEN)
+          label('Stop Operation', title:'Stop Operation1', tabMnemonic:'O')
+          label('Stop Operation', title:'Stop Operation1', tabDisplayedMnemonicIndex:5)
+    }
+}
+frame.show()
+    </pre>
+    <a name="tabLayoutPolicy"></a>
+    <p>這個範例用來看tabLayoutPolicy = JTabbedPane.SCROLL_TAB_LAYOUT的狀況。</p>
+    <h3>Listing. tabLayoutPolicyScroll.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.swing.SwingBuilder
+import javax.swing.*
+import javax.swing.WindowConstants as WC
+
+swing = new SwingBuilder()
+def frame = swing.frame(title: 'Demo', 
+                    size: [300, 100],
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    
+    tabbedPane( tabLayoutPolicy: JTabbedPane.SCROLL_TAB_LAYOUT ) {
+        panel(name: 'Tab One') {
+            label('One')
+        }
+        panel(name: 'Tab Two') {
+            label('Two')
+        }
+        panel(name: 'Tab Three') {
+            label('Three')
+        }
+        panel(name: 'Tab Four') {
+            label('Four')
+        }
+        panel(name: 'Tab Five') {
+            label('Five')
+        }
+    }
+}
+frame.show()
+    </pre>
+    <a name="selectedIndex"></a>
+    <p>用上一個範例加上selectedIndex = 3的case</p>
+    <h3>Listing. selectedIndex.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.swing.SwingBuilder
+import javax.swing.*
+import javax.swing.WindowConstants as WC
+
+swing = new SwingBuilder()
+def frame = swing.frame(title: 'Demo', 
+                    size: [300, 100],
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    
+    tabbedPane( tabLayoutPolicy: JTabbedPane.SCROLL_TAB_LAYOUT, selectedIndex: 3 ) {
+        panel(name: 'Tab One') {
+            label('One')
+        }
+        panel(name: 'Tab Two') {
+            label('Two')
+        }
+        panel(name: 'Tab Three') {
+            label('Three')
+        }
+        panel(name: 'Tab Four') {
+            label('Four')
+        }
+        panel(name: 'Tab Five') {
+            label('Five')
+        }
+    }
+}
+frame.show()
+    </pre>
+    <a name="selectedComponent"></a>
+    <p>selectedComponent的case，這個是騙肖ㄟ，因為昨天晚上搞不出Componet物件讓selectedComponent可以從tabbedPane找的到</p>
+    <h3>Listing. selectedComponent.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.swing.SwingBuilder
+import javax.swing.*
+import javax.swing.WindowConstants as WC
+
+swing = new SwingBuilder()
+
+def frame = swing.frame(title: 'Demo', 
+                    size: [300, 100],
+                    defaultCloseOperation: WC.EXIT_ON_CLOSE)
+
+def tabs = swing.tabbedPane( tabLayoutPolicy: JTabbedPane.SCROLL_TAB_LAYOUT )
+
+def tab1 = swing.panel(name: 'Tab One') {
+    label('One')
+}
+
+def tab2 = swing.panel(name: 'Tab Two') {
+    label('Two')
+}
+
+def tab3 = swing.panel(name: 'Tab Three') {
+    label('Three')
+}
+
+def tab4 = swing.panel(name: 'Tab Four') {
+    label('Four')
+}
+
+def tab5 = swing.panel(name: 'Tab Five') {
+    label('Five')
+}
+
+tabs.add( tab1 )
+tabs.add( tab2 )
+tabs.add( tab3 )
+tabs.add( tab4 )
+tabs.add( tab5 )
+
+tabs.setSelectedComponent( tab2 )
+
+frame.add( tabs )
+
+frame.show()
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Groovy Web Site <a href="http://groovy.codehaus.org/SwingBuilder.tabbedPane">Link</a></li>
+            <li>Groovy in Action First Edition</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/07/07
+</address>
+</body>
+</html>

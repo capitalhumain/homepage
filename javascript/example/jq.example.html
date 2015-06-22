@@ -1,0 +1,97 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Example</title>
+    <style type="text/css">
+    .segment {
+        margin-left: 10px;
+        margin-right: 10px;
+        margin-top: 5px;
+        padding: 5px;
+        background-color: #eeeeee;
+    }
+    
+    .apply {
+        font-size: small;
+    }
+    
+    th, td {
+        padding: 3px;
+    }
+    </style>
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js"></script>
+</head>
+<body>
+    <div id="preface" class="segment">
+        <a class="apply" href="#">[show paragraph 1]</a>
+        <p>
+        沒記錯的話以前好像在Google blog和yahoo blog整理過Longest Common Subsequence (LCS) Problem
+        的東西。現在整理的是Global Alignment Problem的Needleman-Wunsch Algorithm在JavaScript實作。
+        差別只在於之前LCS是用C++實作。這個問題的定義如下
+        </p>
+        <a class="apply" href="#">[show paragraph 2]</a>
+        <p>
+            Find the best alignment between two strings under a given scoring matrix.
+        </p>
+        <a class="apply" href="#">[show paragraph 3]</a>
+        <p>
+        這邊使用Wikipedia上舉例的scoring matrix (如下)和gap penality (-5)來實作
+
+        <table cellspacing='0' style="font-family: 'Courier New'; margin-left: 30px;">
+        <tbody><tr>
+        <th>-</th>
+        <th>A</th>
+        <th>G</th>
+        <th>C</th>
+        <th>T</th>
+        </tr>
+        <tr>
+        <th>A</th>
+        <td align="right">10</td>
+        <td>-1</td>
+        <td>-3</td>
+        <td>-4</td>
+        </tr>
+        <tr>
+        <th>G</th>
+        <td>-1</td>
+        <td align="right">7</td>
+        <td>-5</td>
+        <td>-3</td>
+        </tr>
+        <tr>
+        <th>C</th>
+        <td>-3</td>
+        <td>-5</td>
+        <td align="right">9</td>
+        <td align="right">0</td>
+        </tr>
+        <tr>
+        <th>T</th>
+        <td>-4</td>
+        <td>-3</td>
+        <td align="right">0</td>
+        <td align="right">8</td>
+        </tr>
+        </tbody></table>
+        </p>
+    </div>
+    <div id="seg1" class="segment">
+        <p>
+        因為需要Matrix來儲存計算的結果，為了方便需要使用Douglas Crockford書上產生multiple dimension
+        array的東西；另外根據演算法由substitution matrix計算好的三個mapping的值也必須取最大值放到matrix
+        裡面，待全部計算完畢之後解讀sequence alignment的結果，所以為Array新增了一個max function。
+        </p>
+    </div>
+    <script type="text/javascript">
+    $( function() {
+        $( '.apply' ).bind( 'click', function() {
+            // 選擇笨的實作方法把同一個章節的paragraph都隱藏，
+            // 在打開要打開的paragraph
+            $( 'div#preface p' ).hide();
+            $( this ).next().show();
+        } );
+    } );
+    </script>
+</body>
+</html>

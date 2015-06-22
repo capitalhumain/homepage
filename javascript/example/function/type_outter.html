@@ -1,0 +1,42 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>typeof for function test</title>
+    <style type="text/css">
+    span {
+        color: red;
+    }
+    </style>
+</head>
+<body>
+<div>
+IE6(?)使用typeof無法正確判斷另一個window的array和function object。 ie7 or ie8似乎正常@@"
+<ul>
+    <li>typeof frame1.contentWindow.innerfunc: <span id="r1"></span> (應該是function)</li>
+    <li>typeof obj1Elem: <span id="r2"></span> (不應該是function)</li>
+    <li>typeof /test/: <span id="r3"></span> (不應該是function)</li>
+    <li>Safari 3 typeof NodeList (typeof document.firstChild.childNodes): <span id="sresult"></span> (不應該是function)</li>
+</ul>
+</div>
+<object id="obj1">
+</object>
+<iframe src="type_inner.html" id="frame1">
+</iframe>
+<script type="text/javascript">
+window.onload = function() {
+    var doc = document,
+        frame1 = doc.getElementById( 'frame1' ),
+        obj1Elem = doc.getElementById( 'obj1' ),
+        r1Elem = doc.getElementById( 'r1' ),
+        r2Elem = doc.getElementById( 'r2' ),
+        r3Elem = doc.getElementById( 'r3' ),
+        sresultElem = doc.getElementById( 'sresult' );
+    r1Elem.innerHTML = typeof frame1.contentWindow.innerfunc;
+    // alert( frame1.contentWindow.innerfunc.call() );
+    r2Elem.innerHTML = typeof r2Elem;
+    r3Elem.innerHTML = typeof /test/;
+    sresultElem.innerHTML = typeof doc.firstChild.childNodes;
+};
+</script>
+</body>
+</html>

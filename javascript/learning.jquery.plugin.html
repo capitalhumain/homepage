@@ -1,0 +1,299 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Learning jQuery - plug-in</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Learning jQuery - plug-in</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>天上的雲朵果然無法理解太多人世間的事情...最近竟然連走在路上看到天空的雲朵都會覺得羨慕</p>
+        <h2>Basic</h2>
+        <p>首先，一個程式設計的技巧，在Douglas Crockford的書裡面稱為cascade的技巧（有的書稱為chain or chaining）。之前整理過這個東西，在<a href="lab.function.03.html" target="_blank">這裡</a>。</p>
+        <h2>jQuery.fn object</h2>
+        <p>jQuery最重要的東西，也是一個很大的literal object，這個literal object也是jQuery物件的prototype所指向的物件。之前有大概看過1.3.2的<a href="learning.jquery.init.html" target="_blank">jQuery.fn.init</a> function。</p>
+        <pre name="code" class="javascript:controls:firstline[74]">
+jQuery.fn = jQuery.prototype = {
+// ...之後省略
+        </pre>
+        <h2>jQuery.fn.each function</h2>
+        <p></p>
+        <pre name="code" class="javascript:controls:firstline[244]">
+// Execute a callback for every element in the matched set.
+// (You can seed the arguments with an array of args, but this is
+// only used internally.)
+each: function( callback, args ) {
+    return jQuery.each( this, callback, args );
+},
+        </pre>
+        <p>從Line 361的執行jQuery.extend時給的literal object可以看到內部使用的jQuery.each function的定義。首先，先大概看一下jQuery.extend。</p>
+        <p>從source code看來這個function，除了可以extends jQuery object的功能之外，還可以用來extends其他object。第一個參數如果是boolean則是用來設定是否要做deep copy。</p>
+        <p>如果是deep copy的狀況則在後面可以看到用遞迴的方式來達成這個功能。</p>
+        <p><em>Extend jQuery</em>呼叫這個function的時候提供一個literal object裡面寫好想擴充的功能。這個使用在jQuery source code可以常常看到。</p>
+        <p><em>Extend other object</em>呼叫這個function的時候提供兩個literal object，目的是用第二個object擴充第一個object的功能。</p>
+        <pre name="code" class="javascript:controls:firstline[305]">
+jQuery.extend = jQuery.fn.extend = function() {
+	// copy reference to target object
+	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
+
+	// Handle a deep copy situation
+	if ( typeof target === "boolean" ) {
+		deep = target;
+		target = arguments[1] || {};
+		// skip the boolean and the target
+		i = 2;
+	}
+
+	// Handle case when target is a string or something (possible in deep copy)
+	if ( typeof target !== "object" && !jQuery.isFunction(target) ) {
+		target = {};
+	}
+
+	// extend jQuery itself if only one argument is passed
+	if ( length === i ) {
+		target = this;
+		--i;
+	}
+
+	for ( ; i < length; i++ ) {
+		// Only deal with non-null/undefined values
+		if ( (options = arguments[ i ]) != null ) {
+			// Extend the base object
+			for ( name in options ) {
+				src = target[ name ];
+				copy = options[ name ];
+
+				// Prevent never-ending loop
+				if ( target === copy ) {
+					continue;
+				}
+
+				// Recurse if we're merging object literal values or arrays
+				if ( deep && copy && ( jQuery.isPlainObject(copy) || jQuery.isArray(copy) ) ) {
+					var clone = src && ( jQuery.isPlainObject(src) || jQuery.isArray(src) ) ? src
+						: jQuery.isArray(copy) ? [] : {};
+
+					// Never move original objects, clone them
+					target[ name ] = jQuery.extend( deep, clone, copy );
+
+				// Don't bring in undefined values
+				} else if ( copy !== undefined ) {
+					target[ name ] = copy;
+				}
+			}
+		}
+	}
+
+	// Return the modified object
+	return target;
+};
+        </pre>
+        <p>接著就針對<em>Extend other object</em>寫一個簡單的例子，可以看到下面這兩個簡單的object透過jQuery.extend( objA, objB )之後，objA就有objB的funcB1這個function。</p>
+        <h3>Listing. jQuery.extend.1.html example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+    var objA = {
+        funcA1: function() {
+            alert( 'function A1' );
+        }
+    }, objB = {
+        funcB1: function() {
+            alert( 'function B1' );
+        }
+    };
+    jQuery.extend( objA, objB );
+    if( objA.funcB1 ) {
+        alert( 'objA has funcB1' );
+        objA.funcB1();
+    }
+    if( !objB.funcA1 ) {
+        alert( 'objB do not have funcB1' );
+    }
+        </pre>
+        <p>有關jQuery.extend function還可以看以前寫<a href="learning.jquery.extend.html" target="_blank">這個</a>。</p>
+        <p>接下來看內部使用的那個each function可以區分成四個狀況（以下粗體強調是source code裡面each function的arguments name）</p>
+        <div>
+            <ol>
+                <li><strong>object</strong> is an array without <strong>args</strong></li>
+                <li><strong>object</strong> is an array with <strong>args</strong></li>
+                <li><strong>object</strong> is an object without <strong>args</strong></li>
+                <li><strong>object</strong> is an object with <strong>args</strong></li>
+            </ol>
+        </div>
+        <p>如果object argument是object，則會針對object每一個property來呼叫callback。而callback function裡的this都是property的值。類似的如果是object argument是array，則callback function執行時的this則是執行到的element。</p>
+        <p>如果有提供args物件，相當然而callback function則可以處理那些arguments。如果沒有提供args比較特別的是，arguments物件長度會是2，以<strong>object</strong>是array來說，則arguments分別是該element在array中的位置和element內容；如果<strong>object</strong>是object，則callback function的arguments分別為property name and property value。</p>
+        <pre name="code" class="javascript:controls:firstline[550]">
+// args is for internal usage only
+each: function( object, callback, args ) {
+	var name, i = 0,
+		length = object.length,
+		isObj = length === undefined || jQuery.isFunction(object);
+
+	if ( args ) {
+		if ( isObj ) {
+			for ( name in object ) {
+				if ( callback.apply( object[ name ], args ) === false ) {
+					break;
+				}
+			}
+		} else {
+			for ( ; i < length; ) {
+				if ( callback.apply( object[ i++ ], args ) === false ) {
+					break;
+				}
+			}
+		}
+
+	// A special, fast, case for the most common use of each
+	} else {
+		if ( isObj ) {
+			for ( name in object ) {
+				if ( callback.call( object[ name ], name, object[ name ] ) === false ) {
+					break;
+				}
+			}
+		} else {
+			for ( var value = object[0];
+				i < length && callback.call( value, i, value ) !== false; value = object[++i] ) {}
+		}
+	}
+
+	return object;
+},
+        </pre>
+        <p>一個簡單的測試程式如下，看看有沒有提供<strong>args</strong>的差別</p>
+        <h3>Listing. jQuery.each.1.html example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+$( function() {
+    $( 'p' ).each( function() {
+        var result = $( '#res1' ).html();
+        result = result + '<br/>' + $(this) + '|' + arguments[0] + "|" + arguments[1];
+        $( '#res1' ).html( result );
+    } );
+    $( 'p' ).each( function() {
+        var result = $( '#res1' ).html();
+        result = result + '<br/>' + $(this) + '|' + arguments[0] + '|' + arguments[1];
+        $( '#res1' ).html( result );
+    }, [1, 2] );
+} );
+        </pre>
+        <h2>建立自己的jQuery Plug-in</h2>
+        <p>可由兩個條件來區分擴充jQuery的寫法。就是想要用來擴充jQuery的function是否會在jQuery chain使用到或者在selector api結果的物件上使用。如果兩個答案都是否那就透過下面寫法就可以達到</p>
+        <h3>Listing. jQuery.chain.1.html example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+jQuery.bold = function() {
+    $( 'p' ).css( 'font-weight', 'bold' );
+};
+
+$(function() {
+    // $( 'p' ).bold();   // error $( 'p' ).bold is not a function
+    jQuery.bold();        // it's work
+});
+        </pre>
+        <p>可以由這個例子看到這樣擴充的function，在第六行嘗試在selector找到的東西上使用bold function的方式就會收到javascript error的禮物。</p>
+        <p>接下來改成用jQuery.fn的方式來擴充jQuery會如何</p>
+        <h3>Listing. jQuery.chain.2.html example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+jQuery.fn.bold = function() {
+    $(this).css( 'font-weight', 'bold' );
+};
+
+$(function() {
+    $( 'p' ).bold();
+    // $( 'p' ).bold().css( 'color', 'red' );   // 令人悲傷...沒有chaining的特色
+});
+        </pre>
+        <p>在上面那段程式中Line 7可以看到會發生javascript error，因為bold function並沒有return任何東西，導致想在undefined執行css function就產生錯誤。雖然這樣寫可以用在jQuery selector之後，但是缺沒有chaining的能力。為了讓擴充的function也具備chaining的能力，必須要做一些修改，因此有了下一個版本</p>
+        <h3>Listing. jQuert.chain2.html revise 1 example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+jQuery.fn.bold = function() {
+    return $(this).css( 'font-weight', 'bold' );
+};
+
+$(function() {
+    $( 'p' ).bold().css( 'color', 'red' );
+});
+        </pre>
+        <p>看起來一切都是在自己掌控下正常的運作，世界真是美好，那麼簡單就可以把自己的function擴充到jQuery從此一帆風順。但是慘劇馬上發生在下面的狀況...</p>
+        <h3>Listing. jQuery.chain.3.html example (殘念版)</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+jQuery.fn.message = function( msg ) {
+    var thetext = $( '#result' ).html();
+    thetext += msg;
+    thetext += '<br/>';
+    $( '#result' ).html( thetext );
+    return $(this);
+};
+
+$(function() {
+    var doc = document, 
+        elem = doc.getElementById( 'header' ), 
+        p1 = doc.getElementById( 'para1' );
+    var obj = [ elem, p1 ];
+    $( obj ).message( 'test' ).css( 'color', 'red' );
+});
+        </pre>
+        <p>在自己擴充的message這個function裡面把message append到id為result的element裡面，然後把呼叫message的物件傳回去，看起來應該可以正常運作。但是很不幸的會發現result element只會出現一次test的訊息，而原本jQuery提供的css function卻可以正確的執行。</p>
+        <p>這樣就表示之前jQuery.chain.2.html revise 1的寫法還是不完整的。面對把array object產生的jQuery object這樣寫法是不ok的。因此把擴充的寫法改成下面的寫法</p>
+        <h3>Listing. jQuery.chain.3.html example revise</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+jQuery.fn.message = function(msg) {
+    return this.each( function() {
+        var thetext = $( '#result' ).html();
+        thetext += msg;
+        thetext += '<br/>';
+        $( '#result' ).html( thetext );
+    } );
+};
+
+$(function() {
+    var doc = document, 
+        elem = doc.getElementById( 'header' ), 
+        p1 = doc.getElementById( 'para1' );
+    var obj = [ elem, p1  ];
+    $( obj ).message( 'test' ).css( 'color', 'red' );
+});
+        </pre>
+        <p>就看到和jQuery source code大量出現和書本上講的擴充寫法的型式出來。因為我比較笨，所以要花很多時間思考為啥要這樣寫並且實際的驗證。所以書上認為不須解釋的東西，我還是要花些時間思考。</p>
+        <pre name="code" class="javascript:controls:firstline[1]">
+jQuery.fn.YOUR_FUNCTION = function() {
+    // 看有沒有需要做一些狀況的判斷和預先資料處理的動作
+    return this.each( function() {
+        // 該做的事情，在這做掉
+    } );
+};
+        </pre>
+        <p>這樣就搞懂(自己的解釋)建立jQuery plug-in的第一步</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>jQuery 1.4.2 source code</li>
+                <li>Javascript Cookbook</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/09/26</i>
+    </address>
+    <script type="text/javascript">
+    $( function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+    } );
+    </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>EqualsAndHashCode</title>
+</head>
+<body>
+<div>
+    <h1 class="header">EqualsAndHashCode</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p></p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.8.0</li>
+            <li>Sun JDK 1.6.0_24</li>
+        </ul>
+    </div>
+    <h2>Using <code>@EqualsAndHashCode</code></h2>
+    <p></p>
+    <div class="codehead">Listing 1. JavaDoc裡的範例</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.EqualsAndHashCode
+
+@EqualsAndHashCode
+class Person {
+    String first, last
+    int age
+}
+
+def p1 = new Person(first: 'John', last: 'Smith', age: 21)
+def p2 = new Person(first: 'John', last: 'Smith', age: 21)
+assert p1 == p2
+
+def map = [:]
+map[p1] = 45
+assert map[p2] == 45
+    </pre>
+    <p><code>EqualsAndHashCode</code>有提供三個影響產生的<code>equals()</code>和<code>hashCode()</code>運算方法的參數可以設定。</p>
+    <ul>
+        <li><code>excludes</code></li>
+        <li><code>callSuper</code></li>
+        <li><code>includeFields</code></li>
+    </ul>
+    <h2>About <code>HashCodeHelper</code></h2>
+    <p><code>org.codehaus.groovy.util.HashCodeHelper</code>有一堆static methods用來計算hash code</p>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Programming Groovy</li>
+            <li>Effective Java</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/05/17
+</address>
+<script language="javascript">
+$(function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="jax-ws,SOAPHandler" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>My Cookbook > Web Service > 如何在JAX-WS client log SOAP Message</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">如何在JAX-WS client log SOAP Message</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Problem</h2>
+        <p>如何在JAX-WS Web Service Client logging JAX-WS送出和收到的SOAP message。主要是由java.sun.com有關JAX-WS handler的文章做出來。</p>
+        <h2>Solution</h2>
+        <p>透過撰寫protocol handler就可以取得SOAP message內容，因為題目是SOAP message，所以當然是實作<code>SOAPHandler</code>這個interface。</p>
+        <h3>Listing. SOAPLoggingHandler.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package datasyncclient;
+
+import java.util.TreeSet;
+import java.util.Set;
+import javax.xml.soap.SOAPMessage;
+import javax.xml.namespace.QName;
+import javax.xml.ws.handler.MessageContext;
+import javax.xml.ws.handler.soap.SOAPHandler;
+import javax.xml.ws.handler.soap.SOAPMessageContext;
+import static java.lang.System.out;
+
+/**
+ *
+ * @author terence
+ */
+public class SOAPLoggingHandler implements SOAPHandler<SOAPMessageContext> {
+
+    public Set<QName> getHeaders() {
+        return new TreeSet<QName>();
+    }
+
+    public boolean handleMessage(SOAPMessageContext context) {
+        logToSTDOUT( context );
+        return true;
+    }
+
+    public boolean handleFault(SOAPMessageContext context) {
+        logToSTDOUT( context );
+        return true;
+    }
+
+    public void close(MessageContext context) {
+    }
+
+    private void logToSTDOUT( SOAPMessageContext context ) {
+        Boolean outboundProperty = (Boolean) context.get( MessageContext.MESSAGE_OUTBOUND_PROPERTY );
+
+        if( outboundProperty.booleanValue() ) {
+            out.println( "\nOutbound message:" );
+        } else {
+            out.println( "\nInbound message:" );
+        }
+        SOAPMessage message = context.getMessage();
+        try {
+            message.writeTo( out );
+        } catch(Exception e) {
+            out.println( "Exception in handler: " + e );
+        }
+    }
+}
+        </pre>
+        <p>接下來就是將SOAPLoggingHandler設定到generate出來的Service class裡面。在service provider的話是透過annotation或設定檔的方式設定handler，在client端則可直接透過programmatic的方式設定service class的<code>HandlerResolver</code>即可。</p>
+        <h3>Listing. 設定Handler到Service class</h3>
+        <pre name="code" class="java:nocontrols:firstline[29]">
+        DataSyncWSService service = new DataSyncWSService( new URL( "http://localhost:8080/oescms/DataSyncWS?wsdl" ) );
+        service.setHandlerResolver( new HandlerResolver() {
+            public List<Handler> getHandlerChain(PortInfo portInfo) {
+                List<Handler> handlerList = new ArrayList<Handler>();
+                
+                Handler handler = new SOAPLoggingHandler();
+                handlerList.add( handler );
+                
+                return handlerList;
+            }
+        } );
+        </pre>
+        <p></p>
+        <h2>Discussion</h2>
+        <p>JAX-WS 2.0定義兩種類型handler</p>
+        <ul>
+            <li><strong>Logical</strong>: 處理protocol無法處理到的部份的東西，也就是具bussiness logic意義的部份。</li>
+            <li><strong>Protocol</strong>: 處理跟protocol溝通有關的部份的東西。因此這裡也是透過這個handler把SOAP message logging下來。</li>
+        </ul>
+        <p><code>Service</code>負責維護handler resolver，由<code>HandlerResolver</code> interface的JavaDoc可以看到可以透過<code>getHandlerChain()</code>取得handler chain，而且這個method會傳入<code>PortInfo</code> instance會牽扯到一系列有關binging有關的議題。</p>
+        <h4>Handler Execution</h4>
+        <p>在handler chain裡的handlers會一個接一個被呼叫到，而每個handler被執行到的時候就會被塞一個message context instance。</p>
+        <h3>Figure. handlers exection order</h3>
+        <img src="../images/jax-ws-handler-execution-1.png" />
+        <p>handlers的順序會按照handler resolver的<code>HanderChain</code>的順序，而假設順序如上圖H1, H2, ..., H6當inbound message進來的時候會由H1開始被呼叫，H6最後；如果是outbound message的時候則由H6開始被呼叫，H1最後被呼叫到。</p>
+        <h5><code>public boolean handleMessage (context: C)</code></h5>
+        <p>這個method是正常message處理流程會被呼叫到，如果return true代表這個message的處理流程還要繼續往下走，因此JAX-WS runtime會呼叫下一個handler的<code>handleMessage</code> method；如果return false、ProtocolException或RuntimeException則代表這個message處理流程應該被終止，然而根據需不需要有response還會有不同的處理。</p>
+        <h5><code>public boolean handleFault (context: C)</code></h5>
+        <p>當<code>handleMessage</code>過程當中發生<code>ProtocolException</code>的時候，而這個message processing需要有response的時候，正常message processing就會終止，而啟動fault message processing。這個時候JAX-WS runtime就會呼叫下一個handler的<code>handleFault</code> method。</p>
+        <h5><code>public void close (context: MessageContext)</code></h5>
+        <p>這個method只會被前一個handler在處理<code>handleMessage</code>或<code>handleFault</code>的某些狀況被呼叫到。</p>
+        <h4>Message Context</h4>
+        <p>不同類型的handler會有不同type的message context，class diagram如下圖所示</p>
+        <h3>Figure. <code>MessageContext</code> 相關interfaces Class Diagram</h3>
+        <img src="../images/jax-ws-messagecontext-classdiagram.png" />
+        <p><code>MessageContext</code>會放許多properties，在<code>MessageContext</code>的javadoc裡也可以看到這些properties key的constant，或者由JAX-WS spec可以看到standard <code>MessageContext</code> properties說明的表格。</p>
+        <h2>Reference</h2>
+        <div>
+            <ul>
+                <li>JAX-WS Spec.</li>
+                <li>http://www.w3.org/2002/ws/cg/2/07/meps.html</li>
+                <li>http://www.java-tips.org/java-ee-tips/java-api-for-xml-web-services/writing-a-handler-in-jax-ws.html</li>
+                <li>http://publib.boulder.ibm.com/infocenter/wasinfo/v6r1/index.jsp?topic=/com.ibm.websphere.wsfep.multiplatform.doc/info/ae/ae/twbs_jaxwshandler.html</li>
+            </ul>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2011/01/17
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

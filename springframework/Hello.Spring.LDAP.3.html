@@ -1,0 +1,562 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Spring LDAP" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css"rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>Hello, Spring LDAP - Step 3</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Hello, Spring LDAP - Step 3</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>外離相為禪，內不亂為定。外若著相，內心即亂。外若離相，心即不亂。本性自淨自定。只為見境思境即亂，若見諸境心不亂者，是真定也。</p>
+        <p>在果菜批發商的市場裡要想東西、研究東西、寫程式果然需要極大的真元力，哈，按照這個比喻來說現在就是在果菜批發商的市場裡面，被交代用又小又破的植栽盆在不良的光照、許多蟲害下要種出西瓜來給只出買地瓜葉錢的客戶（但是其實客戶也不知道自己要訂啥，知道的祇有他們只出地瓜葉的錢）。除了聽人賣進口蔬果、植栽用具之外，偶而不小心還會聽到有人吹噓多會現代化的蔬果植栽專案管理與蔬果植栽流程。</p>
+        <p>對後面幾個章節的想法是...看起來後面這幾章好像都是設定偏多，所以一次寫完筆記。</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 1.6.0_20</li>
+                <li>Maven 2.2.1</li>
+                <li>Spring LDAP 1.3.0.RELEASE</li>
+                <li>OpenDS 2.2</li>
+            </ul>
+        </div>
+        <h2>Transaction Support (module name: transaction)</h2>
+        <p>在LDAP Server實現RFC 5805之前，Spring LDAP提供compensating transactions的transaction機制。</p>
+        <h4>Configuration</h4>
+        <p>設定上大致和spring transaction類似。</p>
+        <h3>Listing 1. pom.xml add cglib dependency</h3>
+        <pre name="code" class="xml:controls:firstline[45]">
+    &lt;dependencies>
+        &lt;dependency>
+            &lt;groupId>cglib&lt;/groupId>
+            &lt;artifactId>cglib&lt;/artifactId>
+            &lt;version>${cglib.version}&lt;/version>
+        &lt;/dependency>
+    &lt;/dependencies>
+    
+    &lt;properties>
+        &lt;cglib.version>2.2&lt;/cglib.version>
+    &lt;/properties>
+        </pre>
+        <p>大多數都是和文件上的類似，也就是類似原本spring transaction的設定方法。<strong>不同點</strong>在於transactionManager那邊的設定，在第29行那邊<strong>ContextSourceTransactionManager</strong>由javadoc看到他只有default constructor，所以改成用property的方式注入contextSource。</p>
+        <h3>Listing 2. appContext.xml</h3>
+        <pre name="code" class="xml:controls:firstline[13]">
+    &lt;bean id="contextSourceTarget" class="org.springframework.ldap.core.support.LdapContextSource">
+        &lt;property name="url" value="ldap://localhost:1389" />
+        &lt;property name="base" value="dc=example,dc=com" />
+        &lt;property name="userDn" value="cn=Directory Manager" />
+        &lt;property name="password" value="password" />
+    &lt;/bean>
+
+    &lt;bean id="contextSource" class="org.springframework.ldap.transaction.compensating.manager.TransactionAwareContextSourceProxy">
+        &lt;constructor-arg ref="contextSourceTarget" />
+    &lt;/bean>
+
+    &lt;bean id="ldapTemplate" class="org.springframework.ldap.core.LdapTemplate">
+        &lt;constructor-arg ref="contextSource" />
+    &lt;/bean>
+
+    &lt;bean id="transactionManager" class="org.springframework.ldap.transaction.compensating.manager.ContextSourceTransactionManager">
+        &lt;property name="contextSource" ref="contextSource" />
+    &lt;/bean>
+
+    &lt;bean id="personDaoTarget" class="net.greenrivers.ldap.transaction.PersonDao">
+        &lt;property name="ldapTemplate" ref="ldapTemplate" />
+    &lt;/bean>
+
+    &lt;bean id="personDao" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+        &lt;property name="transactionManager" ref="transactionManager" />
+        &lt;property name="target" ref="personDaoTarget" />
+        &lt;property name="transactionAttributes">
+            &lt;props>
+                &lt;prop key="*">PROPAGATION_REQUIRES_NEW&lt;/prop>
+            &lt;/props>
+        &lt;/property>
+    &lt;/bean>
+    
+    &lt;!-- for test no transaction -->
+    &lt;bean id="ldapTemplateNoTx" class="org.springframework.ldap.core.LdapTemplate">
+        &lt;constructor-arg ref="contextSourceTarget" />
+    &lt;/bean>
+    
+    &lt;bean id="personDaoNoTx" class="net.greenrivers.ldap.transaction.PersonDao">
+        &lt;property name="ldapTemplate" ref="ldapTemplateNoTx" />
+    &lt;/bean>
+        </pre>
+        <h3>Figure 1. 這張圖是從Spring LDAP官方文件擷取下來的，覺得這個表有需要貼在筆記上</h3>
+        <img src="../images/spring.ldap/transaction.operation.png" />
+        <p>檢視Spring LDAP文件講的行為和實際執行的狀況是否一致的觀察，我是透過OpenDS的access這個log來看。寫個test method是因為要看看有使用Spring LDAP transaction support和沒有使用在執行update的差異。</p>
+        <p>這裡的PersonDao是拿simple module那邊的來用，所以update method走的是LdapTemplate#rebind的作法。沒有transaction預期rebind的行為是先delete原本的entry，然後在bind一筆新的entry進去LDAP tree。有transaction support的行為預期應該會是將原本那筆entry改名為暫存名稱，然後新增一筆新的資料的entry，如果一切順利沒有rollback的話，可以看到commit動作時做delete暫存名稱那筆entry，完成整個transaction。</p>
+        <h3>Listing 3. PersonDaoTest#testUpdate</h3>
+        <pre name="code" class="java:controls:firstline[16]">
+    @Test
+    public void testUpdate() {
+        Person p = new Person();
+        p.setUsername( "test1" );
+        p.setUid( "user010" );
+        p.setEmployeeNumber( "1" );
+        p.setPassword( "password" );
+        
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDao personDAO = (PersonDao) ctx.getBean( "personDao" );
+        
+        personDAO.update( p );
+    }
+    
+    @Test
+    public void testNoTxUpdate() {
+        Person p = new Person();
+        p.setUsername( "test1" );
+        p.setUid( "user010" );
+        p.setEmployeeNumber( "1" );
+        p.setPassword( "password" );
+        
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDao personDAO = (PersonDao) ctx.getBean( "personDaoNoTx" );
+        
+        personDAO.update( p );
+    }
+    
+    @Test 
+    public void testUpdateFailed() {
+        Person p = new Person();
+        p.setUsername( "test1" );
+        p.setUid( "user010" );
+        p.setEmployeeNumber( "1" );
+        p.setPassword( "password" );
+        
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDao personDAO = (PersonDao) ctx.getBean( "personDao" );
+        
+        try {
+            personDAO.updateBad( p );
+            fail( "Should not be here" );
+        } catch (RuntimeException e) {
+            // good
+        }
+    }
+        </pre>
+        <p>只有要多寫一個呼叫好LdapTemplate#rebind之後，發生意外讓Spring LDAP的transaction做rollback的PersonDao#updateBad()。</p>
+        <h3>Listing 4. PersonDao的兩個主角</h3>
+        <pre name="code" class="java:controls:firstline[45]">
+    /**
+     * update by rebind to ldap
+     * all attribute should provide
+     **/
+    public void update(Person p) {
+        Name dn = buildDn(p);
+        ldapTemplate.rebind(dn, null, buildAttributes(p));
+    }
+    
+    /**
+     * 為了看rollback的狀況特別寫一個絕對update失敗的狀況
+     **/
+    public void updateBad(Person p) {
+        Name dn = buildDn(p);
+        ldapTemplate.rebind(dn, null, buildAttributes(p));
+        throw new RuntimeException( "failed" );
+    }
+        </pre>
+        <p>OpenDS的access log如下，因為沒有用<strong>PoolingContextSource</strong>而且因為是測試只有一個connection，所以access log就很歡樂（真的歡樂）。每個test method都是一組CONNECT/DISCONNECT，那次test method的所有<strong>REQ</strong>(request)都會在裡面發給OpenDS。</p>
+        <h3>Listing 5. OpenDS access log</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+[07/Oct/2010:09:44:21 +0800] CONNECT conn=0 from=127.0.0.1:3668 to=127.0.0.1:1389 protocol=LDAP
+[07/Oct/2010:09:44:21 +0800] BIND REQ conn=0 op=0 msgID=1 type=SIMPLE dn="cn=Directory Manager"
+[07/Oct/2010:09:44:21 +0800] BIND RES conn=0 op=0 msgID=1 result=0 authDN="cn=Directory Manager,cn=Root DNs,cn=config" etime=22
+[07/Oct/2010:09:44:21 +0800] MODIFYDN REQ conn=0 op=1 msgID=2 dn="uid=user010,ou=People,dc=example,dc=com" newRDN="uid=user010_temp" deleteOldRDN=true newSuperior="ou=People,dc=example,dc=com
+[07/Oct/2010:09:44:21 +0800] ADD REQ conn=0 op=2 msgID=3 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] MODIFYDN RES conn=0 op=1 msgID=2 result=0 etime=39
+[07/Oct/2010:09:44:21 +0800] ADD RES conn=0 op=2 msgID=3 result=0 etime=24
+[07/Oct/2010:09:44:21 +0800] DELETE REQ conn=0 op=3 msgID=4 dn="uid=user010_temp,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] DELETE RES conn=0 op=3 msgID=4 result=0 etime=18
+[07/Oct/2010:09:44:21 +0800] UNBIND REQ conn=0 op=4 msgID=5
+[07/Oct/2010:09:44:21 +0800] DISCONNECT conn=0 reason="Client Unbind"
+[07/Oct/2010:09:44:21 +0800] CONNECT conn=1 from=127.0.0.1:3669 to=127.0.0.1:1389 protocol=LDAP
+[07/Oct/2010:09:44:21 +0800] BIND REQ conn=1 op=0 msgID=1 type=SIMPLE dn="cn=Directory Manager"
+[07/Oct/2010:09:44:21 +0800] BIND RES conn=1 op=0 msgID=1 result=0 authDN="cn=Directory Manager,cn=Root DNs,cn=config" etime=1
+[07/Oct/2010:09:44:21 +0800] SEARCH REQ conn=1 op=1 msgID=2 base="uid=user010,ou=People,dc=example,dc=com" scope=baseObject filter="(objectClass=*)" attrs="ALL"
+[07/Oct/2010:09:44:21 +0800] SEARCH RES conn=1 op=1 msgID=2 result=0 nentries=1 etime=3
+[07/Oct/2010:09:44:21 +0800] DELETE REQ conn=1 op=2 msgID=3 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] DELETE RES conn=1 op=2 msgID=3 result=0 etime=10
+[07/Oct/2010:09:44:21 +0800] ADD REQ conn=1 op=3 msgID=4 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] UNBIND REQ conn=1 op=4 msgID=5
+[07/Oct/2010:09:44:21 +0800] DISCONNECT conn=1 reason="Client Unbind"
+[07/Oct/2010:09:44:21 +0800] CONNECT conn=2 from=127.0.0.1:3670 to=127.0.0.1:1389 protocol=LDAP
+[07/Oct/2010:09:44:21 +0800] ADD RES conn=1 op=3 msgID=4 result=0 etime=12
+[07/Oct/2010:09:44:21 +0800] BIND REQ conn=2 op=0 msgID=1 type=SIMPLE dn="cn=Directory Manager"
+[07/Oct/2010:09:44:21 +0800] BIND RES conn=2 op=0 msgID=1 result=0 authDN="cn=Directory Manager,cn=Root DNs,cn=config" etime=1
+[07/Oct/2010:09:44:21 +0800] MODIFYDN REQ conn=2 op=1 msgID=2 dn="uid=user010,ou=People,dc=example,dc=com" newRDN="uid=user010_temp" deleteOldRDN=true newSuperior="ou=People,dc=example,dc=com
+[07/Oct/2010:09:44:21 +0800] MODIFYDN RES conn=2 op=1 msgID=2 result=0 etime=6
+[07/Oct/2010:09:44:21 +0800] ADD REQ conn=2 op=2 msgID=3 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] DELETE REQ conn=2 op=3 msgID=4 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] ADD RES conn=2 op=2 msgID=3 result=0 etime=11
+[07/Oct/2010:09:44:21 +0800] MODIFYDN REQ conn=2 op=4 msgID=5 dn="uid=user010_temp,ou=People,dc=example,dc=com" newRDN="uid=user010" deleteOldRDN=true newSuperior="ou=People,dc=example,dc=com
+[07/Oct/2010:09:44:21 +0800] DELETE RES conn=2 op=3 msgID=4 result=0 etime=11
+[07/Oct/2010:09:44:21 +0800] UNBIND REQ conn=2 op=5 msgID=6
+[07/Oct/2010:09:44:21 +0800] DISCONNECT conn=2 reason="Client Unbind"
+[07/Oct/2010:09:44:21 +0800] MODIFYDN RES conn=2 op=4 msgID=5 result=0 etime=6
+        </pre>
+        <p>我是先把不同test method區分出來，然後把<strong>RES</strong> (response)弄掉。第一段解釋完之後，後面兩段也會把登入登出的log也拿掉。</p>
+        <p>第一段是有transaction的update，log整理過後和對應程式碼如下。登入的log是第一行和第二行，登出的log是第六行和第七行。接著在<strong>MODIFYDN</strong>可以看到dn attribute的值是測試程式找的那個，newRDN的值是user010_temp。如同文件寫的<strong>DefaultTempEntryRenamingStrategy</strong>行為是在原本的值後面加上"_temp"。緊接著看到一次<strong>ADD</strong>的動作dn="uid=user010,ou=People,dc=example,dc=com"。因為是正常執行完成的狀況，接下來會刪除temporary entry，就會看到<strong>DELETE</strong> user010_temp entry的log。</p>
+        <pre name="code" class="java:nocontrols:firstline[49]">
+    public void update(Person p) {
+        Name dn = buildDn(p);
+        ldapTemplate.rebind(dn, null, buildAttributes(p));
+    }
+        </pre>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+[07/Oct/2010:09:44:21 +0800] CONNECT conn=0 from=127.0.0.1:3668 to=127.0.0.1:1389 protocol=LDAP
+[07/Oct/2010:09:44:21 +0800] BIND REQ conn=0 op=0 msgID=1 type=SIMPLE dn="cn=Directory Manager"
+[07/Oct/2010:09:44:21 +0800] MODIFYDN REQ conn=0 op=1 msgID=2 dn="uid=user010,ou=People,dc=example,dc=com" newRDN="uid=user010_temp" deleteOldRDN=true newSuperior="ou=People,dc=example,dc=com
+[07/Oct/2010:09:44:21 +0800] ADD REQ conn=0 op=2 msgID=3 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] DELETE REQ conn=0 op=3 msgID=4 dn="uid=user010_temp,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] UNBIND REQ conn=0 op=4 msgID=5
+[07/Oct/2010:09:44:21 +0800] DISCONNECT conn=0 reason="Client Unbind"
+        </pre>
+        <p>接下來是一樣的程式，但是沒有使用Spring LDAP transaction。執行的log如下，動作很單純。透過dn找到目標物，刪除找到的目標物，然後加一筆新的進去。就如同LdapTemplate#rebind javadoc的描述<em>Remove an entry and replace it with a new one.</em>。</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+[07/Oct/2010:09:44:21 +0800] SEARCH REQ conn=1 op=1 msgID=2 base="uid=user010,ou=People,dc=example,dc=com" scope=baseObject filter="(objectClass=*)" attrs="ALL"
+[07/Oct/2010:09:44:21 +0800] DELETE REQ conn=1 op=2 msgID=3 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] ADD REQ conn=1 op=3 msgID=4 dn="uid=user010,ou=People,dc=example,dc=com"
+        </pre>
+        <p>最後一個例子是執行rebind之後，後續程式會丟出<strong>RuntimeException</strong>而導致rollback的情形。在這個例子的access log可以看到頭兩個和之前第一個情況一樣的log。但是因為發生rollback的現象，所以看到必須下一個<strong>DELETE</strong>新加entry的request，然後把原本的temporary entry下一次<strong>MODIFYDN</strong> request改回原本entry做回復的動作。</p>
+        <pre name="code" class="java:nocontrols:firstline[57]">
+    public void updateBad(Person p) {
+        Name dn = buildDn(p);
+        ldapTemplate.rebind(dn, null, buildAttributes(p));
+        throw new RuntimeException( "failed" );
+    }
+        </pre>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+[07/Oct/2010:09:44:21 +0800] MODIFYDN REQ conn=2 op=1 msgID=2 dn="uid=user010,ou=People,dc=example,dc=com" newRDN="uid=user010_temp" deleteOldRDN=true newSuperior="ou=People,dc=example,dc=com
+[07/Oct/2010:09:44:21 +0800] ADD REQ conn=2 op=2 msgID=3 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] DELETE REQ conn=2 op=3 msgID=4 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:09:44:21 +0800] MODIFYDN REQ conn=2 op=4 msgID=5 dn="uid=user010_temp,ou=People,dc=example,dc=com" newRDN="uid=user010" deleteOldRDN=true newSuperior="ou=People,dc=example,dc=com
+        </pre>
+        <p>以上的狀況，搭配由Spring LDAP文件上截圖下來那張表就更容易了解，因此我覺得那張表對我了解Spring LDAP transaction support會有幫助，所以放到筆記裡面。</p>
+        <h4>Rename Strategy</h4>
+        <p>在<strong>ContextSourceTransactionManager</strong>可以設定rename strategy，除了目前提供的兩種之外，也可以自己寫只要實作<strong>TempEntryRenamingStrategy</strong> interface，然後注入transactionManager即可。官方提供的兩個strategy分別是</p>
+        <div class="childclasslistregion">
+            <ul>
+                <li><strong>DefaultTempEntryRenamingStrategy</strong>: 預設的strategy，會在distinguished name的最左邊那個attribute的value加上"_temp"。</li>
+                <li><strong>DifferentSubtreeTempEntryRenamingStrategy</strong>: 會把原本ou那個node換成另一個自己設定的那個subtree node，<strong>要注意設定的那個ou node是否有在LDAP server上建立，如果沒建立unit test不會過。</strong></li>
+            </ul>
+        </div>
+        <p><strong>DifferentSubtreeTempEntryRenamingStrategy</strong>的簡單設定方法如下</p>
+        <h3>Listing 6. appContext.xml有關DifferentSubtreeTempEntryRenamingStrategy設定的部份</h3>
+        <pre name="code" class="xml:controls:firstline[55]">
+    &lt;!-- rename strategy demo -->
+    &lt;bean id="subtreeNodeName" class="javax.naming.ldap.LdapName">
+        &lt;constructor-arg value="ou=tempEntries" />
+    &lt;/bean>
+    
+    &lt;bean id="renamingStrategy" class="org.springframework.ldap.transaction.compensating.support.DifferentSubtreeTempEntryRenamingStrategy">
+        &lt;constructor-arg ref="subtreeNodeName" />
+    &lt;/bean>
+    
+    &lt;bean id="transactionManager2" class="org.springframework.ldap.transaction.compensating.manager.ContextSourceTransactionManager">
+        &lt;property name="contextSource" ref="contextSource" />
+        &lt;property name="renamingStrategy" ref="renamingStrategy" />
+    &lt;/bean>
+    
+    &lt;bean id="personDao2" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+        &lt;property name="transactionManager" ref="transactionManager2" />
+        &lt;property name="target" ref="personDaoTarget" />
+        &lt;property name="transactionAttributes">
+            &lt;props>
+                &lt;prop key="*">PROPAGATION_REQUIRES_NEW&lt;/prop>
+            &lt;/props>
+        &lt;/property>
+    &lt;/bean>
+        </pre>
+        <p>衝衝衝後的log如下，其實還蠻歡樂的，可以看到temporary entry都做到ou=tempEntries,dc=example,dc=com裡面去。唯一遇到的問題只有一開始忘記在OpenDS上建立ou=tempEntries,dc=example,dc=com這個node，所以unit test failed的慘劇。</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+[07/Oct/2010:12:31:30 +0800] MODIFYDN REQ conn=5 op=1 msgID=2 dn="uid=user010,ou=People,dc=example,dc=com" newRDN="uid=user0101" deleteOldRDN=true newSuperior="ou=tempEntries,dc=example,dc=com
+[07/Oct/2010:12:31:30 +0800] ADD REQ conn=5 op=2 msgID=3 dn="uid=user010,ou=People,dc=example,dc=com"
+[07/Oct/2010:12:31:30 +0800] DELETE REQ conn=5 op=3 msgID=4 dn="uid=user0101,ou=tempEntries,dc=example,dc=com"
+        </pre>
+        <h2>Java 5 Support (module name: tiger)</h2>
+        <p>想要使用Java 5的generics，先在pom.xml裡面加上spring-ldap-core-tiger的dependency。然後就有org.springframework.ldap.core.simple裡面的<strong>SimpleLdapTemplate</strong>、<strong>ParameterizedContextMapper&lt;T&gt;</strong>、<strong>AbstractParameterizedContextMapper&lt;T&gt;</strong>...等好用。</p>
+        <h3>Listing 7. tiger dependency</h3>
+        <pre name="code" class="xml:controls:firstline[46]">
+        &lt;dependency>
+            &lt;groupId>org.springframework.ldap&lt;/groupId>
+            &lt;artifactId>spring-ldap-core-tiger&lt;/artifactId>
+            &lt;version>${spring.ldap.version}&lt;/version>
+        &lt;/dependency>
+        </pre>
+        <h3>Listing 8. appContext.xml有關SimpleLdapTemplate的設定</h3>
+        <pre name="code" class="xml:controls:firstline[20]">
+     &lt;bean id="simpleLdapTemplate" class="org.springframework.ldap.core.simple.SimpleLdapTemplate">
+         &lt;constructor-arg ref="contextSource" />
+     &lt;/bean>
+
+     &lt;bean id="personDao" class="net.greenrivers.ldap.tiger.PersonDao">
+         &lt;property name="simpleLdapTemplate" ref="simpleLdapTemplate" />
+     &lt;/bean>
+        </pre>
+        <h3>Listing 9. Unit Test Code</h3>
+        <pre name="code" class="java:controls:firstline[14]">
+    @Test
+    public void testGetAll () {
+        ApplicationContext ctx = SpringContextHolder.ctx;
+        PersonDao personDAO = (PersonDao) ctx.getBean( "personDao" );
+        for( Person p : personDAO.getAll() ) {
+            System.out.println( p.getUid() + "/" + p.getUsername() + "/" + p.getEmployeeNumber() );
+        }
+    }
+        </pre>
+        <h3>Listing 10. PersonDao.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.ldap.tiger;
+
+import java.util.List;
+import org.springframework.ldap.core.simple.SimpleLdapTemplate;
+import org.springframework.ldap.core.simple.ParameterizedContextMapper;
+import org.springframework.ldap.core.DirContextAdapter;
+
+public class PersonDao {
+    private SimpleLdapTemplate simpleLdapTemplate;
+
+    public void setSimpleLdapTemplate(SimpleLdapTemplate simpleLdapTemplate) {
+        this.simpleLdapTemplate = simpleLdapTemplate;
+    }
+    
+    public List&lt;Person> getAll () {
+        return simpleLdapTemplate.search( "", "(objectclass=person)", 
+            new ParameterizedContextMapper&lt;Person>() {
+                public Person mapFromContext (Object ctx) {
+                    DirContextAdapter adapter = (DirContextAdapter) ctx;
+                    Person p = new Person();
+                    p.setUsername( adapter.getStringAttribute( "cn" ) );
+                    p.setUid( adapter.getStringAttribute( "uid" ) );
+                    p.setEmployeeNumber( adapter.getStringAttribute( "employeeNumber" ) );
+                    return p;
+                } // mapFromContext
+            } );
+    }
+}
+        </pre>
+        <h2>Configuration</h2>
+        <p></p>
+        <h4>ContextSource Configuration</h4>
+        <p></p>
+        <h3>Figure 2. ContextSource相關Class Diagram</h3>
+        <img src="../images/spring.ldap/spring.ldap.ContextSource.png" />
+        <p><strong>urls</strong>想要可以連多組LDAP Server就是改用這個property，這個在CAS的時候玩過，所以我相信可以玩的起來。</p>
+        <p><strong>pooled</strong>這裡的pooled的設定是native java LDAP pooling，不是Chapter 9的pooling support。有關java的設定見Reference 2的連結。</p>
+        <p><strong>base</strong>這個參數設定base dn，在下面CAS設定範例沒有用，但是之前的範例都有用到。應該有發現有設定這個property在PersonDaoImpl#buildDn() method都不用設"dc=example,dc=com"。</p>
+        <p><strong>baseEnvironmentProperties</strong>環境參數的設定，這可以設定conection timeout, read timeout...等參數。參數和說明可以查看Reference 3。</p>
+        <h3>Listing 11. cas-server-webapp deployerConfigContext.xml contextSource configuration</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+    &lt;!-- ContextSource -->
+    &lt;bean id="myContextSource" class="org.springframework.ldap.core.support.LdapContextSource">
+        &lt;property name="pooled" value="false"/>
+        &lt;property name="urls">
+            &lt;list>
+                &lt;value>ldap://M1210:1389/&lt;/value>
+                &lt;value>ldap://M1210:2389/&lt;/value>
+            &lt;/list>
+        &lt;/property>
+        &lt;property name="userDn" value="cn=Directory Manager"/>
+        &lt;property name="password" value="password"/>
+        &lt;property name="baseEnvironmentProperties">
+            &lt;map>
+                &lt;entry>
+                    &lt;key>
+                        &lt;value>java.naming.security.authentication&lt;/value>
+                    &lt;/key>
+                    &lt;value>simple&lt;/value>
+                &lt;/entry>
+                &lt;entry>
+                    &lt;key>
+                        &lt;value>com.sun.jndi.ldap.connect.timeout&lt;/value>
+                    &lt;/key>
+                    &lt;value>2000&lt;/value>
+                &lt;/entry>
+                &lt;entry>
+                    &lt;key>
+                        &lt;value>com.sun.jndi.ldap.read.timeout&lt;/value>
+                    &lt;/key>
+                    &lt;value>2000&lt;/value>
+                &lt;/entry>
+            &lt;/map>
+        &lt;/property>
+    &lt;/bean>
+        </pre>
+        <p>沒搞的東西...Authentication, Custom ContextFactory</p>
+        <h4>About Base LDAP Path (module name: base)</h4>
+        <p>如果在contextSource那邊設定base LDAP path則表示透過這個contextSource存取LDAP的時候我們只需要提供根據relative path。而如果自己的程式想要知道目前application context設定的base LDAP path的話，只要像下面這兩步驟。</p>
+        <div>
+            <ol>
+                <li>實作<strong>BaseLdapPathAware</strong> interface
+        <h3>Listing 12. PersonDAO.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.ldap.base;
+
+import org.springframework.ldap.core.support.BaseLdapPathAware;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.AttributesMapper;
+import org.springframework.ldap.core.DistinguishedName;
+
+import java.util.List;
+import javax.naming.directory.Attributes;
+import javax.naming.NamingException;
+
+public class PersonDao implements BaseLdapPathAware {
+    private DistinguishedName basePath;
+    private LdapTemplate ldapTemplate;
+
+    public void setLdapTemplate (LdapTemplate ldapTemplate) {
+        this.ldapTemplate = ldapTemplate;
+    }
+
+    public void setBaseLdapPath (DistinguishedName basePath) {
+        this.basePath = basePath;
+    }
+    
+    public List getAllPersonNames() {
+        System.out.println( basePath );
+        return ldapTemplate.search( "", "(&(objectclass=person)(employeeNumber=0))",
+            new AttributesMapper() {
+                public Object mapFromAttributes(Attributes attrs) throws NamingException {
+                    return attrs.get("cn").get();
+                }
+            } );
+    }
+}
+        </pre>
+                </li>
+                <li>在spring config加上<strong>BaseLdapPathBeanPostProcessor</strong>
+        <pre name="code" class="xml:nocontrols:firstline[29]">
+    &lt;bean class="org.springframework.ldap.core.support.BaseLdapPathBeanPostProcessor" />
+        </pre>
+                </li>
+            </ol>
+        </div>
+        
+        <h2>Pooling Support (module name: pooling)</h2>
+        <p></p>
+        <h4>DirContext Validation</h4>
+        <p><strong>PoolingContextSource</strong>可以注入實作<strong>DirContextValidator</strong> interface的物件來進行<strong>DirContext</strong> connection的測試。Spring LDAP也提供<strong>DefaultDirContextValidator</strong>，可以設定的properties和預設值如下表 (from javadoc)</p>
+        <div>
+  <table border="1">
+     <tbody><tr>
+         <th align="left">Property</th>
+         <th align="left">Description</th>
+         <th align="left">Required</th>
+         <th align="left">Default</th>
+     </tr>
+     <tr>
+         <td valign="top">base</td>
+         <td valign="top">
+             The name parameter to the search method.
+         </td>
+         <td valign="top">No</td>
+         <td valign="top">""</td>
+     </tr>
+     <tr>
+         <td valign="top">filter</td>
+         <td valign="top">
+             The filter parameter to the search method.
+         </td>
+         <td valign="top">No</td>
+         <td valign="top">"objectclass=*"</td>
+     </tr>
+     <tr>
+         <td valign="top">searchControls</td>
+         <td valign="top">
+             The <code>SearchControls</code> parameter to the search method.
+         </td>
+         <td valign="top">No</td>
+         <td valign="top">
+             <code>SearchControls.setCountLimit(long)</code> = 1<br>
+             <code>SearchControls.setReturningAttributes(String[])</code> = new String[] { "objectclass" }<br>
+             <code>SearchControls.setTimeLimit(int)</code> = 500
+         </td>
+     </tr>
+ </tbody></table>
+        </div>
+        <h4>Pool Properties</h4>
+        <p></p>
+        <h3>Figure 3. 一樣是從Spring LDAP官方文件剪下來的</h3>
+        <img src="../images/spring.ldap/pool.properties.png" />
+        <h4>Configuration</h4>
+        <p>如果要使用Spring LDAP的pooling support需要commons-pool這個dependency。</p>
+        <h3>Listing 13. required dependency for pooling support</h3>
+        <pre name="code" class="xml:controls:firstline[45]">
+    &lt;dependencies>
+        &lt;dependency>
+            &lt;groupId>commons-pool&lt;/groupId>
+            &lt;artifactId>commons-pool&lt;/artifactId>
+            &lt;version>${commons.pool.version}&lt;/version>
+        &lt;/dependency>
+    &lt;/dependencies>
+    
+    &lt;properties>
+        &lt;commons.pool.version>1.5.5&lt;/commons.pool.version>
+    &lt;/properties>
+        </pre>
+        <p>spring configuration file的設定方法如下</p>
+        <h3>Listing 14. appContext.xml有關pooling contextSource的設定</h3>
+        <pre name="code" class="xml:controls:firstline[13]">
+    &lt;!-- PoolingContextSource in this case using ContextSource Validation -->
+    &lt;bean id="contextSource" class="org.springframework.ldap.pool.factory.PoolingContextSource">
+        &lt;property name="contextSource" ref="contextSourceTarget" />
+        &lt;property name="dirContextValidator" ref="dirContextValidator" />
+        &lt;property name="testOnBorrow" value="true" />
+        &lt;property name="testWhileIdle" value="true" />
+    &lt;/bean>
+
+    &lt;!-- for ContextSource validate -->
+    &lt;bean id="dirContextValidator" class="org.springframework.ldap.pool.validation.DefaultDirContextValidator" />
+
+    &lt;bean id="contextSourceTarget" class="org.springframework.ldap.core.support.LdapContextSource">
+        &lt;property name="url" value="ldap://localhost:1389" />
+        &lt;property name="base" value="dc=example,dc=com" />
+        &lt;property name="userDn" value="cn=Directory Manager" />
+        &lt;property name="password" value="torment0220" />
+    &lt;/bean>
+        </pre>
+        <h2>User Authentication using Spring LDAP (不太想玩他)</h2>
+        <p></p>
+        <h2>最後</h2>
+        <p>第三部份為了怕自己搞混，所以分好幾個module出來。所有的根據Spring LDAP官方文件寫而弄出來的範例和一點點自己想的範例，整包在<a href="../samples/ldap-parent.tar.gz">here</a>。（裡面沒有ldif請自己建立）</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Spring LDAP 1.3.0.RELEASE Document Chapter 6 to end</li>
+                <li>Native Java LDAP Pool Configuration: http://java.sun.com/products/jndi/tutorial/ldap/connect/config.html</li>
+                <li>JNDI Service Provider Properties: http://download.oracle.com/javase/6/docs/technotes/guides/jndi/jndi-ldap.html</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/10/08
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

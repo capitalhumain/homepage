@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>Lab - Array 01</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Lab - Array 01</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+從開始接觸Web Application以來，就認為JavaScript是很複雜的東西。一直以來也都是以工作有需要時，
+才去看怎麼做的心態對待javascript。從之前同事建議看Jeremy Keith的書才算開始用不同的態度看javascript
+這個有趣語言，緊接著看了John Resig的Pro JavaScript Techniques、Ross Harmes和Dustin Diaz的Pro JavaScript 
+Design Patterns和Douglas Crockford的書之後，除了證實自己最早的直覺是正確的之外，也讓自己會想多花點時間深入了解
+javascript。
+    </p>
+    <h2>ECMA-262 Specification</h2>
+    <h3>typeof Operator</h3>
+    <pre style='font-family: "Courier New";'>
+    11.4.3 The typeof Operator
+            The production UnaryExpression : typeof UnaryExpression is evaluated as follows:
+            1. Evaluate UnaryExpression.
+            2. If Type(Result(1)) is not Reference, go to step 4.
+            3. If GetBase(Result(1)) is null, return "undefined".
+            4. Call GetValue(Result(1)).
+            5. Return a string determined by Type(Result(4)) according to the following table:
+    </pre>
+    <table style="width: 700px;border: 1px solid #C3C3C3; margin: 10px;" cellpadding="2" cellspacing="0">
+    <tr>
+        <th>Type</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td>Undefined</td>
+        <td>"undefined"</td>
+    </tr>
+    <tr>
+        <td>Null</td>
+        <td>"object"</td>
+    </tr>
+    <tr>
+        <td>Boolean</td>
+        <td>"boolean"</td>
+    </tr>
+    <tr>
+        <td>Number</td>
+        <td>"number"</td>
+    </tr>
+    <tr>
+        <td>String</td>
+        <td>"string"</td>
+    </tr>
+    <tr>
+        <td>Object (native and doesn’t implement [[Call]])</td>
+        <td>"object"</td>
+    </tr>
+    <tr>
+        <td>Object (native and implements [[Call]])</td>
+        <td>"function"</td>
+    </tr>
+    <tr>
+        <td>Object (host)</td>
+        <td>Implementation-dependent</td>
+    </tr>
+    </table>
+    <h3>propertyIsEnumerable()</h3>
+    <pre style='font-family: "Courier New";'>
+    15.2.4.5 Object.prototype.hasOwnProperty (V)
+            When the hasOwnProperty method is called with argument V, the following steps are taken:
+            1. Let O be this object.
+            2. Call ToString(V).
+            3. If O doesn’t have a property with the name given by Result(2), return false.
+            4. Return true.
+    15.2.4.7 Object.prototype.propertyIsEnumerable (V)
+            When the propertyIsEnumerable method is called with argument V, the following steps are
+            taken:
+            1. Let O be this object.
+            2. Call ToString(V).
+            3. If O doesn’t have a property with the name given by Result(2), return false.
+            4. If the property has the DontEnum attribute, return false.
+            5. Return true.
+    </pre>
+    <p>
+15.2.4.6是Object.prototype.isPrototypeOf (V)，也是該玩玩的東西。
+    </p>
+    <h2>Array</h2>
+    <p>
+JavaScript的Array和熟悉的佔有線性的空間可用index和offset有效率的存取的array是不太一樣的東西。在JavaScript
+Array就像是一個有連續整數的property、有一個正整數名為length的property的物件。當我們直接改變length property
+的值的時候，如果改的比原本的小那多出來的elements就會被刪除。如果我們嘗試從Array中取得目前沒有index
+的值會拿到undefined的值。下面的例子就是針對這些特性做個測試。
+    </p>
+    <a href="example/array_length_01.html">Run</a>
+    <h3>Listing. array_length_01.html (JavaScript)</h3>
+    <pre name="code" class="javascript:controls:firstline[4]">
+window.onload = function() {
+    var arr = [ 'one', 'two', 'three', 'four' ];
+
+    document.getElementById( 'initLength' ).innerHTML = arr.length;
+    arr.push( '23444' );
+    document.getElementById( 'secLength' ).innerHTML = arr.length;
+
+    document.getElementById( 'fetch4a' ).innerHTML = arr[4];
+    arr.length = 3;
+    document.getElementById( 'thirdLength' ).innerHTML = arr.length;
+    document.getElementById( 'fetch4b' ).innerHTML = (arr[4] === undefined);
+    
+    arr[2000] = 'abc';
+    document.getElementById( 'fourLength' ).innerHTML = arr.length;
+    document.getElementById( 'fetchud1' ).innerHTML = (arr[1000] === undefined);
+    
+    // logger in debug console
+    // FireFox: need fireug
+    // IE: 8 should be ok
+    // Safari: should be ok
+    if( typeof console !== 'undefined' ) {
+        console.log( 'arr.constructor===Array: ' + (arr.constructor === Array) );
+        console.log( 'arr.hasOwnProperty( \'length\' ): ' + arr.hasOwnProperty( 'length' ));
+    } // if
+};
+    </pre>
+    <h3>Listing. array_length_01.html (HTML)</h3>
+    <pre name="code" class="xml:controls:firstline[22]">
+    Array Init Length: &lt;span id="initLength"&gt;&lt;/span&gt;&lt;br /&gt;
+    Array add '23444' Length: &lt;span id="secLength"&gt;&lt;/span&gt;&lt;br /&gt;
+    Array [4]: &lt;span id="fetch4a"&gt;&lt;/span&gt;&lt;br /&gt;
+    Array set length=3 Length: &lt;span id="thirdLength"&gt;&lt;/span&gt;&lt;br /&gt;
+    Array [4]: &lt;span id="fetch4b"&gt;&lt;/span&gt;&lt;br /&gt;
+    &lt;hr /&gt;
+    Array arr[2000] = 'abc' Length: &lt;span id="fourLength"&gt;&lt;/span&gt;&lt;br /&gt;
+    Array arr[1000] === undefined: &lt;span id="fetchud1"&gt;&lt;/span&gt;&lt;br /&gt;
+    </pre>
+    <p>
+由ECMA-262的typeof operator說明可以看出來，在規定裡面，除了比較特別的Null是"object"之外，只有Boolean,
+Number和String在語言裡有規定拿到的結果，而其他物件則是沒有明確定義。因此很不幸的如RegExp, Array
+這些透過typeof operator我們拿到的都是"object"。在這些前提之下，當我們需要知道物件是不是Array
+的時候就很麻煩。
+    </p>
+    <p>
+最直接的想法我們會用下面的做法來判斷是不是Array物件，看起來很直覺，一般狀況用起來也很正常。
+但是遇到不同window或frame的時候，就會發現似乎不如預期那麼正常。
+    </p>
+    <pre name="code" class="javascript:controls:firstline[1]">
+var isArray = function(value) {
+    return value && 
+        typeof value === 'object' && 
+        value.constructor === Array;
+};
+    </pre>
+    <a href="example/type_mainframe_problem.html">不同Frame的時候</a>
+    <p>
+在console的log裡面可以看到跨frame使用的問題點，發生在我們使用constructor來做判定的時候會出錯。
+根據Douglas Crockford的書(Reference 2)上的解法程式應該如下
+    </p>
+    <pre name="code" class="javascript:controls:firstline[1]">
+var isArray = function( value ) {
+    return value &&
+        typeof value === 'object' &&
+        typeof value.length === 'number' &&
+        typeof value.splice === 'function' &&
+        !(value.propertyIsEnumerable('length'));
+};
+    </pre>
+    <a href="example/type_mainframe.html">不同Frame的解法測試範例</a>
+    <p>
+Douglas Crockford書上的解法用了propertyIsEnumerable()這個method。有關DontEnum請看(Reference 3)。
+    </p>
+    <a href="example/about_propertyIsEnumerable.html">About propertyIsEnumerable()</a>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>ECMA-262.pdf</li>
+            <li>JavaScript: The Good Parts</li>
+            <li>http://dhtmlkitchen.com/learn/js/enumeration/dontenum.jsp</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/07/23
+</address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="oracle10g,DBMS_SERVER_ALERT" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>My Memo Tips - delete current user所有table的資料</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">My Memo Tips - delete current user所有table的資料</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        為了貫徹不讓陸資公司資料污染自己NB的硬碟，即使是開發時期的測試資料也不想留，所以寫一個簡單的PL/SQL程式把東西清掉。因為不常寫PL/SQL怕以後說不定還有機會用到時還要再想一次PL/SQL語法，所以備份起來。
+        </p>
+        <p>
+        具備足夠的權限的話可以改成查DBA_TABLES, DBA_CONSTRAINTS條件加上owner欄位砍光任何user table資料的寫法。
+        </p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Oracle 10.2.0.1.0 with Windows XP sp3</li>
+            </ul>
+        </div>
+        <h2>簡單的程式</h2>
+        <p>
+        程式是寫delete current user table的資料，如果權限夠可以改成delete特定user table的資料。因為避免FK影響delete table的執行，所以多做disable FK的動作。
+        </p>
+        <h3>Listing. Clean current schema table content</h3>
+        <pre name="code" class="sql:controls:firstline[1]">
+declare
+  stmt varchar2(1000);
+  tname varchar2(30);
+  rowcons user_constraints%ROWTYPE;
+  cursor ccr is select * from user_constraints where constraint_type='R';
+  cursor c1 is select table_name from user_tables;
+begin
+  -- disable R constraint
+  dbms_output.put_line( 'Disable FK constraints' );
+  open ccr;
+  loop
+    fetch ccr into rowcons;
+    exit when ccr%NOTFOUND;
+    stmt := 'alter table ' || rowcons.table_name || ' disable constraints ' || rowcons.constraint_name;
+    execute immediate stmt;
+  end loop;
+  close ccr;
+  -- delete table
+  dbms_output.put_line( 'Delete table' );
+  open c1;
+  loop
+    fetch c1 into tname;
+    exit when c1%NOTFOUND;
+    stmt := 'delete from ' || tname;
+    execute immediate stmt;
+    commit;
+  end loop;
+  close c1;
+  -- enable R constraint
+  dbms_output.put_line( 'Enable FK constraints' );
+  open ccr;
+  loop
+    fetch ccr into rowcons;
+    exit when ccr%NOTFOUND;
+    stmt := 'alter table ' || rowcons.table_name || ' enable constraints ' || rowcons.constraint_name;
+    execute immediate stmt;
+  end loop;
+  close ccr;
+end;
+/
+        </pre>
+        <h3>執行結果</h3>
+        <pre class="console">
+SQL> alter session set nls_language=American;
+
+Session altered.
+
+SQL> declare
+  2    stmt varchar2(1000);
+  3    tname varchar2(30);
+  4    rowcons user_constraints%ROWTYPE;
+  5    cursor ccr is select * from user_constraints where constraint_type='R';
+  6    cursor c1 is select table_name from user_tables;
+  7  begin
+  8    -- disable R constraint
+  9    dbms_output.put_line( 'Disable FK constraints' );
+ 10    open ccr;
+ 11    loop
+ 12      fetch ccr into rowcons;
+ 13      exit when ccr%NOTFOUND;
+ 14      stmt := 'alter table ' || rowcons.table_name || ' disable constraints ' || rowcons.constraint_name;
+ 15      execute immediate stmt;
+ 16    end loop;
+ 17    close ccr;
+ 18    -- delete table
+ 19    dbms_output.put_line( 'Delete table' );
+ 20    open c1;
+ 21    loop
+ 22      fetch c1 into tname;
+ 23      exit when c1%NOTFOUND;
+ 24      stmt := 'delete from ' || tname || ' cascade';
+ 25      execute immediate stmt;
+ 26      commit;
+ 27    end loop;
+ 28    close c1;
+ 29    -- enable R constraint
+ 30    dbms_output.put_line( 'Enable FK constraints' );
+ 31    open ccr;
+ 32    loop
+ 33      fetch ccr into rowcons;
+ 34      exit when ccr%NOTFOUND;
+ 35      stmt := 'alter table ' || rowcons.table_name || ' enable constraints ' || rowcons.constraint_name;
+ 36      execute immediate stmt;
+ 37    end loop;
+ 38    close ccr;
+ 39  end;
+ 40  /
+Disable FK constraints
+Delete table
+Enable FK constraints
+
+PL/SQL procedure successfully completed.
+
+SQL> execute dbms_stats.gather_schema_stats('APUSER');
+
+PL/SQL procedure successfully completed.
+
+        </pre>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/05/06
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

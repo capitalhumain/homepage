@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="maven,multi-module" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <title>Meet Lucene 2</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Meet Lucene 2</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>主要是用SpringMVC做Lucene index查詢呈現，使用的index是前一篇建立的index。目的除了練習maven之外，還可以練習熟悉一下SpringMVC。</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 1.6.0_20</li>
+                <li>Maven 2.2.1</li>
+                <li>Lucene 3.0.2</li>
+                <li>Spring 3.0.3</li>
+            </ul>
+        </div>
+        <h2>家庭手工</h2>
+        <p>這個tutorial project規劃也是multi-module的方式，parent module就命名為tutorial-parent，分別還有tutorial-core、tutorial-webapp和tutorial-support-lucene。（如下圖所示）</p>
+        <img src="../images/java/meet.lucene2.mavne.structure.png" />
+        <p>每個module要做的事情說明如下</p>
+        <div>
+            <ul>
+                <li>tutorial-core: 定義提供search service interface和其他的interface</li>
+                <li>tutorial-support-lucene: 實作Lucene版本的search service</li>
+                <li>tutorial-webapp: Web application包含頁面、設定檔和controller</li>
+            </ul>
+        </div>
+        <p>完整程式在此 <a href="../samples/meet.lucene.2/tutorial-parent.tar.gz">code</a>。</p>
+        <h2>有的沒的</h2>
+        <h4>[Spring Configuration] annotation component scan multiple path</h4>
+        <p>如果使用context:component-scan要掃描多個路徑下的設定，就只要多寫幾次context:component-scan即可</p>
+        <h3>Listing. app-config.xml</h3>
+        <pre name="code" class="xml:controls:firstline[9]">
+	<!-- Scans the classpath of this application for @Components to deploy as beans -->
+    <!-- Lucene support -->
+    &lt;context:component-scan base-package="net.greenrivers.lucene.tutorial.support.lucene" />
+    <!-- Web -->
+	&lt;context:component-scan base-package="net.greenrivers.lucene.web" />
+
+    &lt;bean id="searchServiceManager" class="net.greenrivers.lucene.tutorial.core.SearchServiceManagerImpl">
+        &lt;property name="service" ref="luceneSearchService" />
+    &lt;/bean>
+        </pre>
+        <h4>[Maven Configuration] 共用的maven properties</h4>
+        <p>除了dependencies可以由parent module繼承之外，共用的參數和properties也可以由parent module繼承下來。因此在這裡把dependency version的設定放到parent module裡面，將來要改參數就可以套用到所有child modules。</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Lucene in Action, 2ed</li>
+                <li>Maven: The Definitive Guide</li>
+                <li>Spring in Action, 3ed</li>
+                <li>Spring framework reference</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/09/24
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

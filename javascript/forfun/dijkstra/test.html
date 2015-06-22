@@ -1,0 +1,68 @@
+<html>
+<head>
+    <title>Dijkstra Example</title>
+    <script type="text/javascript" src="../../../js/jquery-1.3.2.min.js"></script>
+    <script type="text/javascript" src="enhancement.js"></script>
+    <script type="text/javascript" src="dijkstra.js"></script>
+    <script type="text/javascript">
+    var assert = function( value, desc ) {
+        var li = document.createElement("li");
+        li.className = value ? "pass" : "fail";
+        li.appendChild( document.createTextNode( desc ) );
+        document.getElementById("results").appendChild( li );
+    }
+
+    window.onload = function() {
+        var x = y = 9;
+        var dijkstra = new Dijkstra(x, y);
+        var i, j;
+        var result = dijkstra.search( 2, 1, 5, 2 );
+        var node;
+        
+        assert( 1 === dijkstra.dist[ 1 ][ 1 ], 'Position test' );
+        // assert( 4 === dijkstra.dist[ 5 ][ 2 ], 'Target Position test' );
+        
+        var str = '';
+        for( i=0; i<x; i++) {
+            for( j=0; j<y; j++) {
+                if( dijkstra.dist[i][j] === undefined ) {
+                    str += '<span class="matrixr">*</span>&nbsp;';
+                } else {
+                    str += '<span class="matrixr">' + dijkstra.dist[i][j] + '</span>&nbsp;';
+                }
+            }
+            str += '<br/>';
+        }
+        $( '#matrix' ).html( str );
+        
+        str = '';
+        j = result.length;      // 因為pop()會影響迴圈下次result.length取得的值
+        for( i=0; i<j; i++ ) {
+            node = result.pop();
+            str += '[' + node[0] + ',' + node[1] + ']';
+        }
+        $( '#route' ).html( str );
+    };
+    </script>
+    <style>
+        #results li.pass { color: green; }
+        #results li.fail { color: red; }
+        #matrix {
+            background-color: #cccccc;
+            width: 200px;
+            height: 170px;
+            padding: 5px;
+        }
+        .matrixr {
+            padding: 1px;
+        }
+    </style>
+</head>
+<body>
+    <ul id="results"></ul>
+    <div id="matrix" style="font-family: 'courier new';">
+    </div>
+    <div id="route">
+    </div>
+</body>
+</html>

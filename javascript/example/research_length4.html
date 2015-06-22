@@ -1,0 +1,40 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script type="text/javascript" language="JavaScript">
+window.onload = function() {
+    var arr = [];
+    arr[-5] = 'glycine';
+    arr[-4] = 'leucine';
+    arr[-3] = 'aspartate';
+    arr[0] = 'alanine';
+    arr[1] = 'glutamate';
+    arr[2] = 'valine';
+    arr[3] = 'phenylalanine';
+    var i = 0;
+    var elem = document.getElementById( 'result' );
+    var lengelem = document.getElementById( 'lengthval' );
+
+    arr.length = 2;         // 負的index並不會砍掉
+    //arr.length = -1;      // 負的length會有錯誤訊息(invalid array length)
+    
+    lengelem.innerHTML = arr.length;
+    for( i=-5; i<arr.length; i++) {
+        elem.innerHTML += ( "arr index(" + i + ") = " + arr[i] + "<br />" );
+    } // for
+    
+    if( arr[3] === undefined ) {
+        alert( 'index 3 is undefined' );
+    } // if
+}; // window.onload()
+</script>
+</head>
+<body>
+    <p>
+    測試負號的index
+    </p>
+    Length of arr: <span id="lengthval"></span>
+    <div id="result">
+    </div>
+</body>
+</html>

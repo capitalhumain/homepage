@@ -1,0 +1,57 @@
+<html>
+<head>
+    <script type="text/javascript" language="javascript">
+    // 第一個測試
+    // 沒有start, end的時候
+    var arr1 = [1, 2, 3];
+    
+    var sarr1 = arr1.slice();
+    alert( '測試一' );
+    alert( arr1 );
+    alert( sarr1 );
+    alert( arr1 === sarr1 );    // false
+    
+    // 第二個測試
+    // 類似array的物件
+    // 0 沒東西
+    // 按照Array object定義length等於最大正整數的property+1
+    var farr1 = { 1: "one", 2: "two", length: 3};
+    var sarr2 = Array.prototype.slice.apply(farr1);
+    alert( '測試二' );
+    alert( sarr2 );
+    alert( sarr2.constructor );
+    
+    // 第三個測試
+    // 看起來像array的object literal，但是length property內容
+    // 和實際有點不符
+    var farr2 = { 0: "bla", 1: "fla", 2: "kla", length: 2};
+    var sarr3 = Array.prototype.slice.apply(farr2);
+    alert( '測試三' );
+    alert( sarr3 );                 // bla, fla
+    
+    // 不考慮邊界值的狀況下，slice的程式碼可能如下
+    var slice = function(start, end) {
+        var sidx = start || 0;
+        var eidx = end || this.length;
+        var i;
+        var result = [];
+        for( i=sidx; i<eidx; i+=1 ) {
+            result.push( this[i] );
+        } // for
+        return result;
+    };
+    alert( 'slice in mind' );
+    sarr1 = slice.apply( arr1 );
+    alert( sarr1 );
+    sarr2 = slice.apply( farr1 );
+    alert( sarr2 );
+    sarr3 = slice.apply( farr2 );
+    alert( sarr3 );
+    alert( slice.apply([1, 2, 3, 4, 5], [1]) );
+    alert( slice.apply([1, 2, 3, 4, 5], [1, 3]) );
+    </script>
+</head>
+<body>
+
+</body>
+</html>

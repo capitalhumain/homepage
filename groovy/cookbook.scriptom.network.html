@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>My Cookbook > Scriptom > WMI: Networking</title>
+</head>
+<body>
+<div>
+    <h1 class="header">My Cookbook > Scriptom > WMI: Networking</h1>
+</div>
+<div class="articlecontent">
+    <h2>Problem</h2>
+    <p>
+    因為工作性質在不同作業可能需要不同的網路設定。在網路上也有許多人寫好工具可以用，但是其實也可以自己用groovy搞出類似功能的小程式。
+    </p>
+    <h2>Solution</h2>
+    <p>
+    CodeHaus有一個open source project可以讓我們的Groovy可以和Windows COM元件溝通，也就是我們可以透過WMI做到想做的事情。
+    從Scriptom 1.6.0讓我們可以透過maven或grapes來dependency Scriptom。
+    </p>
+    <h3>Listing. enable all NIC to DHCP mode</h3>
+    <pre name="code" class="groovy:nocontrols:firstline[1]">
+@Grab( group='org.codehaus.groovy.modules.scriptom', module='scriptom', version='1.6.0' )
+import org.codehaus.groovy.scriptom.*;
+import static org.codehaus.groovy.scriptom.tlb.wbemscripting.WbemFlagEnum.*;
+import static org.codehaus.groovy.scriptom.util.wbemscripting.WbemDateTime.*;
+
+// Groovy COM scripting
+// 根據網站的說法 (http://groovy.codehaus.org/COM%2BScripting)
+// Wrap any code that references an ActiveXObject in Scriptom.inApartment { ... }, 
+// which replaces the way Scriptom previously handled COM threading. 
+Scriptom.inApartment {
+    def locator = new ActiveXObject( 'WbemScripting.SWbemLocator' )
+    def services = locator.ConnectServer( '.' )
+    
+    for( nic in services.ExecQuery( 'SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled=true', 'WQL', wbemFlagForwardOnly ) ) {
+        println "MAC Address: $nic.MACAddress"
+        println "Caption: $nic.Caption"
+        print "Enable DHCP"
+        nic.EnableDHCP
+        println "... Completed."
+    }
+}
+    </pre>
+    <p>
+    因為有的時候會需要設定固定IP，所以另外弄了一個設定固定IP的case；上面那個算是第二個程式的補正版...。省的改。
+    因為設定成固定IP把事情處理好總是要改回來。
+    </p>
+    <h3>Listing. Setup static ip</h3>
+    <pre name="code" class="groovy:nocontrols:firstline[1]">
+@Grab( group='org.codehaus.groovy.modules.scriptom', module='scriptom', version='1.6.0' )
+import org.codehaus.groovy.scriptom.*;
+import static org.codehaus.groovy.scriptom.tlb.wbemscripting.WbemFlagEnum.*;
+import static org.codehaus.groovy.scriptom.util.wbemscripting.WbemDateTime.*;
+
+// Groovy COM scripting
+// 根據網站的說法 (http://groovy.codehaus.org/COM%2BScripting)
+// Wrap any code that references an ActiveXObject in Scriptom.inApartment { ... }, 
+// which replaces the way Scriptom previously handled COM threading. 
+Scriptom.inApartment {
+    // 偶的有線
+    def mac_address = '00:11:22:33:44:55'
+    // EnableStatic
+    def ip_addresses = [ '192.168.1.100' ]
+    def subnet_mask = [ '255.255.255.0' ]
+    // SetGateways
+    def gateway = [ '192.168.1.1' ]
+    def gateway_cost_metric = [ 1 ]
+    
+    def locator = new ActiveXObject( 'WbemScripting.SWbemLocator' )
+    def services = locator.ConnectServer( '.' )
+    
+    for( nic in services.ExecQuery( "SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled=true and MACAddress='$mac_address'", 'WQL', wbemFlagForwardOnly ) ) {
+        println "MAC Address: $nic.MACAddress"
+        
+        // Groovy的list type是java.util.ArrayList，這些method接受的是String array和int array
+        nic.EnableStatic( ip_addresses.toArray(), subnet_mask.toArray() )
+        nic.SetGateways( gateway.toArray(), gateway_cost_metric.toArray() )
+    }
+}
+    </pre>
+    <p>
+    使用Grapes取得scriptom，用ivy或maven會看到下載的過程，但是Grapes不會看到下載的訊息，所以要耐心等候而且保持網路暢通。
+    或者自己下載scriptom安裝到groovy。
+    </p>
+    <h2>Discussion</h2>
+    <p>
+    </p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Groovy Web Site</li>
+            <li>WMI當然是小比她們家的說明，http://msdn.microsoft.com/en-us/library/aa394595%28VS.85%29.aspx</li>
+            <p>功能和限制除了自己踹之外，看書看文件才是最快的。比如說原本想做的Disable/Enable NIC查過MS文件之後就知道，在XP WMI那個function不能用，因為從Vista和Server 2008之後才有這個東東。</p>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2010/03/18
+</address>
+    <script language="javascript">
+    window.onload = function () {
+        SyntaxHighlighter.all();
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

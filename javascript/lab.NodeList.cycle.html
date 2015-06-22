@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>DOM - NodeList cycle</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">DOM - NodeList cycle</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>NodeList有一個很有趣的特點，就是當我們對DOM tree有異動的時候，如果剛好我們已經取得的NodeList物件也在被變動範圍的話，那NodeList也會隨著變動。</p>
+        <p>也就是說如果我們在iterate NodeList的同時，也對DOM tree該NodeList append 新的element的話，很可能會造成不可預期的悲劇。來看看下面這個程式，我嘗試在iterate li的NodeList的同時append新的li為ul的child。</p>
+        <h3>Listing. 有問題的程式碼 => 無窮迴圈</h3>
+        <pre name="code" class="xml:nocontrols:firstline[1]">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;title&gt;NodeList Cycle&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;ul id="theList"&gt;
+        &lt;li&gt;First&lt;/li&gt;
+        &lt;li&gt;Second&lt;/li&gt;
+        &lt;li&gt;Third&lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;script&gt;
+    window.onload = function() {
+        var doc=document, nodeList=doc.getElementsByTagName( 'li' ), theList = doc.getElementById( 'theList' );
+        // 不好的iterate javascript array寫法
+        for(var i=0;i&lt;nodeList.length;i++) {
+            var n = doc.createElement( 'li' );
+            n.appendChild( doc.createTextNode( 'test' ) );
+            // 這樣就會無限迴圈了～
+            theList.appendChild( n );
+            nodeList[i].addEventListener( 'click', function(e) {
+                console.log( 'clicked' );
+            } );
+        }
+    };
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+        </pre>
+        <p>有幾個解法可以解決這個問題，首先，雖然NodeList不是JavaScript array，但是很多行為很像，有效率的iterate JavaScript array的方式用在iterate NodeList可以解決這個問題。</p>
+        <h3>Listing. Cache length</h3>
+        <pre name="code" class="xml:nocontrols:firstline[1]">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;title&gt;NodeList Cycle&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;ul id="theList"&gt;
+        &lt;li&gt;First&lt;/li&gt;
+        &lt;li&gt;Second&lt;/li&gt;
+        &lt;li&gt;Third&lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;script&gt;
+    window.onload = function() {
+        var doc=document, nodeList=doc.getElementsByTagName( 'li' ), theList = doc.getElementById( 'theList' ), i, l;
+        // 不好的iterate javascript array寫法
+        for(i=0, l=nodeList.length;i&lt;l;i++) {
+            var n = doc.createElement( 'li' );
+            n.appendChild( doc.createTextNode( 'test' ) );
+            // 這樣就會無限迴圈了～
+            theList.appendChild( n );
+            nodeList[i].addEventListener( 'click', function(e) {
+                console.log( 'clicked' );
+            } );
+        }
+    };
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+        </pre>
+        <p>另一種方法就是把NodeList換成array來使用，使用的方法就是透過Array的</code>slice</code> method。</p>
+        <h3>Listing. 把NodeList換成array來使用</h3>
+        <pre name="code" class="xml:nocontrols:firstline[1]">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;title&gt;NodeList Cycle&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;ul id="theList"&gt;
+        &lt;li&gt;First&lt;/li&gt;
+        &lt;li&gt;Second&lt;/li&gt;
+        &lt;li&gt;Third&lt;/li&gt;
+    &lt;/ul&gt;
+    &lt;script&gt;
+    window.onload = function() {
+        var doc=document, 
+            slice=Array.prototype.slice, 
+            nodeList=doc.getElementsByTagName( 'li' ), 
+            theList = doc.getElementById( 'theList' ),
+            li_array;
+        // 把NodeList -&gt; Array
+        li_array = slice.call(nodeList);
+        // 不好的iterate javascript array寫法
+        for(var i=0;i&lt;li_array.length;i++) {
+            var n = doc.createElement( 'li' );
+            n.appendChild( doc.createTextNode( 'test' ) );
+            theList.appendChild( n );
+            nodeList[i].addEventListener( 'click', function(e) {
+                console.log( 'clicked' );
+            } );
+        }
+    };
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Learning from jQuery</li>
+                <li><a href="array.html">Array</a>裡有關array length的筆記</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2013/06/26
+    </address>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

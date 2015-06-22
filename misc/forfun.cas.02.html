@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="CAS,Single-Sign On,SSO" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>JA-SIG CAS Single-Sign On - 2</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">JA-SIG CAS Single-Sign On - 2</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        稍微像樣一點的使用狀況：讓CAS Server串OpenDS，使用ldap authentication。選擇用OpenDS是因為openLDAP從無到有的設定超過小弟智商能搞定的程度，在同事的建議下改用OpenDS...果然好玩多了。
+        </p>
+        <p>
+        這個部份分為兩個Task，第一個task只是單純的接通OpenDS server。第二個task是起兩個OpenDS server，設定兩個ldap server和相關參數，順便測試停掉第一台之後，是不是會乖乖連到設定的第二台ldap server。
+        </p>
+        <div>
+            <ol>
+                <li>CAS SSO with one OpenDS server</li>
+                <li>CAS SSO with two OpenDS servers</li>
+            </ol>
+        </div>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 6</li>
+                <li>Apache Maven 2.2.1</li>
+                <li>Apache Tomcat 6</li>
+                <li>JA-SIG CAS 3.4.2</li>
+                <li>Open DS 2.2.0</li>
+            </ul>
+        </div>
+        <h2>Preparation</h2>
+        <div>
+        要在CAS Server設定ldap authentication hadler support很簡單，只要在pom.xml加上ldap support就可以使用。
+        </div>
+        <pre name="code" class="xml:controls:firstline[1]">
+        <dependency>
+            <groupId>org.jasig.cas</groupId>
+            <artifactId>cas-server-support-ldap</artifactId>
+            <version>${cas.version}</version>
+            <type>jar</type>
+            <scope>runtime</scope>
+        </dependency>
+        </pre>
+        <div>測試用的Web Application就用之前Phase 1, 2用的那兩個。</div>
+        <div>LDAP的測試資料則用OpenDS安裝過程中建立測試用兩千筆資料。</div>
+        <h2>Task 1</h2>
+        <div>
+        一樣是在deployerConfigContext.xml裡面就可以設定這些東西。首先就是要設定ldap連線資訊，以便authentication handler使用。
+        </div>
+        <h3>Listing. LDAP connection configuration</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+    <!-- ContextSource -->
+    &lt;bean id="myContextSource" class="org.springframework.ldap.core.support.LdapContextSource">
+        &lt;property name="pooled" value="false"/>
+	    &lt;property name="urls">
+                &lt;list>
+                    &lt;value>ldap://M1210:1389/&lt;/value>
+                &lt;/list>
+	    &lt;/property>
+	    &lt;property name="userDn" value="cn=Directory Manager"/>
+            &lt;property name="password" value="password"/>
+	    &lt;property name="baseEnvironmentProperties">
+                &lt;map>
+                    &lt;entry>
+                        &lt;key>
+                            &lt;value>java.naming.security.authentication&lt;/value>
+                        &lt;/key>
+                        &lt;value>simple&lt;/value>
+                    &lt;/entry>
+                &lt;/map>
+	    &lt;/property>
+    &lt;/bean>
+        </pre>
+        <div>
+        接著就是設定authentication handler
+        </div>
+        <h3>Listing. ldap authentication handler</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+                &lt;bean class="org.jasig.cas.adaptors.ldap.BindLdapAuthenticationHandler" >
+                    &lt;property name="filter" value="cn=%u" />
+                    &lt;property name="searchBase" value="dc=example,dc=com" />
+                    &lt;property name="contextSource" ref="myContextSource" />
+                &lt;/bean>
+        </pre>
+        <div>
+        總和起來設定如下
+        </div>
+        <pre name="code" class="xml:controls:firstline[1]">
+	&lt;bean id="authenticationManager"
+		class="org.jasig.cas.authentication.AuthenticationManagerImpl">
+		&lt;property name="credentialsToPrincipalResolvers">
+			&lt;list>
+				&lt;bean
+					class="org.jasig.cas.authentication.principal.UsernamePasswordCredentialsToPrincipalResolver" />
+
+				&lt;bean
+					class="org.jasig.cas.authentication.principal.HttpBasedServiceCredentialsToPrincipalResolver" />
+			&lt;/list>
+		&lt;/property>
+		&lt;property name="authenticationHandlers">
+			&lt;list>
+				&lt;bean class="org.jasig.cas.authentication.handler.support.HttpBasedServiceCredentialsAuthenticationHandler"
+					p:httpClient-ref="httpClient" />
+				&lt;bean class="org.jasig.cas.adaptors.ldap.BindLdapAuthenticationHandler" >
+                    &lt;property name="filter" value="cn=%u" />
+                    &lt;property name="searchBase" value="dc=example,dc=com" />
+                    &lt;property name="contextSource" ref="myContextSource" />
+                &lt;/bean>
+			&lt;/list>
+		&lt;/property>
+	&lt;/bean>
+
+    <!-- ContextSource -->
+    &lt;bean id="myContextSource" class="org.springframework.ldap.core.support.LdapContextSource">
+        &lt;property name="pooled" value="false"/>
+	    &lt;property name="urls">
+                &lt;list>
+                    &lt;value>ldap://M1210:1389/&lt;/value>
+                &lt;/list>
+	    &lt;/property>
+	    &lt;property name="userDn" value="cn=Directory Manager"/>
+            &lt;property name="password" value="password"/>
+	    &lt;property name="baseEnvironmentProperties">
+                &lt;map>
+                    &lt;entry>
+                        &lt;key>
+                            &lt;value>java.naming.security.authentication&lt;/value>
+                        &lt;/key>
+                        &lt;value>simple&lt;/value>
+                    &lt;/entry>
+                &lt;/map>
+	    &lt;/property>
+    &lt;/bean>
+        </pre>
+        <h2>Task 2</h2>
+        <div>
+        另外在建一個OpenDS server，透過Export ldif/Import ldif的方式把第一台OpenDS server的資料放到第二台裡面。
+        </div>
+        <div>
+        既然是跟連線有關的設定，當然是設定在LdapContextSource的參數裡，連線和查詢的timeout單位是毫秒，因此這邊用的數值跟user manual的一樣都是兩秒。
+        </div>
+        <pre name="code" class="xml:controls:firstline[1]">
+    <!-- ContextSource -->
+    &lt;bean id="myContextSource" class="org.springframework.ldap.core.support.LdapContextSource">
+        &lt;property name="pooled" value="false"/>
+	    &lt;property name="urls">
+            &lt;list>
+                &lt;value>ldap://M1210:1389/&lt;/value>
+                &lt;value>ldap://M1210:2389/&lt;/value>
+            &lt;/list>
+	    &lt;/property>
+	    &lt;property name="userDn" value="cn=Directory Manager"/>
+	    &lt;property name="password" value="password"/>
+	    &lt;property name="baseEnvironmentProperties">
+            &lt;map>
+                &lt;entry>
+                    &lt;key>
+                        &lt;value>java.naming.security.authentication&lt;/value>
+                    &lt;/key>
+                    &lt;value>simple&lt;/value>
+                &lt;/entry>
+                &lt;entry>
+                    &lt;key>
+                        &lt;value>com.sun.jndi.ldap.connect.timeout&lt;/value>
+                    &lt;/key>
+                    &lt;value>2000&lt;/value>
+                &lt;/entry>
+                &lt;entry>
+                    &lt;key>
+                        &lt;value>com.sun.jndi.ldap.read.timeout&lt;/value>
+                    &lt;/key>
+                    &lt;value>2000&lt;/value>
+                &lt;/entry>
+            &lt;/map>
+	    &lt;/property>
+    &lt;/bean>
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ul>
+                <li>JA-SIG CAS User Manual</li>
+                <li>Apache Tomcat 6 Doc and Lorenz Chi 協助</li>
+            </ul>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home" style="display:none;"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/08/10
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

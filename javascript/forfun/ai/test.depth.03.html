@@ -1,0 +1,40 @@
+<html>
+<head>
+<title>Test Suite</title>
+<script type="text/javascript" src="core.js"></script>
+<script type="text/javascript" src="depth.js"></script>
+<script type="text/javascript">
+function assert( value, desc ) {
+    var li = document.createElement("li");
+    li.className = value ? "pass" : "fail";
+    li.appendChild( document.createTextNode( desc ) );
+    document.getElementById("results").appendChild( li );
+}
+
+window.onload = function(){
+    var depth = new Depth();
+    
+    depth.addFlightInfo( 'Taipei', 'Taichung', 200 );
+    depth.addFlightInfo( 'Taichung', 'Kuo', 150 );
+    depth.addFlightInfo( 'Taichung', 'Hua', 150 );
+    
+    solve( depth, 'Taipei', 'Hua1' );
+    
+    assert( depth.btStack.length === 0, "Testing for solve() Taipei->Hua1 ... 查詢不到的case" );
+    
+    depth.reset();
+    
+    solve( depth, 'Taipei', 'Hua' );
+    
+    assert( depth.btStack.length === 2, "Testing for solve() Taipei->Hua ... 查詢得到的case" );
+};
+</script>
+<style>
+    #results li.pass { color: green; }
+    #results li.fail { color: red; }
+</style>
+</head>
+<body>
+    <ul id="results"></ul>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" language="javascript">
+    // 根據ECMA-262 15.3.1規定Function constructor 呼叫使用
+    // Function Invocation Pattern和Constructor Invocation Pattern是一樣的
+    var bla = Function( 'a', 'b', 'c', 'return a+b+c;' );
+    // var bla = Function( 'a, b', 'c', 'return a+b+c;' );  // OK!
+    // var bla = Function( 'a, b, c', 'return a+b+c;' );    // OK!
+    
+    window.onload = function() {
+        document.getElementById( 'result1' ).innerHTML = bla(1, 2, 3);
+    };
+    </script>
+</head>
+<body>
+Result of bla(1, 2, 3): <span id="result1"></span>
+</body>
+</html>

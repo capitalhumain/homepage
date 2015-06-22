@@ -1,0 +1,77 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Common LISP" />
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/style.css" />
+    <title>筆記： Hunt the Wumpus</title>
+</head>
+<body>
+<div>
+    <h1 class="header">筆記： Hunt the Wumpus</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p></p>
+    <h2></h2>
+    <p></p>
+    <h2>用到的functions</h2>
+    <p><code>random</code>簡單說就是取得一個大於等於0小於給定值（不包含給定值）的亂數，該注意的是如果給定值是有小數則產生的亂數也是小數；如果給定值是整數則產生的亂數也會是整數。</p>
+    <h3>Listing. random exmaple （我不是故意充版面是因為運氣一向不好的我也沒想到0-4，我要按那麼多次才會看到0）</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[8]> (random 1.5)
+1.3598021
+[9]> (random 1.5)
+0.7908141
+[10]> (random 1.5)
+0.92384744
+[11]> (random 5)
+4
+[12]> (random 5)
+1
+[13]> (random 5)
+3
+[14]> (random 5)
+3
+[15]> (random 5)
+4
+[16]> (random 5)
+1
+[17]> (random 5)
+3
+[18]> (random 5)
+2
+[19]> (random 5)
+1
+[20]> (random 5)
+0
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Land of LISP, Chapter 8</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/03/16
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

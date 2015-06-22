@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Thread Per Message Pattern</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Thread Per Message Pattern - Homework 7.5</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+還是Manning大優惠的功勞加上老是看些工作用不上的書的結果。只是用Groovy來做古早已前買一本multithread書的習題。
+剛好最近用到了Thread Per Message Pattern，所以就拿這個來玩玩。
+    </p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.6.3</li>
+            <li>Sun JDK 1.6.0_10</li>
+        </ul>
+    </div>
+    <h2>亂亂講時間</h2>
+    <p>
+Thread Per Message就是<strong>當發送request時，啟動一個執行緒，由這個執行緒執行工作</strong>。Thread Per Message
+的重點是放在<strong>提高Host對Client的回應性</strong>，然而啟動執行緒的成本的問題還是存在。如果想降低啟動執行
+緒成本的問題是很重要的，就要思考使用Thread Pool或者Worker Pattern。
+    </p>
+    <p>
+Thread Per Message還有一個特色就是不管交派出去事情的處理結果，如果我們遇到的狀況是需要處理或者需要知道啟動的
+執行緒的<strong>執行狀況、結果或者有後續的callback or 處理程序</strong>的時候，則可以思考是否要使用Future 
+Pattern。
+    </p>
+    <p>
+在Thread Per Message中我們可以輕易的啟動執行緒，但是應用上還必須注意到的是提供服務的<strong>helper是否允許重
+新進入</strong>這個問題，以下面的例子而言，使用Thread Per Message在按下Execute Button的時候，雖然提高程式的回
+應性，但是也會有重新進入Service.service()的問題。因此再service()不允許重新進入的情境，必須使用別的方法來保護
+Helper才能解決這個問題。
+    </p>
+    <h2>程式碼</h2>
+    <p>首先是把書本的題目寫成Groovy版。</p>
+    <h3>Listing. Service.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+class Service {
+    static service() {
+        for( i in 1..50 ) {
+            System.out.print "."
+            Thread.sleep(100)
+        }
+    }
+}
+    </pre>
+    <h3>Listing. MyFrame.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.swing.SwingBuilder
+import java.awt.FlowLayout as FL
+import javax.swing.WindowConstants as WC
+
+swing = new SwingBuilder()
+
+executeAction = swing.action( name:"Execute", closure: {
+    Service.service()
+})
+
+frame = swing.frame( title:'TPM Question',
+        defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    panel( layout: new FL() ) {
+        label( "Thrad-Per-Message Question" )
+        button( "Execute" ) { action(executeAction) }
+    }
+}
+frame.pack()
+frame.show()
+    </pre>
+    <p>提升程式回應性的簡單做法</p>
+    <h3>Listing. MyNewFrame.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+package script
+
+import groovy.swing.SwingBuilder
+import java.awt.FlowLayout as FL
+import javax.swing.WindowConstants as WC
+
+swing = new SwingBuilder()
+
+executeAction = swing.action( name:"Execute", closure: {
+    new Thread({
+        Service.service()
+    }).start()
+})
+
+frame = swing.frame( title:'TPM Question',
+        defaultCloseOperation: WC.EXIT_ON_CLOSE) {
+    panel( layout: new FL() ) {
+        label( "Thrad-Per-Message Question" )
+        button( "Execute" ) { action(executeAction) }
+    }
+}
+frame.pack()
+frame.show()
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>結城浩. Java Multithread Design Patterns - 『Thread-Per-Message - この仕事、やっといてね』</li>
+            <li>Groovy in Action First Edition</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/07/08
+</address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

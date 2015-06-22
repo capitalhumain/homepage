@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushMathProg.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>GNU Linear Programming Kit (GLPK)</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">GNU Linear Programming Kit (GLPK)</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>意料中的學習由google帶來意外的發現，所以就花點時間玩看看。</p>
+        <p></p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>GNU Linear Programming Kit (GLPK) 4.38</li>
+            </ul>
+        </div>
+        <h2>Installation</h2>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+        sudo apt-get install glpk
+        </pre>
+        <p></p>
+        <h2>開始玩嚕</h2>
+        <p>用Head First Data Analysis書上的範例來玩一下，根據書上的例子描述鴨子玩具一個的利潤是5元，小魚玩具一個的利潤是4元。生產部門給的資訊是如果全部生產鴨子玩具一個月最多可以生產400隻鴨子玩具；如果全部生產小魚玩具一個月最多可以生產300隻小魚玩具。而生產一隻鴨子玩具需要使用100個塑膠粒，生產一隻小魚玩具需要使用125個塑膠粒。而目前倉庫庫存的塑膠粒共50000顆。（這個模型有一個預先的假設，就是生產多少就會賣掉多少...這很可能會導致很慘的後果）</p>
+        <p>接下來，讓我這個數學不好的食品科學系學生放肆地唬爛一下吧！要求的是最大利潤因此我們的目標函數是</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+        Objective Function := [Profit of Duck]*[Number of Duck] + [Profit of Fish]*[Number of Fish] 
+                           := 5*[Number of Duck] + 4*[Number of Fish]
+        </pre>
+        <p>而目前知道的限制條件如下</p>
+        <div>
+            <ol>
+                <li>[Number of Duck] <= 400</li>
+                <li>[Number of Fish] <= 300</li>
+                <li>100*[Number of Duck]+125*[Number of Fish] <= 50000</li>
+            </ol>
+        </div>
+        <p>接下來就是把這個模型用MathProg語法寫出來</p>
+        <h3>Listing 1. rubber.mod</h3>
+        <pre name="code" class="MathProg:nocontrols:firstline[1]">
+/* Decision variables */
+var x1 >=0; # duck
+var x2 >=0; # fish
+
+/* Objective function */
+maximize z: 5*x1 + 4*x2;
+
+/* Constraints */
+s.t. duck_max                 : x1 <= 400;
+subject to fishup_max         : x2 <= 300;
+max_pellet                    : 100*x1 + 125*x2 <= 50000;
+
+end;
+        </pre>
+        <p>MathProg的寫法大概說明一下，註解的寫法可以用多行的<code>/**/</code>或者用單行的<code>#</code>，然後每一句expression最後面記得加上<code>;</code>結束那個expression。</p>
+        <p>首先，先定義參數，這個例子就定義兩個參數x1, x2分別代表要求的鴨子玩具和小魚玩具的最佳生產數量，而這兩個參數都必須大於0。接下來我們定義objective function，objective function一般會長的像下面這樣</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+maximize name [alias] [domain]: expression;
+or
+minimize name [alias] [domain]: expression;
+        </pre>
+        <p>alias部份可省略代表objective function name的alias，expression就是objective function的內容。</p>
+        <p>接下來定義限制式，限制式可以由<code>subject to</code>、<code>subj to</code>、<code>s.t.</code>甚至省略上面這些來定義，只有name和expression即可。</p>
+        <p>model建立好了之後，接下來找答案去。透過下列指令</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+glpsol -m rubber.mod -o rubber.sol
+        </pre>
+        <p><code>-m</code>：跟glpsol說我們用GNU MathProg描述的model file，<code>-o</code>：則是跟glpsol說解出來的結果放到那個檔案。如果我們描述model的程式沒有語法錯誤的話，就可以看到解答產生。</p>
+        <p>在console看到執行的情形如下</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/gnu/glpk$ glpsol -m rubber.mod -o rubber.sol
+GLPSOL: GLPK LP/MIP Solver 4.38
+Reading model section from rubber.mod...
+14 lines were read
+Generating o...
+Generating duck_max...
+Generating fishup_max...
+Generating max_pellet...
+Model has been successfully generated
+glp_simplex: original LP has 4 rows, 2 columns, 6 non-zeros
+glp_simplex: presolved LP has 1 row, 2 columns, 2 non-zeros
+Scaling...
+ A: min|aij| =  1.000e+02  max|aij| =  1.250e+02  ratio =  1.250e+00
+GM: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+EQ: min|aij| =  1.000e+00  max|aij| =  1.000e+00  ratio =  1.000e+00
+Crashing...
+Size of triangular part = 1
+      0: obj =   2.500000000e+03  infeas =  1.000e+04 (0)
+*     1: obj =   2.000000000e+03  infeas =  0.000e+00 (0)
+*     2: obj =   2.320000000e+03  infeas =  0.000e+00 (0)
+OPTIMAL SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.1 Mb (114487 bytes)
+Writing basic solution to `rubber.sol'...
+        </pre>
+        <p>在最後面可以看到glpsol說最佳化的解答就在rubber.sol裡面...讚</p>
+        <h3>Listing 2. rubber.sol</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+Problem:    rubber
+Rows:       4
+Columns:    2
+Non-zeros:  6
+Status:     OPTIMAL
+Objective:  z = 2320 (MAXimum)
+
+   No.   Row name   St   Activity     Lower bound   Upper bound    Marginal
+------ ------------ -- ------------- ------------- ------------- -------------
+     1 z            B           2320                             
+     2 duck_max     NU           400                         400           1.8 
+     3 fishup_max   B             80                         300 
+     4 max_pellet   NU         50000                       50000         0.032 
+
+   No. Column name  St   Activity     Lower bound   Upper bound    Marginal
+------ ------------ -- ------------- ------------- ------------- -------------
+     1 x1           B            400             0               
+     2 x2           B             80             0               
+
+Karush-Kuhn-Tucker optimality conditions:
+
+KKT.PE: max.abs.err = 0.00e+00 on row 0
+        max.rel.err = 0.00e+00 on row 0
+        High quality
+
+KKT.PB: max.abs.err = 0.00e+00 on row 0
+        max.rel.err = 0.00e+00 on row 0
+        High quality
+
+KKT.DE: max.abs.err = 1.11e-16 on column 1
+        max.rel.err = 1.01e-17 on column 1
+        High quality
+
+KKT.DB: max.abs.err = 0.00e+00 on row 0
+        max.rel.err = 0.00e+00 on row 0
+        High quality
+
+End of output
+
+        </pre>
+        <p>解答檔裡面第一個部份是執行的程式資訊和計算結果，計算結果裡面包含解答的狀態（Listing 2. Line 5）和objective function最佳化的結果。這個例子我們可以看到結果是OPTIMAL而最大利潤則是2320。</p>
+        <p>接下來第二部份是objective function和contraints之間的資訊，st欄位裡的NU代表a non-basic variable on the upper bound for that constraint。</p>
+        <p>第三部份則是decision variables最佳化解的值。</p>
+        <p>第四部份是檢視這個解是否符合KKT最佳化條件。像我這種數學白痴能理解的大概只有KKT conditions第一項條件︰最佳點必須是個可行解，也就是說要滿足每一個等式及不等式限制條件。</p>
+        <p>接下來就是程式有關的議題。根據實際的情形我們做出上面的model，但是當model有所調整的時候我們也必須追著magic number看遍整個程式。可能現實模型的改變，在程式裡面某個參數沒改到而得到錯誤的結果。所以把所有magic number統一放到data section來設定，因此程式改成如下面這樣。</p>
+        <pre name="code" class="MathProg:nocontrols:firstline[1]">
+/* set definition */
+set PROD;
+
+/* parameters definition */
+param Profit_Product      { i in PROD };
+param Pellet_Usage        { i in PROD };
+param Max_Produce         { i in PROD };
+param Pellet_Max;
+
+/* Decision variables */
+var x { i in PROD } >= 0;
+
+/* Objective function */
+maximize z: sum{ i in PROD } Profit_Product[i]*x[i];
+
+/* Constraints */
+s.t. Dem { i in PROD }   : x[i] <= Max_Produce[i];
+s.t. max_pellet          : sum { i in PROD } Pellet_Usage[i]*x[i] <= Pellet_Max;
+
+/* data section */
+data;
+
+set PROD := duck, fish;
+
+param Profit_Product :=
+duck 5
+fish 4;
+
+param Pellet_Usage :=
+duck 100
+fish 125;
+
+param Max_Produce :=
+duck 400
+fish 300;
+
+param Pellet_Max := 50000;
+
+end;
+
+        </pre>
+        <p>為了達成這個目的，因為這次的模型要求鴨子玩具和小魚玩具的最佳生產數量。首先先定義一個集合用來代表鴨子玩具和小魚玩具，可以在data section看到集合的內容。針對decision variable、利潤、塑膠粒和每月生產上限這幾個資料也都分別定義出來。</p>
+        <p>比較特別的是Line 14～18那邊的寫法，先看objective function</p>
+        <pre name="code" class="MathProg:nocontrols:firstline[14]">
+maximize z: sum{ i in PROD } Profit_Product[i]*x[i];
+        </pre>
+        <p>就是iterate PROD set執行<code>Profit_Product[i]*x[i]</code>這樣expression之後，一個一個丟進去sum裡面求總和。想一下下面簡單的程式片段</p>
+        <pre name="code" class="MathProg:nocontrols:firstline[16]">
+printf{ i in PROD }: "- %d\n", Profit_Product[i];
+
+printf: "sum: %d\n", sum {i in PROD} Profit_Product[i];
+        </pre>
+        <p>在console看到的結果如下</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+- 5
+- 4
+sum: 9
+        </pre>
+        <p></p>
+        <h2>附註</h2>
+        <p>簡單寫一個MathProg的SyntaxHighlight的js</p>
+        <pre name="code" class="javascript:controls:firstline[1]">
+SyntaxHighlighter.brushes.MathProg = function()
+{
+    var datatypes =	'integer binary symbolic ' ;
+    
+	var keywords =	'var set end param subject to subj solve check display printf ' +
+                    'and diff if less or union by div data ' +
+                    'in mod symdiff within cross else inter not then ' ;
+					
+	var functions =	'abs ceil floor exp log log10 max min round sqrt ' +
+                    'trunc Irand224 Uniform01 Uniform Normal10 Normal ' +
+                    'sum prod ' ;
+                    
+    var objective = 'maximize minimize ';
+
+	this.regexList = [
+		{ regex: /#(.*)$/gm,										css: 'comments' },			// one line comments
+		{ regex: SyntaxHighlighter.regexLib.multiLineCComments,		css: 'comments' },			// multiline comments
+		{ regex: SyntaxHighlighter.regexLib.doubleQuotedString,		css: 'string' },			// strings
+		{ regex: SyntaxHighlighter.regexLib.singleQuotedString,		css: 'string' },			// strings
+        { regex: new RegExp(this.getKeywords(datatypes), 'gm'),		css: 'color1 bold' },
+        { regex: new RegExp(this.getKeywords(objective), 'gm'),     css: 'color2 bold' },
+		{ regex: new RegExp(this.getKeywords(functions), 'gm'),		css: 'functions bold' },
+		{ regex: new RegExp(this.getKeywords(keywords), 'gm'),		css: 'keyword bold' },
+        { regex: /s.t./gm,		css: 'keyword bold' }
+		];
+};
+
+SyntaxHighlighter.brushes.MathProg.prototype	= new SyntaxHighlighter.Highlighter();
+SyntaxHighlighter.brushes.MathProg.aliases	= ['MathProg'];
+
+        </pre>
+        <p></p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Head First Data Analysis, O'Reilly</li>
+                <li>http://www.ibm.com/developerworks/linux/library/l-glpk1/</li>
+                <li>GNU MathProg: http://lpsolve.sourceforge.net/5.5/MathProg.htm</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/11/11</i>, latest update 2010/11/11
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

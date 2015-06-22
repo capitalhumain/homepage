@@ -1,0 +1,347 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="SpringMVC, HelloWorld" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <title>Hello, SpringMVC</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Hello, SpringMVC</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>一直以來都不認為自己實力稱不上Java Developer，對所謂的規格更是不感興趣。所以筆記除了工作用的東西之外，都是紀錄自己有興趣玩的對正統IT技術人員來說大概算邪魔外道的東西。(似乎也註定未來悲慘下場 哈哈)</p>
+        <p>資料移轉弄好了，既然沒網路就把之前玩的東西整理一下。邪魔外道玩久了，弄一下正常的東西好了。第一個hello, world區分為兩個部份，第一個部份是把設定檔的東西搞定，且讓他跑起來；第二部份是真的寫一個hello controller</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 1.6.0_20</li>
+                <li>Maven 2.2.1</li>
+            </ul>
+        </div>
+        <h2>Part 1: Configuration</h2>
+        <p>首先，先建立hello目錄，在hello目錄下手建src目錄下需要的各個目錄，然後用copy或者手打pom.xml，既然是『快快樂樂』就不用真的考慮multi module...</p>
+        <h3>Listing. pom.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    &lt;modelVersion>4.0.0&lt;/modelVersion>
+    &lt;groupId>net.greenrivers&lt;/groupId>
+    &lt;artifactId>hellospringmvc&lt;/artifactId>
+    &lt;packaging>war&lt;/packaging>
+    &lt;version>1.0&lt;/version>
+    &lt;name>hello springmvc&lt;/name>
+    &lt;url>http://maven.apache.org&lt;/url>
+
+    &lt;build>
+        &lt;plugins>
+            &lt;plugin>
+                &lt;groupId>org.apache.maven.plugins&lt;/groupId>
+                &lt;artifactId>maven-compiler-plugin&lt;/artifactId>
+                &lt;configuration>
+                    &lt;source>1.6&lt;/source>
+                    &lt;target>1.6&lt;/target>
+                    &lt;encoding>UTF-8&lt;/encoding>
+                &lt;/configuration>
+            &lt;/plugin>
+            
+            &lt;plugin>
+                &lt;groupId>org.apache.maven.plugins&lt;/groupId>
+                &lt;artifactId>maven-resources-plugin&lt;/artifactId>
+                &lt;configuration>
+                    &lt;encoding>UTF-8&lt;/encoding>
+                &lt;/configuration>
+            &lt;/plugin>
+            
+            &lt;plugin>
+                &lt;groupId>org.apache.maven.plugins&lt;/groupId>
+                &lt;artifactId>maven-war-plugin&lt;/artifactId>
+            &lt;/plugin>
+        &lt;/plugins>
+     
+        &lt;finalName>hello&lt;/finalName>
+        &lt;resources>
+            &lt;resource>
+                &lt;directory>src/main/resources&lt;/directory>
+                &lt;filtering>true&lt;/filtering>
+            &lt;/resource>
+        &lt;/resources>
+    &lt;/build>
+
+    &lt;dependencies>
+        &lt;dependency>
+            &lt;groupId>javax.servlet&lt;/groupId>
+            &lt;artifactId>servlet-api&lt;/artifactId>
+            &lt;version>${servlet.version}&lt;/version>
+            &lt;scope>provided&lt;/scope>
+        &lt;/dependency>
+
+        &lt;dependency>
+            &lt;groupId>javax.servlet.jsp&lt;/groupId>
+            &lt;artifactId>jsp-api&lt;/artifactId>
+            &lt;version>${jsp.version}&lt;/version>
+            &lt;scope>provided&lt;/scope>
+        &lt;/dependency>
+
+        &lt;dependency>
+            &lt;groupId>javax.servlet&lt;/groupId>
+            &lt;artifactId>jstl&lt;/artifactId>
+            &lt;version>1.2&lt;/version>
+        &lt;/dependency>
+
+
+        &lt;dependency>
+            &lt;groupId>junit&lt;/groupId>
+            &lt;artifactId>junit&lt;/artifactId>
+            &lt;version>${junit.version}&lt;/version>
+            &lt;scope>test&lt;/scope>
+        &lt;/dependency>
+        
+        &lt;dependency>
+            &lt;groupId>org.springframework&lt;/groupId>
+            &lt;artifactId>org.springframework.core&lt;/artifactId>
+            &lt;version>${springframework.version}&lt;/version>
+        &lt;/dependency>
+        
+        &lt;dependency>
+            &lt;groupId>org.springframework&lt;/groupId>
+            &lt;artifactId>spring-webmvc&lt;/artifactId>
+            &lt;version>${springframework.version}&lt;/version>
+        &lt;/dependency>
+
+        &lt;!--  URL Rewrite -->
+        &lt;dependency>
+            &lt;groupId>org.tuckey&lt;/groupId>
+            &lt;artifactId>urlrewritefilter&lt;/artifactId>
+            &lt;version>${tuckey.version}&lt;/version>
+        &lt;/dependency>
+    &lt;/dependencies>
+    
+    &lt;properties>
+        &lt;springframework.version>3.0.3.RELEASE&lt;/springframework.version>
+        &lt;jsp.version>2.1&lt;/jsp.version>
+        &lt;servlet.version>2.5&lt;/servlet.version>
+        &lt;junit.version>4.8.1&lt;/junit.version>
+        &lt;tuckey.version>3.1.0&lt;/tuckey.version>
+    &lt;/properties>
+
+    &lt;repositories>
+        &lt;repository>
+            &lt;id>springsource-milestone&lt;/id>
+            &lt;url>http://repository.springsource.com/maven/bundles/milestone&lt;/url>
+        &lt;/repository>
+        &lt;repository>
+            &lt;id>springsource-release&lt;/id>
+            &lt;url>http://repository.springsource.com/maven/bundles/release&lt;/url>
+        &lt;/repository>
+        &lt;repository>
+            &lt;id>springsource-external&lt;/id>
+            &lt;url>http://repository.springsource.com/maven/bundles/snapshot&lt;/url>
+        &lt;/repository>
+    &lt;/repositories>
+&lt;/project>        
+        </pre>
+        <p>接著是web.xml的設定，先秉持『快快樂樂』不用像CAS那麼瘋狂在自己的servlet初始化spring的DispatcherServlet。除了DispatcherServlet設定之外，其他設定說明如下</p>
+        <div>
+            <ol>
+                <li>UrlRewriteFilter： 在SpringMVC的範例裡面用到了urlrewrite把網址/app/abc<->/abc，所以也必須要設定他。</li>
+                <li>CharacterEncodingFilter： 用這個filter的目的之前有玩過struts2等應該知道為啥要用，submit form在text field打中文就知道了。</li>
+            </ol>
+        </div>
+        <h3>Listing. web.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+	&lt;display-name>hello Spring MVC&lt;/display-name>
+    
+	<!-- Reads request input using UTF-8 encoding -->
+	&lt;filter>
+		&lt;filter-name>characterEncodingFilter&lt;/filter-name>
+		&lt;filter-class>org.springframework.web.filter.CharacterEncodingFilter&lt;/filter-class>
+		&lt;init-param>
+			&lt;param-name>encoding&lt;/param-name>
+			&lt;param-value>UTF-8&lt;/param-value>
+		&lt;/init-param>
+		&lt;init-param>
+			&lt;param-name>forceEncoding&lt;/param-name>
+			&lt;param-value>true&lt;/param-value>
+		&lt;/init-param>
+	&lt;/filter>
+	
+	<!-- Enables clean URLs with JSP views e.g. /welcome instead of /app/welcome -->
+	&lt;filter>
+		&lt;filter-name>UrlRewriteFilter&lt;/filter-name>
+		&lt;filter-class>org.tuckey.web.filters.urlrewrite.UrlRewriteFilter&lt;/filter-class>
+	&lt;/filter>
+
+	&lt;filter-mapping>
+		&lt;filter-name>characterEncodingFilter&lt;/filter-name>
+		&lt;url-pattern>/*&lt;/url-pattern>
+	&lt;/filter-mapping>
+
+	&lt;filter-mapping>
+		&lt;filter-name>UrlRewriteFilter&lt;/filter-name>
+		&lt;url-pattern>/*&lt;/url-pattern>
+	&lt;/filter-mapping>
+
+	&lt;!-- Handles all requests into the application -->
+	&lt;servlet>
+		&lt;servlet-name>Spring MVC Dispatcher Servlet&lt;/servlet-name>
+		&lt;servlet-class>org.springframework.web.servlet.DispatcherServlet&lt;/servlet-class>
+		&lt;init-param>
+			&lt;param-name>contextConfigLocation&lt;/param-name>
+			&lt;param-value>
+				/WEB-INF/spring/app-config.xml
+			&lt;/param-value>
+		&lt;/init-param>
+		&lt;load-on-startup>1&lt;/load-on-startup>
+	&lt;/servlet>
+
+	&lt;servlet-mapping>
+		&lt;servlet-name>Spring MVC Dispatcher Servlet&lt;/servlet-name>
+		&lt;url-pattern>/app/*&lt;/url-pattern>
+	&lt;/servlet-mapping>
+
+    
+	&lt;welcome-file-list>
+		&lt;welcome-file>index.jsp&lt;/welcome-file>
+	&lt;/welcome-file-list>
+&lt;/web-app>
+        </pre>
+        <p>SpringMVC範例把SpringMVC configuration獨立拆出來，所以在app-config.xml會看到import mvc-config.xml</p>
+        <p>因為還不打算寫java code，所以原本spring example有的context:component-scan就先不管他。</p>
+        <h3>Listing. app-config.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+	<!-- Application Message Bundle -->
+	&lt;bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		&lt;property name="basename" value="/WEB-INF/messages/messages" />
+		&lt;property name="cacheSeconds" value="0" />
+	&lt;/bean>
+
+	<!-- Configures Spring MVC -->
+	&lt;import resource="mvc-config.xml" />
+
+&lt;/beans>
+        </pre>
+        <h3>Listing. mvc-config.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
+
+	<!-- Configures the @Controller programming model -->
+	&lt;mvc:annotation-driven />
+
+	<!-- Forwards requests to the "/" resource to the "welcome" view -->
+	&lt;mvc:view-controller path="/" view-name="welcome"/>
+
+	<!-- Configures Handler Interceptors -->	
+	&lt;mvc:interceptors>
+		&lt;!-- Changes the locale when a 'locale' request parameter is sent; e.g. /?locale=de -->
+		&lt;bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor" />
+	&lt;/mvc:interceptors>
+
+	<!-- Saves a locale change using a cookie -->
+	&lt;bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver" />
+
+	<!-- Resolves view names to protected .jsp resources within the /WEB-INF/views directory -->
+	&lt;bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		&lt;property name="prefix" value="/WEB-INF/views/"/>
+		&lt;property name="suffix" value=".jsp"/>
+	&lt;/bean>
+
+&lt;/beans>
+        </pre>
+        <h2>Part 2: "Hello, World" Controller</h2>
+        <p>先把app-context.xml的context:component-scan的base-package設定好。</p>
+        <h3>Listing. app-context.xml</h3>
+        <pre name="code" class="xml:controls:firstline[1]">
+&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+	<!-- Scans the classpath of this application for @Components to deploy as beans -->
+	&lt;context:component-scan base-package="net.greenrivers.springmvc.hello" />
+
+	<!-- Application Message Bundle -->
+	&lt;bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		&lt;property name="basename" value="/WEB-INF/messages/messages" />
+		&lt;property name="cacheSeconds" value="0" />
+	&lt;/bean>
+
+	<!-- Configures Spring MVC -->
+	&lt;import resource="mvc-config.xml" />
+
+&lt;/beans>
+        </pre>
+        <p></p>
+        <h3>Listing. HelloWorldController.java</h3>
+        <pre name="code" class="java:controls:firstline[1]">
+package net.greenrivers.springmvc.hello;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+@Controller
+public class HelloWorldController {
+    @RequestMapping(value="/helloworld")
+    public ModelAndView helloworld() {
+        ModelAndView mav = new ModelAndView();
+        mav.setViewName( "hello/hello" );
+        mav.addObject( "message", "Hello World!" );
+        return mav;
+    }
+}
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Spring Framework Web Site</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/09/07
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

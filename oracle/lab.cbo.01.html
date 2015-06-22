@@ -1,0 +1,452 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="oracle10g,DBMS_SERVER_ALERT" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>    
+    <title>Lab - Binding Variables</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Lab - Binding Variables</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        紀錄來自Troubleshooting Oracle Performance的Key Concepts有關Bind Variables的優缺點那邊，順便踹看看使用Java(Groovy) PreparedStatement產生的execution plan是如何。有沒有書上講使用Bind Variable的缺點。
+        </p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Oracle 10.2.0.1.0 with Windows XP sp3</li>
+            </ul>
+        </div>
+        <h2>Preparation</h2>
+        <p>
+        首先按照書上寫的準備測試資料，create table如下面
+        </p>
+        <h3>Listing. Create Testing Table</h3>
+        <pre name="code" class="sql:controls:firstline[1]">
+create table t 
+as 
+select
+    rownum id,
+    rpad('x', 100) pad
+from
+    (select rownum from all_objects where rownum<=1000);
+        </pre>
+        <p>
+        檢視剛剛建立的測試資料，跟書本上的應該一致
+        </p>
+        <h3>資料檢視</h3>
+        <p class="preformatted console">
+DAILY@orcl > select count(id), count(distinct id), min(id), max(id) from t;
+
+ COUNT(ID) COUNT(DISTINCTID)    MIN(ID)    MAX(ID)
+---------- ----------------- ---------- ----------
+      1000              1000          1       1000
+        </p>
+        <h2>Literal SQL</h2>
+        <p>
+        首先先看用一般的SQL statement來看看execution plan如下。因為Optimizer認為會掃將近99%的資料，因此Optimizer選擇Full Table Scan。
+        </p>
+        <p>
+        須注意作者count的欄位特別利用pad這個欄位。如果用*或者id會看到不論給啥值Optimizer都選擇用Index Fast Full Scan這個execution plan。
+        </p>
+        <h3>Listing. Execution Plan of id<990</h3>
+        <p class="preformatted console">
+DAILY@orcl > set autotrace traceonly
+DAILY@orcl > select count(pad) from t where id<990;
+
+
+Execution Plan
+----------------------------------------------------------
+Plan hash value: 2966233522
+
+---------------------------------------------------------------------------
+| Id  | Operation          | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+---------------------------------------------------------------------------
+|   0 | SELECT STATEMENT   |      |     1 |   103 |     6   (0)| 00:00:01 |
+|   1 |  SORT AGGREGATE    |      |     1 |   103 |            |          |
+|*  2 |   TABLE ACCESS FULL| T    |   990 |    99K|     6   (0)| 00:00:01 |
+---------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   2 - filter("ID"&lt;990)
+
+
+Statistics
+----------------------------------------------------------
+         44  recursive calls
+          0  db block gets
+         27  consistent gets
+          0  physical reads
+          0  redo size
+        414  bytes sent via SQL*Net to client
+        385  bytes received via SQL*Net from client
+          2  SQL*Net roundtrips to/from client
+          0  sorts (memory)
+          0  sorts (disk)
+          1  rows processed
+        </p>
+        <p>
+        接著改查id小於10的資料execution plan如下，可以看到Optimizer改選擇透過Index來做
+        </p>
+        <h3>Listing. Execution Plan of id<10</h3>
+        <p class="preformatted console">
+DAILY@orcl > set linesize 120
+DAILY@orcl > select count(pad) from t where id<10;
+
+
+Execution Plan
+----------------------------------------------------------
+Plan hash value: 4270555908
+
+--------------------------------------------------------------------------------------
+| Id  | Operation                    | Name | Rows  | Bytes | Cost (%CPU)| Time      |
+--------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT             |      |     1 |   103 |     3   (0)| 00:00:01  |
+|   1 |  SORT AGGREGATE              |      |     1 |   103 |            |           |
+|   2 |   TABLE ACCESS BY INDEX ROWID| T    |     9 |   927 |     3   (0)| 00:00:01  |
+|*  3 |    INDEX RANGE SCAN          | T_PK |     9 |       |     2   (0)| 00:00:01  |
+--------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   3 - access("ID"&lt;10)
+
+
+Statistics
+----------------------------------------------------------
+          0  recursive calls
+          0  db block gets
+          3  consistent gets
+          0  physical reads
+          0  redo size
+        413  bytes sent via SQL*Net to client
+        385  bytes received via SQL*Net from client
+          2  SQL*Net roundtrips to/from client
+          0  sorts (memory)
+          0  sorts (disk)
+          1  rows processed
+        </p>
+        <h2>Bind Variable</h2>
+        <p>
+        接著改用Bind Vairable的方式來看看Execution Plan是如何
+        </p>
+        <h3>Listing. Execution Plan of id<990 (with Bind Variable)</h3>
+        <p class="preformatted console">
+DAILY@orcl > variable id number
+DAILY@orcl > execute :id := 990
+
+PL/SQL procedure successfully completed.
+
+DAILY@orcl > select count(pad) from t where id<:id;
+
+
+Execution Plan
+----------------------------------------------------------
+Plan hash value: 4270555908
+
+-------------------------------------------------------------------------------------
+| Id  | Operation                    | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+-------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT             |      |     1 |   103 |     3   (0)| 00:00:01 |
+|   1 |  SORT AGGREGATE              |      |     1 |   103 |            |          |
+|   2 |   TABLE ACCESS BY INDEX ROWID| T    |    50 |  5150 |     3   (0)| 00:00:01 |
+|*  3 |    INDEX RANGE SCAN          | T_PK |     9 |       |     2   (0)| 00:00:01 |
+-------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   3 - access("ID"&lt;TO_NUMBER(:ID))
+
+
+Statistics
+----------------------------------------------------------
+          0  recursive calls
+          0  db block gets
+         19  consistent gets
+          0  physical reads
+          0  redo size
+        414  bytes sent via SQL*Net to client
+        385  bytes received via SQL*Net from client
+          2  SQL*Net roundtrips to/from client
+          0  sorts (memory)
+          0  sorts (disk)
+          1  rows processed
+        </p>
+        <h3>Listing. Execution Plan of id<10 (with Bind Variable)</h3>
+        <p class="preformatted console">
+DAILY@orcl > variable id number
+DAILY@orcl > execute :id := 10
+
+PL/SQL procedure successfully completed.
+
+DAILY@orcl > select count(pad) from t where id<:id;
+
+
+Execution Plan
+----------------------------------------------------------
+Plan hash value: 4270555908
+
+-------------------------------------------------------------------------------------
+| Id  | Operation                    | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+-------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT             |      |     1 |   103 |     3   (0)| 00:00:01 |
+|   1 |  SORT AGGREGATE              |      |     1 |   103 |            |          |
+|   2 |   TABLE ACCESS BY INDEX ROWID| T    |    50 |  5150 |     3   (0)| 00:00:01 |
+|*  3 |    INDEX RANGE SCAN          | T_PK |     9 |       |     2   (0)| 00:00:01 |
+-------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   3 - access("ID"&lt;TO_NUMBER(:ID))
+
+
+Statistics
+----------------------------------------------------------
+          0  recursive calls
+          0  db block gets
+         19  consistent gets
+          0  physical reads
+          0  redo size
+        413  bytes sent via SQL*Net to client
+        385  bytes received via SQL*Net from client
+          2  SQL*Net roundtrips to/from client
+          0  sorts (memory)
+          0  sorts (disk)
+          1  rows processed
+
+        </p>
+        <p>
+        這邊我做不出書本上的結果，但是大致上就是會選擇使用第一次binding的variable的值來選擇execution plan，即使後面使用別的值也是一樣。
+        </p>
+        <h2>Groovy PreparedStatement</h2>
+        <p>
+        最後書本之外的就是用Groovy寫一個使用PreparedStatement查詢，來看看透過Java的PreparedStatement的execution plan是怎樣
+        </p>
+        <p>
+        首先先用id=990的值執行SQL，之後再使用id=10的值執行SQL。就可以看到第二次執行的時候Optimizer也是用id=990的Execution plan。接著我restart oracle之後，先用id=10執行SQL，再使用id=990來執行SQL。
+        </p>
+        <p>
+        可以觀察到和Binding Variable類似的結果，Oracle會根據最先執行bind的資料產生execution plan，然後就會一直沿用那個execution plan。根據書本上的說法在11g有方法解決這個狀況，待以後實驗。
+        </p>
+        <p>
+        正常來說因為這裡執行的Query很快就做完，從V$SESSION通常不會運氣那麼好看到sql_id和sql_child_number正好有在執行的SQL的資訊；我用了一些賤招可以偷懶查V$SESSION，而不用查V$SQL。
+        </p>
+        <p class="preformatted console">
+-- 真正有意義的 param.id = 990
+SYS@orcl > select schemaname, sql_id, sql_child_number from v$session where username='DAILY';
+
+SCHEMANAME                     SQL_ID        SQL_CHILD_NUMBER
+------------------------------ ------------- ----------------
+DAILY                          0tt3s5c62v5bn                0
+
+SYS@orcl > select * from table(dbms_xplan.display_cursor('0tt3s5c62v5bn', 0, 'ALL'));
+
+PLAN_TABLE_OUTPUT
+-----------------------------------------------------------------------------------------------
+
+SQL_ID  0tt3s5c62v5bn, child number 0
+-------------------------------------
+select count(pad) cnt from t where id<:1
+
+Plan hash value: 2966233522
+
+---------------------------------------------------------------------------
+| Id  | Operation          | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+---------------------------------------------------------------------------
+|   0 | SELECT STATEMENT   |      |       |       |     6 (100)|          |
+|   1 |  SORT AGGREGATE    |      |     1 |   103 |            |          |
+|*  2 |   TABLE ACCESS FULL| T    |   990 |    99K|     6   (0)| 00:00:01 |
+---------------------------------------------------------------------------
+
+Query Block Name / Object Alias (identified by operation id):
+-------------------------------------------------------------
+
+   1 - SEL$1
+   2 - SEL$1 / T@SEL$1
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+   2 - filter("ID"&lt;:1)
+
+
+25 rows selected.
+
+-- param.id = 10
+SYS@orcl > select * from table(dbms_xplan.display_cursor('0tt3s5c62v5bn', 0, 'ALL'));
+
+PLAN_TABLE_OUTPUT
+-----------------------------------------------------------------------------------------------
+
+SQL_ID  0tt3s5c62v5bn, child number 0
+-------------------------------------
+select count(pad) cnt from t where id<:1
+
+Plan hash value: 2966233522
+
+---------------------------------------------------------------------------
+| Id  | Operation          | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+---------------------------------------------------------------------------
+|   0 | SELECT STATEMENT   |      |       |       |     6 (100)|          |
+|   1 |  SORT AGGREGATE    |      |     1 |   103 |            |          |
+|*  2 |   TABLE ACCESS FULL| T    |   990 |    99K|     6   (0)| 00:00:01 |
+---------------------------------------------------------------------------
+
+Query Block Name / Object Alias (identified by operation id):
+-------------------------------------------------------------
+
+   1 - SEL$1
+   2 - SEL$1 / T@SEL$1
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   2 - filter("ID"&lt;:1)
+
+Column Projection Information (identified by operation id):
+-----------------------------------------------------------
+
+   1 - (#keys=0) COUNT("PAD")[22]
+   2 - "PAD"[VARCHAR2,100]
+
+
+31 rows selected.
+
+-- restart oracle
+-- id=10
+SYS@orcl > select schemaname, sql_id, sql_child_number from v$session where username='DAILY';
+
+SCHEMANAME                     SQL_ID        SQL_CHILD_NUMBER
+------------------------------ ------------- ----------------
+DAILY                          0tt3s5c62v5bn                0
+
+SYS@orcl > select * from table(dbms_xplan.display_cursor('0tt3s5c62v5bn', 0, 'ALL'));
+
+PLAN_TABLE_OUTPUT
+-----------------------------------------------------------------------------------------------
+
+SQL_ID  0tt3s5c62v5bn, child number 0
+-------------------------------------
+select count(pad) cnt from t where id<:1
+
+Plan hash value: 4270555908
+
+-------------------------------------------------------------------------------------
+| Id  | Operation                    | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+-------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT             |      |       |       |     3 (100)|          |
+|   1 |  SORT AGGREGATE              |      |     1 |   103 |            |          |
+|   2 |   TABLE ACCESS BY INDEX ROWID| T    |     9 |   927 |     3   (0)| 00:00:01 |
+|*  3 |    INDEX RANGE SCAN          | T_PK |     9 |       |     2   (0)| 00:00:01 |
+-------------------------------------------------------------------------------------
+
+Query Block Name / Object Alias (identified by operation id):
+-------------------------------------------------------------
+
+   1 - SEL$1
+   2 - SEL$1 / T@SEL$1
+   3 - SEL$1 / T@SEL$1
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   3 - access("ID"&lt;:1)
+
+Column Projection Information (identified by operation id):
+-----------------------------------------------------------
+
+   1 - (#keys=0) COUNT("PAD")[22]
+   2 - "PAD"[VARCHAR2,100]
+   3 - "T".ROWID[ROWID,10]
+
+
+34 rows selected.
+
+-- id=990
+SYS@orcl > select schemaname, sql_id, sql_child_number from v$session where username='DAILY';
+
+SCHEMANAME                     SQL_ID        SQL_CHILD_NUMBER
+------------------------------ ------------- ----------------
+DAILY                          0tt3s5c62v5bn                0
+
+SYS@orcl > select * from table(dbms_xplan.display_cursor('0tt3s5c62v5bn', 0, 'ALL'));
+
+PLAN_TABLE_OUTPUT
+-----------------------------------------------------------------------------------------------
+
+SQL_ID  0tt3s5c62v5bn, child number 0
+-------------------------------------
+select count(pad) cnt from t where id<:1
+
+Plan hash value: 4270555908
+
+-------------------------------------------------------------------------------------
+| Id  | Operation                    | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+-------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT             |      |       |       |     3 (100)|          |
+|   1 |  SORT AGGREGATE              |      |     1 |   103 |            |          |
+|   2 |   TABLE ACCESS BY INDEX ROWID| T    |     9 |   927 |     3   (0)| 00:00:01 |
+|*  3 |    INDEX RANGE SCAN          | T_PK |     9 |       |     2   (0)| 00:00:01 |
+-------------------------------------------------------------------------------------
+
+Query Block Name / Object Alias (identified by operation id):
+-------------------------------------------------------------
+
+   1 - SEL$1
+   2 - SEL$1 / T@SEL$1
+   3 - SEL$1 / T@SEL$1
+
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   3 - access("ID"<:1)
+
+Column Projection Information (identified by operation id):
+-----------------------------------------------------------
+
+   1 - (#keys=0) COUNT("PAD")[22]
+   2 - "PAD"[VARCHAR2,100]
+   3 - "T".ROWID[ROWID,10]
+
+
+34 rows selected.
+        </p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Troubleshooting Oracle Performance, Chapter 2, p 24~27</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/05/06
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

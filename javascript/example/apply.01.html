@@ -1,0 +1,42 @@
+<html>
+<head>
+    <title>about Function.prototype.apply</title>
+    <script type="text/javascript" language="javascript">
+    var bla = function( i ) {
+        // 這個this用來看看apply傳物件進來的是啥碗糕
+        alert( this );
+        alert( 'this is general javascript function argument i=' + i );
+    };
+    
+    var Bla = function( i ) {
+        this.index = i;
+    };
+    
+    Bla.prototype.method1 = function() {
+        alert( this.index + 1 );
+    };
+    
+    Bla.prototype.method2 = function( step ) {
+        alert( this.index + step );
+    };
+    
+    window.onload = function() {
+        // 傳null的時候
+        bla.apply( null, [100] );   // this 就是 object Window
+        
+        var obj = new Bla( 9 );
+        Bla.prototype.method1.apply( obj );
+        Bla.prototype.method2.apply( obj, [5] );
+        
+        // in this case this.index is undefined
+        // undefined + 99 = NaN
+        Bla.prototype.method2.apply( null, [99] );  
+        
+        // 傳一個物件當成this，
+        bla.apply( obj, [1] );      // this 是 object Object
+    };
+    </script>
+</head>
+<body>
+</body>
+</html>

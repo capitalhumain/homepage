@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css"type="text/css"  rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Variables</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Variables</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>登高壯觀天地間，大江茫茫去不還；黃雲萬里動風色，白波九耀留雪山。</p>
+        <div style="padding-left: 30px;">一本好書The Smart Swarm，self-organization三個基本機制: Decentralized control, Distributed problem solving和Multiple interactions。加上其他的重點如下
+            <ol>
+                <li>Decentralized control</li>
+                <li>Distributed problem solving</li>
+                <li>Multiple interactions</li>
+                <li>Diversity of knowledge</li>
+                <li>Limits of human intuition</li>
+                <li>Friendly competition of ideas</li>
+                <li>Effective mechanisms for narrowing choices</li>
+                <li>Indirect collaboration</li>
+                <li>Adaptive mimicking</li>
+                <li>Risk minimizing strategies</li>
+            </ol>
+        </div>
+        <p>其實self-organization不管被怎麼用來「指責」組織中底下的成員，只是讓人想到下面的對話。哈~</p>
+        <p>楓：「立場不同，影響了是非觀念。但實際上，任何人做任何事，都是為讓了讓自己好過。」</p>
+        <p>千：「所以，探究是非並無意義，更重要是強弱之別，與形勢差異而已。」</p>
+        <h2>嗯...變數</h2>
+        <h4>Scope</h4>
+        <p>JavaScript變數存在的scope只有function scope和global scope這兩個scope。JavaScript大多數的使用都是在browser上執行，所謂的global其實就是會跑到window物件裡。這樣好不好呢?!如果使用了third-party javascript library或者多人開發同一頁面的程式的時候，或許就會造成潛在很難debug的錯誤。</p>
+        <h4>Declaration</h4>
+        <p>因為JavaScript容許在針對variable設定值之前沒有使用<code>var</code>進行變數宣告，因此久而久之大家都認為寫JavaScript變數可以不用宣告也ok。</p>
+        <p>思考一下下面的程式，看看在window.onload()裡面那三次的a的值到底是10, 100還是undefined?!</p>
+        <pre name="code" class="javascript:nocontrols:firstline[9]">
+    var func1 = function (arg1) {
+        if( arg1 === 1 )
+            a = 100;
+        return arg1;
+    };
+    
+    var func2 = function (arg1) {
+        if( arg1 === 1 )
+            a = 10;
+        return arg1;
+    };
+    
+    window.onload = function() {
+        var doc = document, 
+            result = doc.getElementById( "result" ),
+            msg = '',
+            tmp;
+        tmp = func1( 1 );
+        msg += ("1st: " + tmp + ",a=" + a + "<br/>");
+        tmp = func2( 1 );
+        msg += ("2nd: " + tmp + ",a=" + a + "<br/>");
+        tmp = func1( 1 );
+        msg += ("3rd: " + tmp + ",a=" + a + "<br/>");
+        result.innerHTML = msg;
+    };
+        </pre>
+        <p>答案是，即是在function裡面，只要沒有使用<code>var</code>宣告的變數的scope都是global。因此下面的程式在畫面上看到的結果就會是global a=100。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[9]">
+    var obj = {
+        func1: function () {
+            a = 100;
+        }
+    };
+    
+    window.onload = function() {
+        var doc = document, 
+            result = doc.getElementById( "result" ),
+            msg = '';
+        obj.func1();
+        msg += ( "global a=" + window.a );
+        result.innerHTML = msg;
+    };
+        </pre>
+        <p>因為JavaScript只有function scope和global scope，因此老大建議在function一開始的地方使用<code>var</code>宣告好這個function要用變數。但是由於沒用<code>var</code>並不會有警告的特性，有時候還是會掉入這個陷阱。比如說下面的寫法</p>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+    var func1 = funcation() {
+        var a = b = 1;        
+    };
+        </pre>
+        <p>這樣寫在java等其他語言都會被compiler嫌棄，會被檢查出來。但是JavaScript允許，只是b是global scope。所以比較好的寫法主要的目的是要能夠<strong>避免/減少global scope變數</strong></p>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+    var func1 = function() {
+        var a, b;
+        a = b = 1;
+    };
+        </pre>
+        <p>除了在function一開始就宣告所有local variable之外，還有一個好習慣應該要養成，就是<strong>single var pattern</strong>在一個<code>var</code> statement裡面把這個function的local variable全部都宣告，甚至初始化好。</p>
+        <h4>找變數 （not for ECMA-262 5th edition）</h4>
+        <p>就是找變數，當程式進去到某個區域（eg. 執行某個function），根據想實作的功能JavaScript engine會建立一個execution context存放這個區域宣告的變數。當執行該區域程式要對某個變數<code>var1</code>做處理的時候，就會從那個execution context去找<code>var1</code>，如果在自己的execution context找不到就會往外面找，一直找到global context。如果都找不到就會看到JavaScript error寫"var1 is not defined"之類的訊息。</p>
+        <p>另外，像Array, String...等這些ECMA-262講的那些語言提供的物件也是放在global context。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[9]">
+    window.onload = function() {
+        var slice = window.Array.prototype.slice,
+            doc = document,
+            result = doc.getElementById( 'result' );
+        result.innerHTML = slice.call( [1, 2, 3, 4], 1, 3 );    // 2, 3
+    };
+        </pre>
+        <p>如此一來簡單的眉角就看出來了，提昇自己的程式執行效能可以從這裡著手。比如說document物件、Array物件的slice...等functions...再一開始就把這些東西在自己開發的function程式利用function scope variables存放起來，之後程式在使用的時候就只需要在該function的execution context就可以找到可以用的物件，不需要再去global context找這些東西。相同的道理也可以用到自己開發的object裡面。</p>
+        <p>這個好習慣可以從許多高手寫的JavaScript library學到，下面看一下John Resig的片段程式碼</p>
+        <h3>Listing. 這是jQuery source code</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[67]">
+	// Save a reference to some core methods
+	toString = Object.prototype.toString,
+	hasOwnProperty = Object.prototype.hasOwnProperty,
+	push = Array.prototype.push,
+	slice = Array.prototype.slice,
+	indexOf = Array.prototype.indexOf;
+        </pre>
+        <h2>Variable Hoisting</h2>
+        <p>在同一個execution scope變數宣告的動作會被拉到該execution scope一開始建立的時候就做。因此看看下面的程式碼，即使我們有兩個global variable ga, gb而且都有值，但是在anonymous function裡面也宣告local variable ga, gb並且分別給值。只是在local ga declaration and assignment之前，用alert秀出ga, gb的值。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[4]">
+var ga = "123";
+var gb = "456";
+
+(function() {
+    var gb = "def";
+    alert( ga ); // undefined, variable declaration (function也會) 會被拉到前面。
+    alert( gb ); // 'def'
+    var ga = "abc";
+})();
+        </pre>
+        <p>由於local ga的宣告會被拉到一進入anonymous function的時候就在execution context裡建立local ga。因此上面程式跟下面這樣寫結果是一樣的。這樣就可以知道alert(ga)看到undefined就是預期內的事了。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[4]">
+var ga = "123";
+var gb = "456";
+
+(function() {
+    var gb, ga;
+    gb = "def";
+    alert( ga ); // undefined, variable declaration (function也會) 會被拉到前面。
+    alert( gb ); // 'def'
+    ga = "abc";
+})(); 
+        </pre>
+        <p>在一開始就用<code>var</code>宣告所有要用的變數還有一個好處，就是可以避免因為variable hoisting而發生問題。</p>
+        <h2>Resources</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 3rd edition</li>
+                <li>JavaScript: The Good Parts (O'Reilly)</li>
+                <li>JavaScript Patterns (O'Reilly)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/10/13</i>, latest update 2010/10/26
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<html>
+<head>
+<script language="JavaScript" type="text/javascript">
+window.onload = function() {
+    var obj1 = {
+        length: 10
+    };
+
+    var arr = [ '1', 'a', 'sd' ];
+    arr[ 'test' ] = 11;
+    
+    document.getElementById( 'test1' ).innerHTML = obj1.propertyIsEnumerable( 'length' );
+    document.getElementById( 'test3' ).innerHTML = arr.propertyIsEnumerable( 'test' );
+    document.getElementById( 'test4' ).innerHTML = arr.propertyIsEnumerable( 'length' );
+};
+</script>
+</head>
+<body>
+<pre style='font-family: "Courier New";'>
+    var obj1 = {
+        length: 10
+    };
+    var arr = [ '1', 'a', 'sd' ];
+    arr[ 'test' ] = 11;
+</pre>
+<div>
+    <ul>
+        <li>obj1's propertyIsEnumerable: <span id="test1"></span></li>
+        <li>arr's propertyIsEnumerable( 'test' ): <span id="test3"></span></li>
+        <li>arr's propertyIsEnumerable( 'length' ): <span id="test4"></span></li>
+    </ul>
+</div>
+<div>
+    <ol>
+        <li>自己件的物件propertyIsEnumerable()和hasOwnProperty()是沒啥差別的</li>
+        <li>因為Array也是一個JavaScript物件，因此也可以放自己喜歡的property，放一個test property看到的結果和一般的object是一樣的。</li>
+        <li>實作的和ECMA-262定義的完全不一樣</li>
+        <li>Array的話就相當不一樣，自己訂的property行為和hasOwnProperty()一樣；但是針對length則會return false</li>
+    </ol>
+</div>
+<h4>ECMA-262</h4>
+<pre style='font-family: "Courier New";'>
+15.2.4.5 Object.prototype.hasOwnProperty (V)
+        When the hasOwnProperty method is called with argument V, the following steps are taken:
+        1. Let O be this object.
+        2. Call ToString(V).
+        3. If O doesn’t have a property with the name given by Result(2), return false.
+        4. Return true.
+15.2.4.7 Object.prototype.propertyIsEnumerable (V)
+        When the propertyIsEnumerable method is called with argument V, the following steps are
+        taken:
+        1. Let O be this object.
+        2. Call ToString(V).
+        3. If O doesn’t have a property with the name given by Result(2), return false.
+        4. If the property has the DontEnum attribute, return false.
+        5. Return true.
+</pre>
+</body>
+</html>

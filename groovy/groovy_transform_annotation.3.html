@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>TupleConstructor</title>
+</head>
+<body>
+<div>
+    <h1 class="header">TupleConstructor</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>還記得groovy變數宣告有下面這個整組設定變數值的寫法嗎？！</p>
+    <pre name="code" class="groovy:nocontrols:firstline[1]">
+def (a, b, c) = [1, 2]
+
+assert a == 1
+assert b == 2
+assert c == null
+    </pre>
+    <p>透過<code>TupleConstructor</code>我們也可以用整組的方式提供attributes的值來呼叫constructor。</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.8.0</li>
+            <li>Sun JDK 1.6.0_24</li>
+        </ul>
+    </div>
+    <h2><code>TupleConstructor</code></h2>
+    <p>這個class annotation用來讓我們可以用比較方便的語法產生物件。</p>
+    <div class="codehead">Listing 1. 來自Groovy API JavaDoc的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+import groovy.transform.TupleConstructor
+
+@TupleConstructor
+@ToString(includeNames=true)
+public class Customer {
+    String first, last
+    int age
+    Date since
+    Collection favItems
+}
+
+def c1 = new Customer()
+println( "c1: $c1" )
+
+def c2 = new Customer('Tom', 'Yang')
+println( "c2: $c2" )
+
+def c3 = new Customer(first: 'Tom', age: 22)
+println( "c3: $c3" )
+
+def c4 = new Customer(null, 'Yang', 22, new Date(), ['baseball', 'xbox360'])
+println( "c4: $c4" )
+    </pre>
+    <p>設定attributes順序則是attributes宣告的順序；也可以透過name: value的形式設定想設定的attribute。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/lab/groovy$ groovy TupleConstructor_1.groovy 
+c1: Customer(first:null, last:null, age:0, since:null, favItems:null)
+c2: Customer(first:Tom, last:Yang, age:0, since:null, favItems:null)
+c3: Customer(first:Tom, last:null, age:22, since:null, favItems:null)
+c4: Customer(first:null, last:Yang, age:22, since:Wed May 25 18:50:46 CST 2011, favItems:[baseball, xbox360])
+    </pre>
+    <p>另外，field也可以透過<code>TupleConstructor</code>來使用constructor設定值</p>
+    <div class="codehead">Listing 2. <code>includeFields</code> attribute</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+import groovy.transform.TupleConstructor
+
+@TupleConstructor(includeFields=true)
+@ToString(includeNames=true, includeFields=true)
+public class Customer {
+    String first, last
+    int age
+    Date since
+    Collection favItems
+    private int credit
+}
+
+def c1 = new Customer()
+println( "c1: $c1" )
+
+def c2 = new Customer('Tom', 'Yang')
+println( "c2: $c2" )
+
+def c3 = new Customer(first: 'Tom', age: 22, credit: -10)
+println( "c3: $c3" )
+
+def c4 = new Customer(null, 'Yang', 22, new Date(), ['baseball', 'xbox360'], 10)
+println( "c4: $c4" )
+    </pre>
+    <p>更複雜的的狀況就是繼承的時候</p>
+    <div class="codehead">Listing 3. 簡單的繼承例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.transform.ToString
+import groovy.transform.TupleConstructor
+
+@ToString(includeNames=true)
+class Person {
+    String first, last
+    int age
+}
+
+@TupleConstructor(includeSuperProperties=true)
+@ToString(includeNames=true, includeSuper=true)
+class Customer extends Person {
+    Date since
+    Collection favItems
+}
+
+def c1 = new Customer()
+println( "c1: $c1" )
+
+def c2 = new Customer('Tom', 'Yang')
+println( "c2: $c2" )
+
+def c3 = new Customer(first: 'Tom', age: 22)
+println( "c3: $c3" )
+
+def c4 = new Customer(null, 'Yang', 22, new Date(), ['baseball', 'xbox360'])
+println( "c4: $c4" )
+    </pre>
+    <p>使用super系列的attributes就可以達成這個目的</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/lab/groovy$ groovy TupleConstructor_2.groovy 
+c1: Customer(since:null, favItems:null, super:Person(first:null, last:null, age:0))
+c2: Customer(since:null, favItems:null, super:Person(first:Tom, last:Yang, age:0))
+c3: Customer(since:null, favItems:null, super:Person(first:Tom, last:null, age:22))
+c4: Customer(since:Thu May 26 12:40:44 CST 2011, favItems:[baseball, xbox360], super:Person(first:null, last:Yang, age:22))
+    </pre>
+    <p><strong>限制</strong>目前<code>TupleConstructor</code>不支援inner class</p>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Groovy 1.8 API JavaDoc</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/05/25
+</address>
+<script language="javascript">
+$(function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

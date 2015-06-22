@@ -1,0 +1,224 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="LISP" />
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/style.css" />
+    <title>筆記： Conditions</title>
+</head>
+<body>
+<div>
+    <h1 class="header">筆記： Conditions</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>我的第三代Dell E6410正式服役，雖然四歲多的XPS M1210除了滿腔熱血會熱過頭和光碟機會鬧脾氣搞失蹤之外，還相當勇猛說。E6410裝ubuntu 10.10使用<code>sudo apt-get install clisp</code>從repository上安裝的clisp是2.48。但是mit-scheme從repository上消失了...有點傻眼。(但是可以看到mit-scheme-doc @@")</p>
+    <p>條件判斷的部份...大多數跟其他語言都會有。</p>
+    <p><strong>2011/03/02:</strong> 今天早上乖乖的依據mit/gnu-scheme上的unix installation guide把mit-scheme編譯並安裝完成，目前看起來是正常的。</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Utbuntu 10.10</li>
+            <li>GNU CLISP 2.48</li>
+        </ul>
+    </div>
+    <h2><code>if</code></h2>
+    <p><code>nil</code>或空的list在邏輯判斷的時候會判斷成false。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[3]> (defvar *test* nil)
+*TEST*
+[4]> (if *test* 'True 'False)
+FALSE
+[5]> (defvar *test2* '(1 2))
+*TEST2*
+[6]> (if *test2* 'True 'False)
+TRUE
+[7]> (setf *test2* '())
+NIL
+[8]> (if *test2* 'True 'False)
+FALSE
+    </pre>
+    <p>另外一個重點是<code>nil</code>、<code>'nil</code>、<code>()</code>和<code>'()</code>在Common Lisp都是一樣的值。</p>
+    <h3>Listing. chapter 3 my-length sample code</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defun my-length( list )
+    (if list 
+        (1+ (my-length( cdr list )))
+        0))
+    </pre>
+    <p></p>
+    <h3>Listing. 另一個作法</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defun my-length2( list )
+    (let ((idx 0))
+        (if list 
+            ( car (reverse (mapcar (lambda(x) (setf idx (1+ idx)) ) list) ) )
+            0)
+    )
+)
+    </pre>
+    <p>兩個算list長度的function的執行狀況</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[20]> (load "my_length2")
+;; Loading file /home/terence/lab/lisp/cl/my_length2.lsp ...
+;; Loaded file /home/terence/lab/lisp/cl/my_length2.lsp
+T
+[21]> (my-length2 '(one two three four five six))
+6
+[22]> (load "my_length")
+;; Loading file /home/terence/lab/lisp/cl/my_length.lsp ...
+;; Loaded file /home/terence/lab/lisp/cl/my_length.lsp
+T
+[23]> (my-length '(one two three four five six))
+6
+[24]>
+    </pre>
+    <p>學到<code>progn</code>之後就覺得第二招蠻笨的，透過<code>progn</code>可以只回傳最後一個evaluate的值。因此前面使用<code>mapcar</code>的目的只有在於把idx算出來。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defun my-length3( list )
+    (let ((idx 0))
+        (if list 
+            ( progn (mapcar (lambda(x) (setf idx (1+ idx)) ) list) idx )
+            0)
+    )
+)
+    </pre>
+    <p></p>
+    <h4><code>and</code> and <code>or</code></h4>
+    <p>重點只有一句話「Lisp是使用<em>shortcut Boolean evaluation</em>」。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (defvar *is-even* nil)
+*IS-EVEN*
+[2]> (or (oddp 4) (setf *is-even* t))
+T
+[3]> *is-even*
+T
+[4]> (setf *is-even* nil)
+NIL
+[5]> (or (oddp 5) (setf *is-even* t))
+T
+[6]> *is-even*
+NIL
+    </pre>
+    <h4><code>member</code></h4>
+    <p><code>member</code> function會將傳入list內找到第一個符合的資料之後的list傳回來；如果找不到則會傳回<code>nil</code>。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[7]> (member nil '(3 4 5))
+NIL
+[8]> (member nil '(3 4 nil 5))
+(NIL 5)
+[9]> (member 6 '(3 4 5))
+NIL
+[10]> (member nil '(3 4 nil 5 nil nil 3 3 3 3))
+(NIL 5 NIL NIL 3 3 3 3)
+    </pre>
+    <p>搭配<code>if</code>可以做出這樣的東西</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defun contains ( part list )
+    (if (member part list)
+        t
+        nil
+    )
+)
+    </pre>
+    <h4><code>find-if</code></h4>
+    <p>這本書第一個接觸到的higher-order function，對於數學不好的我而言，通俗的說法就是所謂的higher-order function就是吃function的function。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[14]> (find-if #'oddp '(2 4 6 7 8))
+7
+[15]> (find-if #'oddp '(2 4 6 8))
+NIL
+[16]> (find-if #'oddp '(1 3 5 6 7 8 9))
+1
+    </pre>
+    <p><code>null</code> function用來判斷list是不是空的。以下面例子而言，第一個例子執行結果是T(rue)，第二個例子的list裡面有一個空的list結果是<code>nil</code>。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[12]> (null '())
+T
+[13]> (null '(()))
+NIL
+    </pre>
+    <h2><code>when</code> and <code>unless</code></h2>
+    <p><code>when</code>和<code>unless</code>都常常在其他語言看到。</p>
+    <h2><code>cond</code> and <code>case</code></h2>
+    <p>分支的作法在Lisp有兩種，一種是在其他語言可以看到類似樣子的<code>case</code>；另一種是<code>cond</code>。</p>
+    <h3>Listing. cond example</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defvar *arch-enemy* nil)
+(defvar *test* nil)
+(defun pudding-eater (person)
+    (cond ( (eq person 'henry) 
+                (setf *arch-enemy* 'studpid-lisp-alien)
+                '(curse you lisp alien - you ate my pudding) )
+          ( (eq person 'johnny)
+                (setf *arch-enemy* 'useless-old-johnny)
+                (setf *test* 'the-test)
+                '(i hope you choked on my pudding johnny) )
+          ( t
+                '(why you eat my pudding stanger?) ) 
+    ) 
+)
+    </pre>
+    <p>另一個狀況，像下面這樣的寫法第11～13行那個condition永遠不會被執行到。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defvar *arch-enemy* nil)
+(defvar *test* nil)
+(defun pudding-eater (person)
+    (cond ( (eq person 'henry) 
+                (setf *arch-enemy* 'studpid-lisp-alien)
+                '(curse you lisp alien - you ate my pudding) )
+          ( (eq person 'johnny)
+                (setf *arch-enemy* 'useless-old-johnny)
+                (setf *test* 'the-test)
+                '(i hope you choked on my pudding johnny) )
+          ( (eq person 'henry)
+                (setf *arch-enemy* 'you-cannot-see-me)
+                '(you should not see me) )
+          ( t
+                '(why you eat my pudding stanger?) ) 
+    ) 
+)
+    </pre>
+    <p></p>
+    <h2><code>eq</code>, <code>equal</code>, <code>eql</code> and ...</h2>
+    <p>在Lisp有很多equal functions</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (equalp "Bob" "bob")
+T
+[2]> (eql "Bob" "bob")
+NIL
+[3]> (eq "Bob" "bob")
+NIL
+[4]> (equal "Bob" "bob")
+NIL
+    </pre>
+    <p></p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Land of LISP, Chapter 4</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/02/24
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

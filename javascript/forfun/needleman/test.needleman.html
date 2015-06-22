@@ -1,0 +1,20 @@
+<html>
+<head>
+    <script type="text/javascript" src="enhancement.js"></script>
+    <script type="text/javascript" src="needleman.js"></script>
+    <script type="text/javascript">
+    window.onload = function() {
+        var result = needle( 'CGAGACGT', 'AGACTAGTTAC' );
+        var align = document.getElementById( 'alignment' );
+        align.innerHTML = result[0] + '<br/>' + result[1];
+    };
+    </script>
+    <style>
+        #alignment { font-family: "courier new"; }
+    </style>
+</head>
+<body>
+    <div id="alignment">
+    </div>
+</body>
+</html>

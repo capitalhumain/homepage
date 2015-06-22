@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Lab - Oracle - V$OBJECT_USAGE</title>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</head>
+<body>
+    <div>
+        <h1 class="header">Lab - Oracle - V$OBJECT_USAGE</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+每個schema都可以看到V$OBJECT_USAGE這個view，因為他是一個public synonym of SYS.V$OBJECT_USAGE。當我們
+monitor index的使用狀況的時候可以透過這個view來看監控的那個view有沒有被使用到。
+        </p>
+        <h2>Using V$OBJECT_USAGE</h2>
+        <p>
+一個簡單的使用範例，當我們開始monitor index的時候V$OBJECT_USAGE的monitoring="YES"和stat_monitoring會填
+上開始monitor的時間。如果我們的query有用到這個index的時候，就會看到V$OBJECT_USAGE的used="YES"。結束對
+index的monitor的時候會看到monitoring="NO"和end_monitoring填上結束時間。
+        </p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+
+ANDREA@orcl> alter index t_pk monitoring usage;
+
+Index altered.
+
+ANDREA@orcl> col index_name for a5
+ANDREA@orcl> col table_name for a5
+ANDREA@orcl> col start_monitoring for a30
+ANDREA@orcl> col end_monitoring for a30
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    NO     10/15/2009 23:31:53
+
+ANDREA@orcl> set autotrace traceonly explain
+ANDREA@orcl> select * from t where id < 100;
+
+Execution Plan
+----------------------------------------------------------
+Plan hash value: 3772518221
+
+------------------------------------------------------------------------------------
+| Id  | Operation                   | Name | Rows  | Bytes | Cost (%CPU)| Time     |
+------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT            |      |    99 | 32373 |   101   (0)| 00:00:02 |
+|   1 |  TABLE ACCESS BY INDEX ROWID| T    |    99 | 32373 |   101   (0)| 00:00:02 |
+|*  2 |   INDEX RANGE SCAN          | T_PK |    99 |       |     2   (0)| 00:00:01 |
+------------------------------------------------------------------------------------
+
+Predicate Information (identified by operation id):
+---------------------------------------------------
+
+   2 - access("ID"<100)
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    YES    10/15/2009 23:31:53
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    YES    10/15/2009 23:31:53
+
+ANDREA@orcl> alter index t_pk nomonitoring usage;
+
+Index altered.
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     NO     YES    10/15/2009 23:31:53            10/15/2009 23:35:28
+
+        </pre>
+        <p>
+當我們要重複monitor同一個index的時候不用擔心資料要不要刪除的問題，當我們下monitoring usage指令的時候，
+就會看到下列結果。下面就是在上述測試之後重新再monitor t_pk index usage的狀況。
+        </p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+        
+ANDREA@orcl> alter index t_pk monitoring usage;
+
+Index altered.
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    NO     10/15/2009 23:35:41
+
+        </pre>
+        <p>
+monitoring index usage的時候，除了query有用到這個index used flag會變成YES之外，連index rebuild也會影響
+到V$OBJECT_USAGE的狀態。而且會把monitoring的狀態關掉。
+        </p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     YES    NO     10/15/2009 23:35:41
+
+ANDREA@orcl> alter index t_pk rebuild;
+
+Index altered.
+
+ANDREA@orcl> select * from v$object_usage;
+
+INDEX TABLE MONITO USED   START_MONITORING               END_MONITORING
+----- ----- ------ ------ ------------------------------ ------------------------------
+T_PK  T     NO     YES    10/15/2009 23:35:41
+
+        </pre>
+        <h2>About V$OBJECT_USAGE</h2>
+        <p>
+        </p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+SYS@orcl> select text from dba_views where owner='SYS' and view_name='V$OBJECT_USAGE';
+
+TEXT
+--------------------------------------------------------------------------------
+select io.name, t.name,
+       decode(bitand(i.flags, 65536), 0, 'NO', 'YES'),
+       decode(bitand(ou.flags, 1), 0, 'NO', 'YES'),
+       ou.start_monitoring,
+       ou.end_monitoring
+from sys.obj$ io, sys.obj$ t, sys.ind$ i, sys.object_usage ou
+where io.owner# = userenv('SCHEMAID')
+  and i.obj# = ou.obj#
+  and io.obj# = ou.obj#
+  and t.obj# = i.bo#
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Oracle 10g Reference (b14237)</li>
+                <li>Oracle 10g Administrator's Guide (b14231)</li>
+            </ol>
+        </div>
+    </div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+    <address>
+    Terence Chao, 2009/10/15
+    </address>
+</body>
+</html>

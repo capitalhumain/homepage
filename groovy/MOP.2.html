@@ -1,0 +1,600 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Groovy - Meta-Object Protocol 2</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Groovy - Meta-Object Protocol 2</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>二月就想要整理三則Groovy MOP的東西，結果到四月中才開始寫第二則...</p>
+    
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.7.0</li>
+            <li>Sun JDK 1.6.0_24</li>
+        </ul>
+    </div>
+    <h2>Introduce new method to class</h2>
+    <p></p>
+    <h4>Categories</h4>
+    <p>在groovy可以透過categories為class加入新的method。看一下第一個簡單的測試</p>
+    <div class="codehead">Listing 1. 踹踹groovy categories</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Foo {
+    def static bla(self) {
+        "[[${self}]]"
+    }
+
+    // with arguments
+    def static bla(self, arg1) {
+        "[[${self}/${arg1}]]"
+    }
+}
+
+use(Foo) {
+    // Calendar
+    def d = Calendar.instance
+    println d.bla()
+
+    // String
+    println "abc".bla()
+
+    // with arguments
+    println "abc".bla(10)
+}
+    </pre>
+    <p>如果要針對特定類別增加method的時候，就在第一個參數標示類別，如下面修改的範例就只有針對String類別增加bla()。</p>
+    <div class="codehead">Listing 2. 針對特定類別增加新的method</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Foo {
+    def static bla(String self) {
+        "[[${self}]]"
+    }
+}
+
+
+use(Foo) {
+    // for Calendar
+    try {
+        def d = Calendar.instance
+        println d.bla()
+    } catch(groovy.lang.MissingMethodException e) {
+        println e.message
+    }
+
+    // for String
+    println "abc".bla()
+}
+    </pre>
+    <p>執行第二個程式就會看到下列結果</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/lab/groovy$ groovy categories_2.groovy 
+No signature of method: java.util.GregorianCalendar.bla() is applicable for argument types: () values: []
+Possible solutions: clear(), any(), clear(int), get(int), use([Ljava.lang.Object;), is(java.lang.Object)
+[[abc]]
+    </pre>
+    <p>上面的程式在使用categories的時候，Groovy會把<code>use()</code>的呼叫轉給<code>org.codehaus.groovy.runtime.GroovyCategorySupport</code>class的<code></code>static &lt;T> use (Class categoryClass, Closure&lt;T> closure)</code>。如javadoc上寫描述</p>
+    <p><em>Create a scope based on given categoryClass and invoke closure within that scope.</em></p>
+    <p><code>ThreadCategoryInfo</code>這個inner class</p>
+    <div class="codehead">Listing 3. Groovy 1.7.9 ThreadCategoryInfo use() source code</div>
+    <pre name="code" class="java:nocontrols:firstline[95]">
+        private Object use(Class categoryClass, Closure closure) {
+            newScope();
+            try {
+                use(categoryClass);
+                return closure.call();
+            } finally {
+                endScope();
+            }
+        }
+    </pre>
+    <p>下面這個method的source code可以看到把Category Class的public static methods做成key/methods pair list的過程。</p>
+    <div class="codehead">Listing 3. Groovy 1.7.9 ThreadCategoryInfo applyUse() source code</div>
+    <pre name="code" class="java:nocontrols:firstline[117]">
+        private void applyUse(CachedClass cachedClass) {
+            CachedMethod[] methods = cachedClass.getMethods();
+            for (CachedMethod cachedMethod : methods) {
+                if (cachedMethod.isStatic() && cachedMethod.isPublic()) {
+                    CachedClass[] paramTypes = cachedMethod.getParameterTypes();
+                    if (paramTypes.length > 0) {
+                        CachedClass metaClass = paramTypes[0];
+                        CategoryMethod mmethod = new CategoryMethod(cachedMethod, metaClass.getTheClass());
+                        final String name = cachedMethod.getName();
+                        CategoryMethodList list = get(name);
+                        if (list == null || list.level != level) {
+                            list = new CategoryMethodList(name, level, list);
+                            put(name, list);
+                        }
+                        list.add(mmethod);
+                        Collections.sort(list);
+                        cachePropertyAccessor(mmethod);
+                    }
+                }
+            }
+        }
+    </pre>
+    <p><p>
+    <h4><code>ExpandoMetaClass</code></h4>
+    <p></p>
+    <h5>Add member/static methods</h5>
+    <p></p>
+    <div class="codehead">Listing 4. 只針對<code>Integer</code>增加<code>daysFromNow</code> method</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+Integer.metaClass.daysFromNow = { ->
+    Calendar today = Calendar.instance
+    today.add(Calendar.DAY_OF_MONTH, delegate)
+    today.time
+}
+
+println 5.daysFromNow()
+    </pre>
+    <div class="codehead">Listing 5. 針對<code>Integer</code>、<code>Long</code>增加<code>daysFromNow</code> method</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+daysFromNow = { ->
+    Calendar today = Calendar.instance
+    today.add( Calendar.DAY_OF_MONTH, (int) delegate )
+    today.time
+}
+
+Integer.metaClass.daysFromNow = daysFromNow
+Long.metaClass.daysFromNow = daysFromNow
+
+println 5.daysFromNow()
+println 5L.daysFromNow()
+    </pre>
+    <div class="codehead">Listing 6. 加在parent class的<code>daysFromNow</code> method</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+Number.metaClass.daysFromNow = { ->
+    Calendar today = Calendar.instance
+    today.add( Calendar.DAY_OF_MONTH, (int) delegate )
+    today.time
+}
+
+println 5.daysFromNow()
+println 5L.daysFromNow()
+    </pre>
+    <div class="codehead">Listing 7. add static method</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+Integer.metaClass.static.isEven = { val -> val % 2 == 0 }
+
+println "Is 2 even? " + Integer.isEven(2)
+println "Is 3 even? " + Integer.isEven(3)
+    </pre>
+    <p></p>
+    <h5>Add/Replace Constructors</h5>
+    <p></p>
+    <div class="codehead">Listing 8.</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+// introduce new constructor with Calendar instance for Integer
+// introduce 用 << operator；如果要replace exists constructor則用 = operator
+Integer.metaClass.constructor << { Calendar calendar ->
+    new Integer(calendar.get(Calendar.DAY_OF_YEAR))
+}
+
+println new Integer(Calendar.instance)
+println new Integer(4)
+
+Integer.metaClass.constructor = { int val ->
+    println "Intercepting constructor call"
+    constructor = Integer.class.getConstructor(Integer.TYPE)
+    constructor.newInstance(val)
+}
+
+println new Integer(4)
+println new Integer(Calendar.instance)
+
+    </pre>
+    <h5>Add properties</h5>
+    <p></p>
+    <div class="codehead">Listing 9. </div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+Integer.metaClass.foo = "A"
+
+def obj = new Integer(1)
+println obj
+println obj.foo
+
+    </pre>
+    <h5>借別人的method到自己的class</h5>
+    <p></p>
+    <div class="codehead">Listing 10. 官方網站的範例</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person {
+    String name
+} 
+class MortgageLender {
+   def borrowMoney() {
+      "buy house"
+   }
+}
+
+def lender = new MortgageLender()
+
+Person.metaClass.buyHouse = lender.&borrowMoney
+
+def p = new Person()
+
+assert "buy house" == p.buyHouse()
+
+    </pre>
+    <p></p>
+    <div class="codehead">Listing 11. 修改自官方網站的範例</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person {
+    String name
+} 
+class MortgageLender {
+   def a = ""
+   def borrowMoney() {
+      a + "buy house"
+   }
+}
+
+def lender = new MortgageLender()
+
+Person.metaClass.buyHouse = lender.&borrowMoney
+
+def p = new Person()
+
+assert "buy house" == p.buyHouse()
+
+lender.a = "a"
+
+assert "abuy house" == p.buyHouse()
+    </pre>
+    <p><code>ExpandoMetaClass</code>很威猛可以讓我們增加instance method、static method、constructor...等，但是有個限制就是必須在groovy程式碼裡使用他。</p>
+    <p>接下來，兩個作法記得要把Reference 1的Figure 12.2翻開來對照。</p>
+    <h4><code>methodMissing()</code></h4>
+    <p></p>
+    <div class="codehead">Listing 12. 書本上的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person {
+    def work() { "working..." }
+
+    def plays = [ 'Tennis', 'VolleyBall', 'BasketBall' ]
+
+    def methodMissing(String name, args) {
+        System.out.println "methodMissing called for $name"
+        def methodInList = plays.find { it == name.split( 'play' )[1] }
+        if(methodInList) {
+            return "playing ${name.split( 'play' )[1]}..."
+        } else {
+            throw new MissingMethodException(name, Person.class, args)
+        }
+    }
+}
+
+jack = new Person()
+
+println jack.work()
+println jack.playTennis()
+println jack.playBasketBall()
+println jack.playVolleyBall()
+println jack.playTennis()
+
+try {
+    jack.playPolitics()
+} catch(Exception ex) {
+    println "Error: " + ex
+}
+    </pre>
+    <p></p>
+    <div class="codehead">Listing 13. 書本上的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person {
+    def work() { "working..." }
+}
+
+Person.metaClass.methodMissing = { String name, args ->
+    def plays = [ 'Tennis', 'VolleyBall', 'BasketBall' ]
+    
+    System.out.println "methodMissing called for $name"
+    def methodInList = plays.find { it == name.split('play')[1] }
+    
+    if(methodInList) {
+        def impl = { Object[] vargs ->
+            return "playing ${name.split('play')[1]}..."
+        }
+        
+        Person.metaClass."$name" = impl // futur calls will use it
+                                        // 因為會在metaClass找到這個property的內容並執行，
+                                        // 不會再到methodMissing => 也就是說在這個例子在
+                                        // plays裡的項目內的話，只會看到methodMissing各被
+                                        // 呼叫一次
+        return impl(args)
+    } else {
+        throw new MissingMethodException(name, Person.class, args)
+    }
+}
+
+def jeff = new Person()
+println jeff.work()
+println jeff.playTennis()
+println jeff.playTennis()  // 按照之前看到的處理流程圖，不會再走到methodMissing()
+                           // 因此第二次呼叫playTennis()，不會看到"methodMissing Called for playTennis"
+    </pre>
+    <h4><code>invokeMethod()</code></h4>
+    <p><code>invokeMethod()</code>要分成兩塊來看，一個是在Ref 1 Chapter 12那張圖一開始implements <code>GroovyInterceptable</code>或者寫自己的<code>metaClass<code>的<code>invokeMethod()</code>(Type 1)，另一個是在下方檢查沒有<code>methodMissing()</code>這個method之後(Type 2)。</p>
+    <p>針對Type 2可以簡單寫一個程式，以Listing 14裡的Person class的instance而言，當我們呼叫sign()的時候，按照流程因為沒有<code>methodMissing()</code>應該會走向是否有<code>invokeMethod()</code>的判斷。因此以下面這個例子，我們應該要可以看到螢幕上印出"Invoke sign ..."的訊息。</p>
+    <div class="codehead">Listing 14. Type 2 example</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person {
+    def work() { 
+        "It's works..."
+    }
+    def invokeMethod(String name, args) {
+        "Invoke $name ..."
+    }
+}
+
+def jeff = new Person()
+println jeff.work()		// It's works...
+println jeff.sign()		// Invoke sign ...
+    </pre>
+    <p>如果要使用實作<code>GroovyInterceptable</code>的方式的話，就要特別注意所有method invoke會被<code>invokeMethod()</code>攔截。一不小心就會變成Listing 15的慘劇。</p>
+    <div class="codehead">Listing 15. 「意外」的被攔截</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person implements GroovyInterceptable {
+    def work() { 
+        "working..."
+    }
+
+    def invokeMethod(String name, args) {
+        "Invoke $name ..."
+    }
+}
+
+def jeff = new Person()
+assert jeff.work() == "working..."
+assert jeff.sign() == "Invoke sign ..."
+
+    </pre>
+    <p></p>
+    <div class="codehead">Listing 16. 書本上的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person implements GroovyInterceptable {
+    def plays = [ 'Tennis', 'VolleyBall', 'BasketBall' ]
+
+    def work() { 
+        "working..."
+    }
+
+    def invokeMethod(String name, args) {
+        System.out.println "intercepting call for $name"
+        def method = metaClass.getMetaMethod(name, args)
+        if(method) {
+            return method.invoke(this, args)
+        } else {
+            return metaClass.invokeMethod(this, name, args)
+        }
+    }
+
+    def methodMissing(String name, args) {
+        System.out.println "methodMissing called for $name"
+        def methodInList = plays.find { it == name.split('play')[1] }
+        if(methodInList) {
+            def impl = { Object[] vargs ->
+                return "playing ${name.split('play')[1]}..."
+            }
+            Person.metaClass."$name" = impl;
+            return impl(args)
+        } else {
+            throw new MissingMethodException(name, Person.class, args)
+        }
+    }
+}
+
+def jeff = new Person()
+assert jeff.work() == "working..."
+assert jeff.playTennis() == "playing Tennis..."
+
+    </pre>
+    <p>這樣是藉由<code>metaClass</code>的<code>invokeMethod()</code>繼續往下找要呼叫的method，然後最後走向<code>methodMissing()</code>。當然這裡的<code>methodMissing()</code>是有bug的，不過只是在展示MOP機制用，所以不用太計較。看到這裡就有一個惡搞版本程式出來。</p>
+    <div class="codehead">Listing 17. 前一個例子加上重新定義Person <code>metaClass</code>的<code>invokeMethod</code></div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person implements GroovyInterceptable {
+    def plays = [ 'Tennis', 'VolleyBall', 'BasketBall' ]
+
+    def work() { 
+        "working..."
+    }
+
+    def invokeMethod(String name, args) {
+        System.out.println "intercepting call for $name"
+        def method = metaClass.getMetaMethod(name, args)
+        if(method) {
+            return method.invoke(this, args)
+        } else {
+            return metaClass.invokeMethod(this, name, args)
+        }
+    }
+
+    def methodMissing(String name, args) {
+        System.out.println "methodMissing called for $name"
+        def methodInList = plays.find { it == name.split('play')[1] }
+        if(methodInList) {
+            def impl = { Object[] vargs ->
+                return "playing ${name.split('play')[1]}..."
+            }
+            Person.metaClass."$name" = impl;
+            return impl(args)
+        } else {
+            throw new MissingMethodException(name, Person.class, args)
+        }
+    }
+}
+
+Person.metaClass.invokeMethod = { String name, args ->
+    if( name.startsWith( 'play' ) ) {
+        methodMissing( name, args);
+    } else {
+        "Invoke $name"
+    }
+}
+
+def jeff = new Person()
+assert jeff.work() == "working..."
+assert jeff.playTennis() == "playing Tennis..."
+assert jeff.go() == "Invoke go"
+
+    </pre>
+    <h2>Introduce new method to object</h2>
+    <p>手法就是改想改的特定instance的<code>metaClass</code>的內容。</p>
+    <div class="codehead">Listing 18. 書本上的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person {
+}
+
+def emc = new ExpandoMetaClass(Person) 
+emc.sing = { ->
+    'oh baby baby...'
+}
+emc.initialize()
+
+def jack = new Person()
+def paul = new Person()
+
+jack.metaClass = emc
+
+println jack.sing()
+
+try {
+    paul.sing()
+} catch(ex) {
+    println ex
+}
+    </pre>
+    <p></p>
+    <div class="codehead">Listing 19. 另一種作法</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Person {
+    def work() {
+        "working..."
+    }
+}
+
+def jack = new Person()
+def paul = new Person()
+
+jack.metaClass {
+    sing = {
+        "It's the final countdown"
+    }
+}
+
+assert jack.work() == "working..."
+assert paul.work() == "working..."
+assert jack.sing() == "It's the final countdown"
+
+try {
+    paul.sing()
+} catch(ex) {
+    println ex
+}
+    </pre>
+    <h2>有的沒的</h2>
+    <p>有沒有覺得Groovy Categories寫起來有點討厭，methods要宣告成<code>static</code>還要傳一個<code>self</code>變數進去。用<code>@Category</code>讓我們在寫categories的時候少掉那些有的沒的東西。</p>
+    <div class="codehead">Listing 20. <code>@Category</code>和<code>@Mixin</code>的範例</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+@Category(Test)
+class FooCategory {
+    def bla() {
+        "[[${name}]]"
+    }
+}
+
+interface Test {
+    String getName()
+}
+
+@Mixin(FooCategory)
+class TestClz implements Test {
+    String getName() {
+        "TestClz"
+    }
+}
+
+def obj = new TestClz()
+assert obj.getName() == "TestClz"
+assert obj.bla() == "[[TestClz]]"
+    </pre>
+    <p></p>
+    <div class="codehead">Listing 21. <code>@Category</code>和use construct一起使用</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+@Category(Number)
+class FooCategory {
+    def bla() {
+        "blabla"
+    }
+}
+
+use(FooCategory) {
+    def obj = new Integer(10)
+    assert obj.bla() == "blabla"
+
+    def obj2 = "abc"
+    try {
+        obj2.bla()
+    } catch(ex) {
+        println ex
+    }
+}
+    </pre>
+    <p>因為上面例子舉的不好，搭配<code>@Mixin</code>會哭，因為<code>Integer</code>這些小朋友都是final，無法繼承。所以就跟Groovy javadoc裡面的範例類似弄Collection裡的class來玩</p>
+    <div class="codehead">Listing 22. <code>@Category</code>和<code>@Mixin</code>的另一個例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+@Category(HashSet)
+class FooCategory {
+    def bla() {
+        "blabla"
+    }
+}
+
+@Mixin(FooCategory)
+class MySet extends HashSet {
+    MySet(Collection init) {
+        super(init)
+    }
+}
+
+def obj = new MySet( [10, 20, 30, 40] )
+assert obj.bla() == "blabla"
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Programming Groovy</li>
+            <li>http://groovy.codehaus.org/ExpandoMetaClass</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/02/21
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

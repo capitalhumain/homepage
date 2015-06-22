@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>My Cookbook > File > Processing Apache Accesslog</title>
+</head>
+<body>
+<div>
+    <h1 class="header">My Cookbook > File > Processing Apache Accesslog</h1>
+</div>
+<div class="articlecontent">
+    <h2>Problem</h2>
+    <p>
+    想要使用Groovy來處理apache accesslog，取出符合reqular expression有興趣的group的資料，
+    並寫入資料庫方便使用SQL做進一步的分析。
+    </p>
+    <h2>Solution</h2>
+    <p>
+    因為要處理多台apache server的accesslog，希望可以區分不同apache server。而需求要取出的是request時間
+    、HTTP Request Method和Request resource。因此資料庫的table可能如下
+    </p>
+    <h3>Listing. db.sql</h3>
+    <pre name="code" class="sql:nocontrols:firstline[1]">
+create table accesslog(
+    servername varchar2(30),
+    accesstime timestamp,
+    method varchar2(5),
+    uri varchar2(2000)
+);
+    </pre>
+    <p>
+    透過regular expression取出想要寫到DB的資料，因為這個需求我只想看到request /cs/這個資源下的request
+    記錄，所以多跑一次==~的reqular expression運算來過濾資料。
+    </p>
+    <p>
+    接著就只是單純的使用Sql.execute(gstring: GString)把資料寫入資料庫。剩下就是統計分析的SQL的事了。
+    </p>
+    <h3>Listing. accesslog.groovy</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import groovy.sql.Sql
+
+if( this.args ) {
+	println "Processing file: ${this.args[1]}"
+	def db = Sql.newInstance(
+        'jdbc:oracle:thin:@localhost:1521:orcl',
+        'andrea',
+        'andrea',
+        'oracle.jdbc.OracleDriver'
+    )
+    db.execute( 'alter session set nls_language=American' )
+    
+	new File( this.args[1] ).eachLine{ line ->
+		def matches = line =~ /.*\x5b([0-9]{1,2}+\/[A-Z]{1}+[a-z]{2}+\/[0-9]{4}+:[0-9]{2}+:[0-9]{2}+:[0-9]{2}+)\s[\+|\-]{1}+[0-9]{4}+\x5d \x22(GET|POST) (\S*) \S*\x22 .*/
+		if( matches.matches() ) {
+			if( matches[0][3] ==~ /\/cs\/.*/ ) {
+				println "${matches[0][1]} ${matches[0][2]} ${matches[0][3]} ${args[0]}"
+				def param = [web: args[0], 
+				             time: matches[0][1], 
+				             method: matches[0][2], 
+				             msg: matches[0][3]]
+				db.execute """insert into  accesslog values 
+				              ($param.web, 
+				              to_timestamp( $param.time, 'dd/mon/yyyy:HH24:MI:SS'), 
+				              $param.method, 
+				              $param.msg)"""
+			} else {
+				println "Not match /cs/.* uri ${matches[0][3]}"
+			}
+	    } else {
+	    	println "Not Match: ${line}"
+	    }
+	}
+}
+
+    </pre>
+    <h2>Discussion</h2>
+    <p>
+    呼叫Sql execute(gstring: GString)這個method如果嘗試使用${}讓Groovy幫忙換的話會收到很多sql injection 
+    的warning，基於礙眼的問題所以我改成這樣的寫法就不會收到Groovy瘋狂鬼叫的warning message。
+    </p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Groovy Web Site</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/12/30
+</address>
+    <script language="javascript">
+    window.onload = function () {
+        SyntaxHighlighter.all();
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

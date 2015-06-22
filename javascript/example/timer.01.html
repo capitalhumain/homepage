@@ -1,0 +1,47 @@
+<html>
+<head>
+<script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+<script type="text/javascript">
+
+var terence = {
+    max: {
+        hp: 20,
+        mp: 40
+    },
+    hp: 10,
+    mp: 20,
+    hp_timer_id: undefined
+};
+
+$(function() {
+    $( '#hp' ).html( terence.hp );
+    $( '#mp' ).html( terence.mp );
+    terence.hp_timer_id = setInterval( function() { 
+            if( terence.hp < terence.max.hp ) {
+                terence.hp += 1;
+                $( '#hp' ).html( terence.hp ); 
+            }
+        }, 5000 );
+    $( '#attack' ).bind( 'click', function() {
+        terence.hp -= 5;
+        $( '#hp' ).html( terence.hp );
+    } );
+    $( window ).unload( function() {
+        alert( "clean" );
+        if( terence.hp_timer_id ) { 
+            alert( "clean hp timer" );
+            clearInterval( terence.hp_timer_id );
+        }
+    } );
+});
+</script>
+</head>
+<body>
+<div>
+HP: <span id="hp">-</span> MP: <span id="mp">-</span>
+</div>
+<div>
+<input id="attack" value="Attack" type="button" />
+</div>
+</body>
+</html>

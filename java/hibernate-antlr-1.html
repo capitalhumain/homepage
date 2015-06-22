@@ -1,0 +1,147 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="hibernate,many-to-many" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>Hibernate + ANTLR v3</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Hibernate + ANTLR v3</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>野心太大導致書單太長，也附帶變成老荀說的「鼯鼠五技而窮」。不過換個角度想，看這些東西的時候玩的還蠻爽的，畢竟「知識是世界上最美好的東西」。還是希望今年可以按照計畫把ANTLR, Flex, Bison用熟就好。</p>
+        <p>上禮拜五在回家的公車上想到這個作業是因為hibernate的dependency有ANTLR，而現在在看的是ANTLR v3，所以才想做做這個作業。</p>
+        <p>拿來修改的例子在<a href="../maven/memo.antlr.project.html">Maven ANTLR project</a>這篇。</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>MySQL</li>
+                <li>ANTLR 3.3</li>
+                <li>Hibernate 3.3.1.GA</li>
+            </ul>
+        </div>
+        <h2>E新增的功能</h2>
+        <p>希望新增兩個功能，一個<code>save expr</code>是將expr結果儲存到<code>LogMessage</code> table，另外一個是<code>list all</code>將<code>LogMessage</code> table的內容在螢幕顯示出來。</p>
+        <h3>Listing. ELexer.g新增部份</h3>
+        <pre name="code" class="plain:nocontrols:firstline[25]">
+SAVE    : 'save'
+        ;
+        
+LIST    : 'list'
+        ;
+
+ALL     : 'all'
+        ;
+        </pre>
+        <p>針對<code>list all</code>如果設計上只有使用<code>list</code>會造成無法推測出正確的路線的結果；在變動的最小的前提下，所以我偷懶的選擇<code>list all</code>。</p>
+        <h3>Listing. EParser.g stat與新增的部份</h3>
+        <pre name="code" class="plain:controls:fistline[18]">
+stat    : expr NEWLINE                  -> expr
+        | ID ASSIGN expr NEWLINE        -> ^(ASSIGN ID expr)
+        | SAVE expr NEWLINE             -> ^(SAVE expr)
+        | LIST ALL NEWLINE              -> ^(LIST ALL)
+        | NEWLINE                       ->
+        ;
+        </pre>
+        <p>這個時候就可以踹看看AST產生是不是會跟預期的一樣。</p>
+        <h3>Listing. EWalker.g stat的AST對應的action與新增部份</h3>
+        <pre name="code" class="plain:controls:firstline[15]">
+@members {
+HashMap&lt;String, Integer> memory = new HashMap&lt;String, Integer>();
+LogMessageService lmService = (LogMessageService) SpringContextHolder.ctx.getBean( "logMessageService" );
+}
+
+prog    :       stat+
+        ;
+
+stat    :       expr {
+                     System.out.println( $expr.value ); 
+                     }
+        |       ^(ASSIGN ID expr) { memory.put( $ID.text, new Integer( $expr.value ) ); }
+        |       ^(SAVE expr) { 
+                             StringBuilder msg = new StringBuilder();
+                             msg.append( "From EWalker: " );
+                             msg.append( " = " );
+                             msg.append( $expr.value );
+                             lmService.save( msg.toString() ); 
+                             }
+        |       ^(LIST ALL) { System.out.println( lmService.list() ); }
+        ;
+        </pre>
+        <p>最後執行下列的程式</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+a = 10-1*2
+b=(a+1)*3
+list all
+save b
+save a
+list all
+        </pre>
+        <p>預期可以在第二次執行<code>list all</code>的時候可以由資料庫查詢到之前存到資料庫裡b, a的結果。</p>
+        <h3>Listing. 執行情況</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/java/hibernate/antlr-migration$ mvn exec:java -Dexec.mainClass=net.greenrivers.hibernate.antlr.Test
+[INFO] Scanning for projects...
+[INFO] Searching repository for plugin with prefix: 'exec'.
+[INFO] ------------------------------------------------------------------------
+[INFO] Building antlr hibernate migration test
+[INFO]    task-segment: [exec:java]
+[INFO] ------------------------------------------------------------------------
+[INFO] Preparing exec:java
+[INFO] No goals needed for project - skipping
+[INFO] [exec:java {execution: default-cli}]
+a = 10-1*2
+b=(a+1)*3
+list all
+save b
+save a
+list all
+Default AST tree: (= a (- 10 (* 1 2))) (= b (* (+ a 1) 3)) (list all) (save b) (save a) (list all)
+Hibernate: select logmessage0_.id as id0_, logmessage0_.content as content0_ from LogMessage logmessage0_
+Listing LogMessage content from db [
+]
+Hibernate: insert into LogMessage (content) values (?)
+Hibernate: insert into LogMessage (content) values (?)
+Hibernate: select logmessage0_.id as id0_, logmessage0_.content as content0_ from LogMessage logmessage0_
+Listing LogMessage content from db [
+From EWalker:  = 27
+From EWalker:  = 8
+]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESSFUL
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 33 seconds
+[INFO] Finished at: Tue Jan 18 14:43:46 CST 2011
+[INFO] Final Memory: 11M/89M
+[INFO] ------------------------------------------------------------------------
+        </pre>
+        <p>Sample Code: <a href="../samples/hibernate-code.tar.gz">here</a></p>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2011/01/17
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

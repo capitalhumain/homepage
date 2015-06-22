@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushR.js" ></script>
+    <script type="text/javascript" src="../js/shBrushMathProg.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>GNU Linear Programming Kit (GLPK) in R</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">GNU Linear Programming Kit (GLPK) in R</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>始終記得國中二年級在Acer 915P上看著自己寫的第一個GW-Basic程式跑起來的快樂。對我這個智力不好的人而言，每一次寫程式、每一次看到實驗結果都充滿興奮的情緒。做自己喜歡的事情應該是要快樂的，不應該被小人搞到連快樂的事情都變成不快樂。</p>
+        <p>意料之外的學習跟計畫之中的學習的交集</p>
+        <p>意料之外的學習是GLPK，計畫之中的學習是R...兩者的交集當然就是Rglpk</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>GNU Linear Programming Kit (GLPK) 4.42</li>
+                <li>R version 2.10.1</li>
+                <li>R/GNU Linear Programming Kit Interface (Ubuntu package: r-cran-rglpk) version 0.3-1-2</li>
+            </ul>
+        </div>
+        <h2>Installation</h2>
+        <p>因為最近改成在Ubuntu下開發才開始變熟，所以先用Synaptic Package Manager安裝R和需要的packages。Rglpk只有裝0.3-1-2是從Synaptic Package Manager由repository上看到的只有這個版本，雖然從CRAN網站上可以看到2010年二月已經release 0.3-5。</p>
+        <h2>找東西</h2>
+        <p>透過R的library()這個command可以看到目前執行環境裡已經安裝的packages。前面是名稱，後面是描述。而前面的名稱也是我們要用library( package_name )或require( package_name )跟R說我們要load的package name。</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+> library()
+Rglpk                   R/GNU Linear Programming Kit Interface
+        </pre>
+        <h2>開工</h2>
+        <p>接下來把Head First Data Analysis最佳化範例的模型改成用R/GLPK的方式描述</p>
+        <h3>Listing 1. rubber.R</h3>
+        <pre name="code" class="R:nocontrols:firstline[1]">
+library( Rglpk )
+
+# objective function: 5*x1 + 4*x2 
+obj <- c(5, 4)
+# subject to:
+#    100*x1 + 125*x2 <= 50000
+#      1*x1 +   0*x2 <= 400
+#      0*x1 +   1*x2 <= 300
+# => matrix( c(100, 1, 0, 125, 0, 1), nrow = 3 )
+mat <- matrix(c(100, 1, 0, 125, 0, 1), nrow=3)
+dir <- c("<=", "<=", "<=")
+rhs <- c(50000, 400, 300)
+max <- TRUE
+
+result <- Rglpk_solve_LP( obj, mat, dir, rhs, max=max )
+
+print( result )
+        </pre>
+        <p><code>Rglpk_solve_LP</code> function有用到的arguments說明如下，沒用到的也剪貼如下</p>
+        <div>
+            <ul>
+                <li><code>obj</code>: 用vector表示objective function的係數</li>
+                <li><code>mat</code>: 用vector或matrix表示限制式的係數</li>
+                <li><code>dir</code>: 用character vector表示不等式的方向</li>
+                <li><code>rhs</code>: 用vector表示限制式右邊的值</li>
+                <li><code>max</code>: 最佳化的方式，TRUE表示maximize；FALSE表示minimize。（這個參數有預設值：FALSE）</li>
+                <li><code>types</code>: a vector indicating the types of the objective variables. types can be either "B" for binary, "C" for continuous or "I" for integer. By default all variables are of type "C".</li>
+                <li><code>bounds</code>: NULL (default) or a list with elements upper and lower containing the in-dices and corresponding bounds of the objective variables. The default for each variable is a bound between 0 and Inf.</li>
+                <li><code>verbose</code>: a logical for turning on/off additional solver output: Default: FALSE.</li>
+            </ul>
+        </div>
+        <p><strong>特別注意</strong>mat這個matrix跟constraint functions對應的方式。主要是要依照R的方式</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+> w <- array( 1:18, dim=c(3, 3, 2) )
+> w
+, , 1
+
+     [,1] [,2] [,3]
+[1,]    1    4    7
+[2,]    2    5    8
+[3,]    3    6    9
+
+, , 2
+
+     [,1] [,2] [,3]
+[1,]   10   13   16
+[2,]   11   14   17
+[3,]   12   15   18
+
+> m <- matrix( 1:18, nrow=3 )
+> m
+     [,1] [,2] [,3] [,4] [,5] [,6]
+[1,]    1    4    7   10   13   16
+[2,]    2    5    8   11   14   17
+[3,]    3    6    9   12   15   18
+> 
+        </pre>
+        <p>因此限制式的描述方法，以這個例子來看會變成三個限制式先列出x1的係數，再列出x2的係數，最後設定<code>nrow</code>跟<code>matrix</code> function說這個matrix有三列（三個限制式）。這樣就可以把限制不等式左邊的係數描述出來。</p>
+        <p>接下來就是透過R來解最佳化答案，執行結果如下</p>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+> source("rubber.R")
+Loading required package: slam
+Using the GLPK callable library version 4.42
+$optimum
+[1] 2320
+
+$solution
+[1] 400  80
+
+$status
+[1] 0
+
+>
+        </pre>
+        <p>結果最佳利潤跟前一篇用GLPK計算的2320一樣，而最佳解的(x1, x2)=(400, 80)，status = 0則表示最佳解有找到。根據CRAN文件這三個值解釋剪貼如下</p>
+        <div>
+            <ul>
+                <li><code>solution</code>: the vector of optimal coefficients</li>
+                <li><code>optimum</code>: the value of the objective function at the optimum</li>
+                <li><code>status</code>: an integer with status information about the solution returned: 0 if the optimal solution was found, a non-zero value otherwise.</li>
+            </ul>
+        </div>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Head First Data Analysis, O'Reilly</li>
+                <li>http://cran.r-project.org/web/packages/Rglpk/index.html</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/11/22</i>, latest update 2010/11/25
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

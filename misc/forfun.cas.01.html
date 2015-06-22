@@ -1,0 +1,436 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="CAS,Single-Sign On,SSO" />
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>JA-SIG CAS Single-Sign On - 1</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">JA-SIG CAS Single-Sign On - 1</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        『快快樂樂』用JA-SIG CAS...騙小孩子版本
+        </p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>Sun JDK 6</li>
+                <li>Apache Maven 2.2.1</li>
+                <li>Apache Tomcat 6</li>
+                <li>JA-SIG CAS 3.4.2</li>
+            </ul>
+        </div>
+        <h2>Start The Show</h2>
+        <div>
+        因為是初體驗，使用的config大致如下
+        <ul>
+            <li>只有一台Tomcat 6。</li>
+            <li>JA-SIG CAS Server authentication handler: AcceptUsersAuthenticationHandler。</li>
+            <li>JA-SIG CAS Client設定方式選擇web.xml設定Filter和Listener。</li>
+            <li>測試Web Applications走HTTP而非HTTPS，只有跟CAS搞登入登出流程的時候才走HTTPS。</li>
+        </ul>
+        </div>
+        <div>
+        開工之前，就是先打開Tomcat HTTPS(想要有SSO這個動作是必要的)
+        <ol>
+            <li>使用keytool產生keystore</li>
+            <li>修改server.xml，把comment拿掉
+            <pre name="code" class="xml:controls:firstline[1]">
+<Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol" SSLEnabled="true"
+           maxThreads="150" scheme="https" secure="true"
+           clientAuth="false" sslProtocol="TLS" 
+           keystoreFile="/home/terence/local/apache-tomcat-6.0.20/bin/keystore" keystorePass="password" />
+            </pre>
+            </li>
+            <li>重新啟動Tomcat，連到https://localhost:8443看看就知道有沒有成功</li>
+        </ol>
+        </div>
+        <h2>Phase I: SSO初體驗 - 準備CAS Server</h2>
+        <p>
+        搞一個自己的CAS Server的做法，根據CAS文件建議的我選用Maven的方式搞。因為我用AcceptUsersAuthenticationHandler，所以要多加一個dependency。如果將來要用別的authentication就加入該方法的dependency就好。完整pom.xml如下
+        </p>
+        <pre name="code" class="xml:controls:firstline[1]">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>edu.university.cas</groupId>
+    <artifactId>local-cas</artifactId>
+    <packaging>war</packaging>
+    <version>1.0</version>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <warName>cas</warName>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jasig.cas</groupId>
+            <artifactId>cas-server-webapp</artifactId>
+            <version>${cas.version}</version>
+            <type>war</type>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.jasig.cas</groupId>
+            <artifactId>cas-server-support-generic</artifactId>
+            <version>${cas.version}</version>
+            <type>jar</type>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <properties>
+        <cas.version>3.4.2</cas.version>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>ja-sig</id>
+            <url>http://oss.sonatype.org/content/repositories/releases/</url>
+        </repository>
+    </repositories>
+
+</project>
+        </pre>
+        <p>
+        接著在src下對應目錄把自己要用的設定檔由target中copy過來改，在這個簡單的例子只要改deployerConfigContext.xml
+        </p>
+        <pre name="code" class="xml:controls:firstline[96]">
+                <bean class="org.jasig.cas.adaptors.generic.AcceptUsersAuthenticationHandler">
+                    <property name="users">
+                        <map>
+                            <entry>
+                                <key>
+                                    <value>scott</value>
+                                </key>
+                                <value>tiger</value>
+                            </entry>
+                            <entry>
+                                <key>
+                                    <value>admin</value>
+                                </key>
+                                <value>admin</value>
+                            </entry>
+                        </map>
+                    </property>
+                </bean>
+        </pre>
+        <p>
+        接著就是最簡單的工作執行mvn clean package
+        </p>
+        <h2>Phase I: SSO初體驗 - 準備CAS Client</h2>
+        <p>
+        測試用的兩個CAS Client也是用maven專案來玩，因為兩個很類似只有index.jsp有不同的配色和wording用來快速區分使用的系統。完整pom.xml如下
+        </p>
+        <pre name="code" class="xml:controls:firstline[1]">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>net.greenrivers</groupId>
+    <artifactId>SimpleWeb</artifactId>
+    <packaging>war</packaging>
+    <version>1.0</version>
+    <name>SimpleWeb</name>
+    <url>http://maven.apache.org</url>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <webappDirectory>${basedir}/target/SimpleWeb</webappDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+     
+        <finalName>SimpleWeb</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+            <version>2.5</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet.jsp</groupId>
+            <artifactId>jsp-api</artifactId>
+            <version>2.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.jasig.cas</groupId>
+            <artifactId>cas-client</artifactId>
+            <version>${cas.version}</version>
+            <type>pom</type>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jasig.cas</groupId>
+            <artifactId>cas-client-core</artifactId>
+            <version>${cas.version}</version>
+            <type>jar</type>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+    
+    <properties>
+        <cas.version>3.1.2</cas.version>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>ja-sig</id>
+            <url>http://oss.sonatype.org/content/repositories/releases/</url>
+        </repository>
+    </repositories>
+</project> 
+        </pre>
+        <p>
+        因為採用設定Filter的方式搞CAS Client，所以有關web.xml filter設定如下
+        </p>
+        <pre name="code" class="xml:controls:firstline[5]">
+    <!-- Authentication Filter -->
+    <filter>
+        <filter-name>CAS Authentication Filter</filter-name>
+        <filter-class>org.jasig.cas.client.authentication.AuthenticationFilter</filter-class>
+        <init-param>
+            <param-name>casServerLoginUrl</param-name>
+            <param-value>https://localhost:8443/cas/login</param-value>
+        </init-param>
+        <init-param>
+            <param-name>service</param-name>
+            <param-value>http://localhost:8080/SimpleWeb/index.jsp</param-value>
+        </init-param>
+        <init-param>
+            <param-name>serverName</param-name>
+            <param-value>https://localhost:8443</param-value>
+        </init-param>
+    </filter>
+    
+    <!-- ticket Validation Filter -->
+    <filter>
+        <filter-name>CAS Validation Filter</filter-name>
+        <filter-class>org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter</filter-class>
+        <init-param>
+            <param-name>casServerUrlPrefix</param-name>
+            <param-value>http://localhost:8080/cas</param-value>
+        </init-param>
+        <init-param>
+            <param-name>serverName</param-name>
+            <param-value>http://localhost:8080</param-value>
+        </init-param>
+    </filter>
+
+    <!-- HttpServletRequrst Wrapper Filter -->
+    <filter>
+        <filter-name>CAS HttpServletRequest Wrapper Filter</filter-name>
+        <filter-class>org.jasig.cas.client.util.HttpServletRequestWrapperFilter</filter-class>
+    </filter>
+
+    <!-- -->
+    <filter>
+        <filter-name>CAS Assertion Thread Local Filter</filter-name>
+        <filter-class>org.jasig.cas.client.util.AssertionThreadLocalFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>CAS Authentication Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    
+    <filter-mapping>
+        <filter-name>CAS Validation Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    
+    <filter-mapping>
+        <filter-name>CAS HttpServletRequest Wrapper Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    
+    <filter-mapping>
+        <filter-name>CAS Assertion Thread Local Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+        </pre>
+        <p>
+        簡單的index.jsp用來秀透過ticket validation 之後，CAS設給我們的userid。除了確認之外等下還可以用來做Single-Sign out的功能檢驗。
+        </p>
+        <pre name="code" class="xml:controls:firstline[1]">
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+&lt;html>
+&lt;head>
+    &lt;meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    &lt;title>Application: [SimpleWeb]</title>
+&lt;/head>
+&lt;body>
+    <h3>Application: [SimpleWeb] It's Work!</h3>
+    <div style="border: 1px solid #CC0000; width: 300px; height:100px; padding:10px; background-color: #eeeeee;">
+        Login User: 
+        <span style="color:red;">
+        <%=request.getRemoteUser()%>
+        </span>
+    </div>
+&lt;/body>
+&lt;/html>
+        </pre>
+        <p>
+        接著把這兩個WAR佈署到Tomcat就可以玩玩看了。在同一個browser，tab 1在SimpleWeb登入之後，在tab 2使用SimpleWeb2會因為SSO為登入狀態並取得user id。
+        </p>
+        <p>
+        只在SimpleWeb登入的時候就可以在cookie找到一個名為CASTGC的cookie資訊（以我的案例path設定在/cas下）只有在secure connection的時候才會送這個cookie到server。
+        </p>
+        <p>
+        接著在ticket validation的過程中會發現ticket id會以query string的方式在url看到。如果我們這個時候按reload就會發生ticket expired的問題。這個問題可以透過設定解決。
+        </p>
+        <h2>Phase II: Single-Sign Out初體驗 - 修改CAS Client</h2>
+        <p>
+        設定Single-Sign Out的方式只要多加一個Filter和一個Listener
+        </p>
+        <pre name="code" class="xml:controls:firstline[5]">
+        <!-- Single-Sign Out  -->
+    <filter>
+        <filter-name>CAS SingleSignOut Filter</filter-name>
+        <filter-class>org.jasig.cas.client.session.SingleSignOutFilter</filter-class>
+    </filter>
+        </pre>
+        <pre name="code" class="xml:controls:firstline[59]">
+    <filter-mapping>
+        <filter-name>CAS SingleSignOut Filter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping> 
+        </pre>
+        <pre name="code" class="xml:controls:firstline[84]">
+    <listener>
+        <listener-class>org.jasig.cas.client.session.SingleSignOutHttpSessionListener</listener-class>
+    </listener>
+        </pre>
+        <p>
+        在index.jsp寫logout連結，就可以測試Single-Sign Out
+        </p>
+        <pre name="code" class="xml:controls:firstline[1]">
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+&lt;html>
+&lt;head>
+    &lt;meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    &lt;title>Application: [SimpleWeb]</title>
+&lt;/head>
+&lt;body>
+    <h3>Application: [SimpleWeb] It's Work!</h3>
+    <div style="border: 1px solid #CC0000; width: 300px; height:100px; padding:10px; background-color: #eeeeee;">
+        Login User: 
+        <span style="color:red;">
+        <%=request.getRemoteUser()%>
+        </span>
+        <a href="https://localhost:8443/cas/logout">Logout</a>
+    </div>
+&lt;/body>
+&lt;/html>
+        </pre>
+        <p>
+        玩的方法就很多了，最簡單的是走完phase I的流程之後，在某一個application登出系統；在另一個application refresh會發現已經登出，因此再走一次登入流程。
+        </p>
+        <h2>問題點</h2>
+        <div>
+        <ul>
+            <li>Ticket id以query string方式秀在url的解法
+            <div style="background-color: #eeeeee;">
+                <ol>
+                    <li>ticket validation使用org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter</li>
+                    <li>init-param 參數 redirectAfterValidation 設定為 ture</li>
+                </ol>
+            </div>
+            </li>
+            <li style="color:red;">如果JSP Container沒有開https就只有登入，沒有SSO => 不確定CASTGC這個cookie有沒有辦法config成一般http連線也會送</li>
+            <li style="color:red;">測試application如果都走https，在ticket validation的時候會收到下列的exception
+<pre style="background-color: #cccccc; padding: 5px;">
+javax.net.ssl.SSLHandshakeException:
+sun.security.validator.ValidatorException: PKIX path building failed:
+sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+</pre>
+            => 把tomcat的keystore import到/usr/lib/security/cacerts一樣沒鳥用....無敵煩的java security
+            </li>
+        </ul>
+        </div>
+        <h2>Reference</h2>
+        <div>
+            <ul>
+                <li>JA-SIG CAS User Manual</li>
+                <li>Apache Tomcat 6 Doc and Lorenz Chi 協助</li>
+            </ul>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home" style="display:none;"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/06/17
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

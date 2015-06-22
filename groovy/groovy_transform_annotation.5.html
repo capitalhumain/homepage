@@ -1,0 +1,279 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script language="JavaScript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <title>Synchronized</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Synchronized</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>寫java的時候我們知道當使用<code>synchronized</code> keyword在member method的時候，在進入function body之前取得的lock是該method的object；如果是static synchronized method使用的lock則是那個method所在的<code>Class</code> object。在Groovy有一個用在method的annotation，結果類似但是行為不太一樣。這裡就是要看一下這個小東西。</p>
+    <p>沒有自信算是心理疾病嗎？！該看現在很熱門的心理醫師...</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.8.0</li>
+            <li>Sun JDK 1.6.0_24</li>
+        </ul>
+    </div>
+    <h2><code>Synchronized</code></h2>
+    <p>這個東西只能用在static member method或member method，效果和java語言本身<code>synchronized</code>類似，但是lock的是不同物件。這個annotation會introduce一個object，然後function body會先取得這個object lock才開始進行。（除非使用的時候都給不同的<code>value</code>，不然多個synchronized static method應該是共用同一個lock object）</p>
+    <p>先寫一個沒用<code>Synchronized<code>的static method，然後用兩個thread來使用他。</p>
+    <div class="codehead">Listing 1. NoSynchronizedExample_1.groovy</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import java.util.concurrent.Executors
+
+class NoSynchronizedExample {
+    static int i = 0
+    static void greet(msg) {
+        println "$msg greeting " + i++
+    }
+}
+
+def executorService = Executors.newFixedThreadPool(2)
+def genTask(id) {
+    new Runnable() {
+        public void run() {
+            int i = 5
+            while(i > 0) {
+                NoSynchronizedExample.greet(id)
+                i--
+            }
+        }
+    }
+}
+
+try {
+    executorService.submit( genTask("1") )
+    executorService.submit( genTask("2") )
+} catch(e) {
+    println e
+} finally {
+    executorService.shutdown()
+}
+    </pre>
+    <p></p>
+    <div class="codehead">Listing 2. SynchronizedExample_1.groovy</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+import java.util.concurrent.Executors
+import groovy.transform.Synchronized
+
+class SynchronizedExample {
+    static int i = 0
+    @Synchronized
+    static void greet(msg) {
+        println "$msg greeting " + i++
+    }
+}
+
+def executorService = Executors.newFixedThreadPool(2)
+def genTask(id) {
+    new Runnable() {
+        public void run() {
+            int i = 5
+            while(i > 0) {
+                SynchronizedExample.greet(id)
+                i--
+            }
+        }
+    }
+}
+
+try {
+    executorService.submit( genTask("1") )
+    executorService.submit( genTask("2") )
+} catch(e) {
+    println e
+} finally {
+    executorService.shutdown()
+}
+    </pre>
+    <p>不相信groovy java doc寫的pseudo code可以看一下反組譯groovyc產生的SynchronizedExample.class。如下面（Listing 3），針對static method會產生Line 12的static attribute $LOCK，而在<code>greet()</code>（Line 22~29）可以看到程式主體在<code>synchronized($LOCK)</code>裡面。</p>
+    <div class="codehead">Listing 3. 反組譯SynchronizedExample.class</div>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
+import org.codehaus.groovy.runtime.BytecodeInterface8;
+import org.codehaus.groovy.runtime.GStringImpl;
+import org.codehaus.groovy.runtime.callsite.CallSite;
+import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
+
+public class SynchronizedExample
+  implements GroovyObject
+{
+  private static int i;
+  private static final Object $LOCK;
+
+  public SynchronizedExample()
+  {
+    SynchronizedExample this;
+    CallSite[] arrayOfCallSite = $getCallSiteArray();
+    MetaClass localMetaClass = $getStaticMetaClass();
+    this.metaClass = localMetaClass;
+  }
+
+  public static void greet(Object msg)
+  {
+    CallSite[] arrayOfCallSite = $getCallSiteArray(); synchronized ($LOCK)
+    {
+      int j;
+      Object tmp72_67 = arrayOfCallSite[2].call((Integer)DefaultTypeTransformation.box(j = i)); i = DefaultTypeTransformation.intUnbox(tmp72_67); tmp72_67; arrayOfCallSite[0].callStatic($get$$class$SynchronizedExample(), arrayOfCallSite[1].call(new GStringImpl(new Object[] { msg }, new String[] { "", " greeting " }), (Integer)DefaultTypeTransformation.box(tmp72_67)));
+    }
+  }
+
+  static
+  {
+    __$swapInit();
+    Long localLong1 = (Long)DefaultTypeTransformation.box(0L);
+    __timeStamp__239_neverHappen1306829390605 = DefaultTypeTransformation.longUnbox(localLong1);
+    Long localLong2 = (Long)DefaultTypeTransformation.box(1306829390605L);
+    __timeStamp = DefaultTypeTransformation.longUnbox(localLong2);
+    int j;
+    int k;
+    if ((!BytecodeInterface8.isOrigInt()) || (__$stMC) || (BytecodeInterface8.disabledStandardMetaClass()))
+    {
+      j = 0;
+      i = j;
+    }
+    else
+    {
+      k = 0;
+      i = k;
+    }
+    Object[] arrayOfObject = new Object[DefaultTypeTransformation.intUnbox((Integer)DefaultTypeTransformation.box(0))];
+    $LOCK = arrayOfObject;
+  }
+
+  public static int getI()
+  {
+    return i;
+  }
+
+  public static void setI(int paramInt)
+  {
+    i = paramInt;
+  }
+}
+    </pre>
+    <p>如果加上<code>Synchronized</code>的method是member function則會產生一個member attribute；此外也可以用<code>value</code>選定自己喜歡的已經加入的lock object name。</p>
+    <p>接下來是一個簡單的程式用來印證一開始說的那些話。這個class有兩個synchronized static method。</p>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class SynchronizedExample2 {
+    static int i = 0
+    @Synchronized
+    static void greet(msg) {
+        println "$msg greeting " + i++
+    }
+
+    @Synchronized
+    static void default_greet(msg) {
+        println "$msg hello, world"
+    }
+}
+    </pre>
+    <p>反組譯的結果，只有看到一個lock object。...所以我才說如果沒有指定，應該會共用。</p>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
+import org.codehaus.groovy.runtime.BytecodeInterface8;
+import org.codehaus.groovy.runtime.GStringImpl;
+import org.codehaus.groovy.runtime.callsite.CallSite;
+import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
+
+public class SynchronizedExample2
+  implements GroovyObject
+{
+  private static int i;
+  private static final Object $LOCK;
+
+  public SynchronizedExample2()
+  {
+    SynchronizedExample2 this;
+    CallSite[] arrayOfCallSite = $getCallSiteArray();
+    MetaClass localMetaClass = $getStaticMetaClass();
+    this.metaClass = localMetaClass;
+  }
+
+  public static void greet(Object msg)
+  {
+    CallSite[] arrayOfCallSite = $getCallSiteArray(); synchronized ($LOCK)
+    {
+      int j;
+      Object tmp72_67 = arrayOfCallSite[2].call((Integer)DefaultTypeTransformation.box(j = i)); i = DefaultTypeTransformation.intUnbox(tmp72_67); tmp72_67; arrayOfCallSite[0].callStatic($get$$class$SynchronizedExample2(), arrayOfCallSite[1].call(new GStringImpl(new Object[] { msg }, new String[] { "", " greeting " }), (Integer)DefaultTypeTransformation.box(tmp72_67)));
+    }
+  }
+
+  public static void default_greet(Object msg) {
+    CallSite[] arrayOfCallSite = $getCallSiteArray(); synchronized ($LOCK) { arrayOfCallSite[3].callStatic($get$$class$SynchronizedExample2(), new GStringImpl(new Object[] { msg }, new String[] { "", " hello, world" }));
+    }
+  }
+
+  static
+  {
+    __$swapInit();
+    Long localLong1 = (Long)DefaultTypeTransformation.box(0L);
+    __timeStamp__239_neverHappen1306831878274 = DefaultTypeTransformation.longUnbox(localLong1);
+    Long localLong2 = (Long)DefaultTypeTransformation.box(1306831878274L);
+    __timeStamp = DefaultTypeTransformation.longUnbox(localLong2);
+    int j;
+    int k;
+    if ((!BytecodeInterface8.isOrigInt()) || (__$stMC) || (BytecodeInterface8.disabledStandardMetaClass()))
+    {
+      j = 0;
+      i = j;
+    }
+    else
+    {
+      k = 0;
+      i = k;
+    }
+    Object[] arrayOfObject = new Object[DefaultTypeTransformation.intUnbox((Integer)DefaultTypeTransformation.box(0))];
+    $LOCK = arrayOfObject;
+  }
+
+  public static int getI()
+  {
+    return i;
+  }
+
+  public static void setI(int paramInt)
+  {
+    i = paramInt;
+  }
+}
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Groovy 1.8 API JavaDoc</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/05/31
+</address>
+<script language="javascript">
+$(function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

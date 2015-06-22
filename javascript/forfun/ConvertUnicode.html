@@ -1,0 +1,71 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script language="JavaScript">
+//+ Jonas Raoni Soares Silva
+//@ http://jsfromhell.com/geral/utf-8 [v1.0]
+
+String.prototype.escapeMarkup = function() {
+    var character = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        '"': '&quot;'
+    };
+    return this.replace(/[<>&"]/g, function (c) {
+        return character[c];
+    });
+};
+
+var UTF8 = {
+    encode : function (instr) {
+        instr = instr.replace(/\r\n/g,"\n");
+        var utftext = "";
+    
+        for (var n = 0; n < instr.length; n++) {
+            utftext += "&#";
+            var c = instr.charCodeAt(n);
+
+            utftext += c;
+            utftext += ";";
+        }
+        return utftext;
+    }
+};
+
+function ConvertIt() {
+    var elem = document.getElementById( "source" );
+    var result = document.getElementById( "result" );
+    var resstr = UTF8.encode(elem.value);
+    result.value = resstr;
+};
+
+function RevertIt() {
+    var elem = document.getElementById( "revert" );
+    var result = document.getElementById( "result" );
+    elem.innerHTML = result.value;
+};
+
+</script>
+</head>
+<body>
+    <div>
+    根據網路上找到的寫法簡化成自己需要的功能。
+    </div>
+    <h5>source</h5>
+    <div style="margin: 3px;">
+<textarea id="source" style="border: 1px solid #cccccc; height: 200px; width: 500px;">
+</textarea>
+    </div>
+    <input type="button" value="convert" onclick="ConvertIt();" />&nbsp;  
+    <h5>numeric character reference (NCR)</h5>
+    <div style="margin: 3px;">
+<textarea id="result" style="border: 1px solid #cc0000; height: 200px; width: 500px;">
+</textarea>
+    </div>
+    <input type="button" value="revert" onclick="RevertIt();" />&nbsp;就只是把NCR的鼕鼕放到下面pre的裡面
+    <h5>NCR to browser</h5>
+<pre id="revert" style="border: 1px solid #00cc00; height: 200px; width: 500px;">
+    </pre>
+</body>
+</html>

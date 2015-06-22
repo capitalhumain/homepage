@@ -1,0 +1,439 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="jax-ws,SOAPHandler" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>My Cookbook > Old Stuff > Read-Write Lock</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Read-Write Lock</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>我們動用到concurrency programming的目的是？資源的妥善利用？application的responsive?...針對Read/Write Lock pattern ゆうき ひろし先生在這個pattern舉了一個生活化的例子來說明</p>
+        <blockquote class="quote">
+        老師在黑板上寫授課的說明，全班學生都一起看。當大家都還在看的時候，老師想要擦掉黑板繼續下一段的說明。這個時候學生們都出聲了「老師，我們還在看！請先不要擦！」於是老師就等大家都看完。
+        </blockquote>
+        <p>這個例子也描述一種適合使用Read-Write Lock pattern的情境，在concurrency programming裡object state的一致性是相當重要，由於讀取通常不應該會變更object state，如果有一個功能是需要提供同時大量讀取作業，而必須阻止寫入的動作的需求時，就很適合應用Read-Write Lock pattern。</p>
+        <h2>手工打造</h2>
+        <p>基礎版要做的事情有</p>
+        <ul>
+            <li>多執行序讀取沒有關係，有人在讀取的時候不可以寫入</li>
+            <li>只有一個執行序可以改變object state，而且當object state會改變的時候不允許任何讀取行為</li>
+        </ul>
+        <p>主要是簡化Reference 3作者的範例，他因為要講解習題提到的課題，所以預先實作其他功能，我做了一些刪減，把重點放在基礎版要做的事情。</p>
+        <p>用兩個attributes來紀錄讀取和寫入的狀態，而我們就是要透過這兩個attributes來達成上面寫的那兩個目標。<code>readingCount</code>用來紀錄讀取的thread的數目；<code>writingCount</code>用來紀錄寫入thread的數目，這個值任何時候都只會是0或1。會異動到object state的就是<code>readLock()</code>、<code>readUnlock()</code>、<code>writeLock()</code>和<code>writeUnlock()</code>這些method，就在這些methods加上<code>synchronized</code>保護。</p>
+        <div class="codehead">Listing 1. ReadWriteLock.java</div>
+        <pre name="code" class="java:controls:firstline[1]">
+package org.examples.locks;
+
+public class ReadWriteLock {
+    private int readingCount = 0;
+    private int writingCount = 0;
+
+    public synchronized void readLock() throws InterruptedException {
+        while(writingCount > 0) {
+            wait();
+        }
+        readingCount++;
+    }
+
+    public synchronized void readUnlock() {
+        readingCount--;
+        notifyAll();
+    }
+
+    public synchronized void writeLock() throws InterruptedException {
+        while(readingCount > 0 || writingCount > 0) {
+            wait();
+        }
+        writingCount++;
+    }
+
+    public synchronized void writeUnlock() {
+        writingCount--;
+        notifyAll();
+    }
+}
+        </pre>
+        <p>接下來就是使用基礎版的<code>ReadWriteLock</code></p>
+        <div class="codehead">Listing 2. Data.java</div>
+        <pre name="code" class="java:controls:firstline[1]">
+package org.examples;
+
+import org.examples.locks.ReadWriteLock;
+
+public class Data {
+    private final char[] buffer;
+    private final ReadWriteLock rwl = new ReadWriteLock();
+
+    public Data(int size) {
+        this.buffer = new char[size];
+        for(int i=0; i&lt;size; i++) {
+            buffer[i] = '*';
+        }
+    }
+
+    public char[] read() throws InterruptedException {
+        rwl.readLock();
+        try {
+            return doRead();
+        } finally {
+            rwl.readUnlock();
+        }
+    }
+
+    public void write(char c) throws InterruptedException {
+        rwl.writeLock();
+        try {
+            doWrite( c );
+        } finally {
+            rwl.writeUnlock();
+        }
+    }
+
+    private void slowly() {
+        try {
+            Thread.sleep(50);
+        } catch(InterruptedException e) {
+        }
+    }
+
+    private char[] doRead() {
+        char[] newbuf = new char[buffer.length];
+        for(int i=0; i&lt;newbuf.length; i++) {
+            newbuf[i] = buffer[i]; 
+        }
+        slowly();
+        return newbuf;
+    }
+
+    private void doWrite(char c) {
+        for(int i=0; i&lt;buffer.length; i++) {
+            buffer[i] = c;
+            slowly();
+        }
+    }
+}
+        </pre>
+        <p>測試的程式...就不假裝沒<code>java.util.concurrent</code>的東西好用了。</p>
+        <div class="codehead">Listing 3. Main.java</div>
+        <pre name="code" class="java:controls:firstline[1]">
+package org.examples;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.lang.Thread;
+
+public class Main {
+    public static void main(String[] args) {
+        final Data d = new Data( 10 );
+        ExecutorService executorService = Executors.newFixedThreadPool( 5 );
+        
+        try {
+            // Write thread
+            executorService.submit( new Runnable() {
+                 private String mark = "abcdefghijklmnopqrstuvwxyz";
+                 private int init = 0;
+                 public void run() {
+                     try {
+                         while(true) {
+                             char target = nextChar();
+                             d.write( target );
+                             System.out.println(Thread.currentThread().getName() + " write [" + target + "]" );
+                             init++;
+                         }
+                     } catch(InterruptedException e) {
+                     }
+                 }
+                 private char nextChar() {
+                     if(init >= mark.length()) {
+                         init = 0;
+                     }
+                     return mark.charAt(init);
+                 }
+            } );
+            executorService.submit( new Runnable() {
+                 private String mark = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                 private int init = 0;
+                 public void run() {
+                     try {
+                         while(true) {
+                             char target = nextChar();
+                             d.write( target );
+                             System.out.println(Thread.currentThread().getName() + " write [" + target + "]" );
+                             init++;
+                         }
+                     } catch(InterruptedException e) {
+                     }
+                 }
+                 private char nextChar() {
+                     if(init >= mark.length()) {
+                         init = 0;
+                     }
+                     return mark.charAt(init);
+                 }
+            } );
+            // Read thread
+            executorService.submit( new Runnable() {
+                 public void run() {
+                     try {
+                         while(true) {
+                             char[] readdata = d.read();
+                             System.out.println(Thread.currentThread().getName() + " reads " + String.valueOf(readdata));
+                         }
+                     } catch(InterruptedException e) {
+                     }
+                 }
+            } );
+            executorService.submit( new Runnable() {
+                 public void run() {
+                     try {
+                         while(true) {
+                             char[] readdata = d.read();
+                             System.out.println(Thread.currentThread().getName() + " reads " + String.valueOf(readdata));
+                         }
+                     } catch(InterruptedException e) {
+                     }
+                 }
+            } );
+            executorService.submit( new Runnable() {
+                 public void run() {
+                     try {
+                         while(true) {
+                             char[] readdata = d.read();
+                             System.out.println(Thread.currentThread().getName() + " reads " + String.valueOf(readdata));
+                         }
+                     } catch(InterruptedException e) {
+                     }
+                 }
+            } );
+        } catch(Exception e) {
+            e.printStackTrace();
+        } finally {
+            executorService.shutdown();
+        }
+    }
+}
+        </pre>
+        <h4>fairness</h4>
+        <p>還記得<code>Object#notifyAll()</code>javadoc寫的東西嗎？所有等待的threads不管先來後到，都要重新競爭一次取得lock。這是原本java instinct lock的機制。而如果根據request lock的順序取得lock的policy就是fairness。</p>
+        <p></p>
+        <div class="codehead">Listing. 土法煉鋼的Fairness Read/Write Lock</div>
+        <pre name="code" class="java:controls:firstline[1]">
+package org.examples.locks;
+
+import java.util.List;
+import java.util.ArrayList;
+
+public class ReadWriteLock {
+    private int waitingForRead = 0;
+    private int readingCount = 0;
+    private List&lt;Thread> waitingForWriteLock = new ArrayList&lt;Thread>();
+    private Thread currentWrite;
+
+    public synchronized void readLock() throws InterruptedException {
+        if(currentWrite != null) {
+            waitingForRead++;
+            while(currentWrite != null) {
+                wait();
+            }
+            waitingForRead--;
+        }
+        readingCount++;
+    }
+
+    public synchronized void readUnlock() {
+        if( readingCount > 0 ) {
+            readingCount--;
+            if( 0 == readingCount && waitingForWriteLock.size() > 0 ) {
+                currentWrite = waitingForWriteLock.get(0);
+                notifyAll();
+            }
+        } else {
+            // big trouble
+            throw new IllegalStateException( "Big Trouble" );
+        }
+    }
+
+    public synchronized void writeLock() throws InterruptedException {
+        Thread t = Thread.currentThread();
+        if( null == currentWrite && readingCount == 0 && waitingForRead == 0) {
+            currentWrite = t;
+            return;
+        }
+        
+        waitingForWriteLock.add( t );
+        
+        while( currentWrite != t ) {
+            wait();
+        }
+        waitingForWriteLock.remove( t );
+    }
+
+    public synchronized void writeUnlock() {
+        if( Thread.currentThread() == currentWrite ) {
+            if( 0 == readingCount && waitingForWriteLock.size() > 0 ) {
+                currentWrite = waitingForWriteLock.get( 0 );
+                notifyAll();
+            } else {
+                currentWrite = null;
+                if( waitingForRead > 0 ) {
+                    notifyAll();
+                }
+            }
+        } else {
+            // big trouble
+            throw new IllegalStateException( "Big Trouble" );
+        }
+    }
+}
+        </pre>
+        <p>上面的寫法主要來自於這個自己蠻幹弄的Fairness Lock class。</p>
+        <div class="codehead">Listing. 土法煉鋼的Fairness Lock</div>
+        <pre name="code" class="java:controls:firstline[1]">
+package org.examples.locks;
+
+import java.util.List;
+import java.util.ArrayList;
+
+public class FairnessLock {
+    private List&lt;Thread> waitingList = new ArrayList&lt;Thread>();
+    private Thread currentHolder;
+
+    public Thread getOwner() {
+        return currentHolder;
+    }
+
+    public synchronized int getWaitCount() {
+        return waitingList.size();
+    }
+    
+    public synchronized void lock() throws InterruptedException {
+        Thread t = Thread.currentThread();
+        if( null == currentHolder ) {
+            currentHolder = t;
+            return;
+        }
+        
+        waitingList.add( t );
+        
+        while( t != currentHolder ) {
+            wait();
+        }
+        
+        currentHolder = t;
+    }
+    
+    public synchronized void unlock() throws InterruptedException {
+        if( currentHolder == Thread.currentThread() ) {
+            if( waitingList.size() > 0 ) {
+                currentHolder = waitingList.remove( 0 );
+                notifyAll();
+                return;
+            } else {
+                currentHolder = null;
+                notifyAll();
+            }
+        } else {
+            throw new IllegalStateException( "Big trouble" );
+        }
+    }
+}
+        </pre>
+        <h2><code>java.util.concurrent.locks.ReadWriteLock</code></h2>
+        <p>在Tiger之後，就不用親手打造這個東東了。下面就是使用<code>java.util.concurrent.locks.ReentrantReadWriteLock</code>的簡單例子。</p>
+        <pre name="code" class="groovy:controls:firstline[1]">
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.concurrent.Executors
+
+public class ResourceProvider {
+    private final Map&lt;String, String> data = new HashMap&lt;String, String>()
+    private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock()
+
+    public String getResource(String key) {
+        rwl.readLock().lock()
+        try {
+            Thread.sleep(300)
+            // 至少有1 => 自己嚕
+            return data.get(key) + "/" + rwl.getReadLockCount() 
+        } finally {
+            rwl.readLock().unlock()
+        }
+    }
+
+    public void refresh() throws Exception {
+        // reload resources into memory
+        rwl.writeLock().lock()
+        try {
+            data.put("Ala", "Alanine")
+            data.put("Gly", "Glycine")
+            data.put("Asp", "Aspartate")
+        } finally {
+            rwl.writeLock().unlock()
+        }
+    }
+}
+
+def r = new ResourceProvider()
+r.refresh()
+def executorService = Executors.newFixedThreadPool(2)
+
+try {
+    executorService.submit( new Runnable() {
+        public void run() {
+            def i=0
+            for(i=0; i&lt;10; i++) {
+                println "T1: " + r.getResource( "Gly" )
+            }
+        }
+    } )
+    executorService.submit( new Runnable() {
+        public void run() {
+            def i=0
+            for(i=0; i&lt;10; i++) {
+                println "T2: " + r.getResource( "Ala" )
+            }
+        }
+    } )
+} catch(e) {
+    println e
+} finally {
+    executorService.shutdown()
+}
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ul>
+                <li>Concurrent Programming in Java</li>
+                <li>Patterns in Java Vol1</li>
+                <li>http://www.hyuki.com/dp/dp2.html 不確定是不是這本的中譯本，應該是增補改訂版之前那個版本，因為中譯本沒講<code>java.util.concurrent</cod>裡的東西，日文增補改訂版有講。廢話一句，很佩服出版社翻譯這本書，不知道除了圖書館之外，賣出去幾本…</li>
+            </ul>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2011/06/08
+    </address>
+    <script language="javascript">
+    $(function() {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    });
+    </script>
+</body>
+</html>

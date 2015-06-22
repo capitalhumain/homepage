@@ -1,0 +1,296 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Lab - Oracle - OPEN_CURSORS</title>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</head>
+<body>
+    <div>
+        <h1 class="header">Lab - Oracle - OPEN_CURSORS</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p >
+OPEN_CURSORS是用來設定一個session能夠open的cursor最大數目的參數。這是一個根據application屬性而定的參數
+。針對大多數的application，Oracle預設安裝時是設為300；據說針對web application，Tom Kyte建議值是1000。
+        </p>
+        <h2>Open Cursors per session</h2>
+        <p >
+要看每個session的目前open cursor數目，看V$OPEN_CURSOR這個view並是指每個session被cached的cursor；透過
+V$SESSTAT這個view我們可以得到比較準確的資訊。可以自己透過下列兩個sql statement觀察一下自己系統這兩個
+view查詢結果。
+        </p>
+        <h3>Listing. 由V$OPEN_CURSOR查每個session的cursors數目</h3>
+        <pre name="code" class="sql:nocontrols:firstline[1]">
+-- for v$open_cursor view
+col user_process for a30
+select user_name || '(' || sid || ')' user_process, 
+       count(*) "Current Cursors"
+from v$open_cursor
+group by user_name || '(' || sid || ')';
+        </pre>
+        <p >
+查詢V$SESSTAT這個view我們還需要join V$STATNAME和V$SESSION獲得對人類比較具有可讀性和意義的結果。目前為
+止我們只需要<strong>opended cursor current</strong>這個statistics description。
+        </p>
+        <p >
+V$STATNAME這個view可以看到所有Oracle database的statistics descriptions。當我們需要透過V$SESSTAT或
+V$SYSSTAT的statistic#就是和V$STATNAME join。當然10g V$SYSSTAT裡面就有name, class這些資訊 @@"。
+        </p>
+        <h3>Listing. 由V$SESSTAT查詢每個session的current open cursors數目</h3>
+        <pre name="code" class="sql:nocontrols:firstline[1]">
+col user_process for a30
+select ss.username || '(' || se.sid || ') ' user_process,
+       value "Current Cursors"
+from v$session ss, v$sesstat se, v$statname sn
+where se.statistic# = sn.statistic#
+and se.sid = ss.sid
+and ss.username is not null
+and name = 'opened cursors current';
+        </pre>
+        <h3>Listing. 不想列出所有session時的另一個觀察的sql statement</h3>
+        <pre name="code" class="sql:nocontrols:firstline[1]">
+col highest_open_cur for 999999999999999
+col max_open_cur for a20
+select max(ss.value) as highest_open_cur, p.value as max_open_cur
+from v$sesstat ss, v$statname sn, v$parameter p
+where ss.statistic# = sn.statistic#
+and sn.name = 'opened cursors current'
+and p.name = 'open_cursors'
+group by p.value;
+        </pre>
+        <p >
+藉由觀察V$SESSTAT可以知道目前open_cursors的設定是否足以負擔application正常運作，比如觀察到current open cursor
+的值逼近open_cursors的設定值。
+        </p>
+        <h2>有session用超過open_cursors設定值的狀況</h2>
+        <p >
+這裡還有一些有問題的狀況，比如說Recursive Calls和User Calls的比例有的session很不自然，另外像Current 
+Cursors的數目(這個應該和application本身設計和使用有關)。下面執行結果就是在測試環境open_cursors = 300
+結果application運作有session opened cursor current超過max value(300)，而收到Oracle贈送ORA-01000賀禮的
+狀況。
+        </p>
+        <pre name="code" class="sql:nocontrols:firstline[1]">
+set linesize 100
+set pagesize 150
+col user_process for a30
+select ss.username || '(' || se.sid || ') ' user_process,
+       sum( decode( name, 'recursive calls', value ) ) "Recursive Calls",
+       sum( decode( name, 'user calls', value ) ) "User Calls",
+       sum( decode( name, 'opened cursors cumulative', value ) ) "Opened Cursors",
+       sum( decode( name, 'opened cursors current', value ) ) "Current Cursors"
+from v$session ss, v$sesstat se, v$statname sn
+where se.statistic# = sn.statistic#
+and ( name like '%opened cursors current%' 
+      or name like '%user calls%'
+      or name like '%recursive calls%'
+      or name like '%opened cursors cumulative%' )
+and se.sid = ss.sid
+and ss.username is not null
+and ss.program = 'JDBC Thin Client' 
+group by ss.username || '(' || se.sid || ') ';
+        </pre>
+        <pre class="console">
+        
+USER_PROCESS                   Recursive Calls User Calls Opened Cursors Current Cursors                                                              
+------------------------------ --------------- ---------- -------------- ---------------                                                              
+CSUSER(542)                               2377       3389            784              31                                                              
+CSUSER(546)                                 46        529              9               2                                                              
+CSUSER(551)                                 46        542              8               1                                                              
+CSUSER(553)                                 46        542              8               1                                                              
+CSUSER(555)                                 46        542              8               1                                                              
+CSUSER(556)                                 46        542              8               1                                                              
+CSUSER(568)                                 46          9              9               2                                                              
+CSUSER(573)                                 46        571              9               2                                                              
+CSUSER(576)                                 46        594              8               1                                                              
+CSUSER(616)                               5909        370            419              36                                                              
+CSUSER(617)                               5830       8123           2119              51                                                              
+CSUSER(623)                                 46         42              9               2                                                              
+CSUSER(626)                               8248        363            539              36                                                              
+CSUSER(629)                             111889      39381          14973             300                                                              
+CSUSER(636)                               8857       7665           2301              42                                                              
+CSUSER(543)                               1651        720            174              24                                                              
+CSUSER(558)                                 46        542              8               1                                                              
+CSUSER(559)                                 46         10              9               2                                                              
+CSUSER(566)                              67726      20271           9198             188                                                              
+CSUSER(586)                                 46         24              9               2                                                              
+CSUSER(587)                                 46        594              8               1                                                              
+CSUSER(602)                                 46        598              8               1                                                              
+CSUSER(608)                                 46         18              9               2                                                              
+CSUSER(615)                                 92       1705            324              45                                                              
+CSUSER(620)                              15763       8123           2497              68                                                              
+CSUSER(622)                               1849      20683           4705              57                                                              
+CSUSER(627)                             172475      67878          24500             300                                                              
+CSUSER(563)                                172         21             22               4                                                              
+CSUSER(572)                                 46        569              9               2                                                              
+CSUSER(575)                                 46        594              8               1                                                              
+CSUSER(588)                                 46         12              9               2                                                              
+CSUSER(595)                                 46        598              8               1                                                              
+CSUSER(596)                                 46        598              8               1                                                              
+CSUSER(604)                                 46        598              8               1                                                              
+CSUSER(605)                                 46        598              8               1                                                              
+CSUSER(614)                               7243      12510           3051              75                                                              
+CSUSER(619)                                 46         13              9               2                                                              
+CSUSER(635)                               2128      18626           4338              52                                                              
+CSUSER(541)                                 46         24              9               2                                                              
+CSUSER(548)                                 46        542              8               1                                                              
+CSUSER(552)                                 46        542              8               1                                                              
+CSUSER(571)                                 46        561              9               2                                                              
+CSUSER(589)                               3035        187            263               9                                                              
+CSUSER(594)                                 46        598              8               1                                                              
+CSUSER(601)                                 46        598              8               1                                                              
+CSUSER(624)                               3581        143            295              10                                                              
+CSUSER(631)                             119343      43306          16672             234                                                              
+CSUSER(634)                                 83       7365           1681              46                                                              
+CSUSER(642)                               1932       3076            756              36                                                              
+CSUSER(544)                                 46        425              9               2                                                              
+CSUSER(549)                                 46        542              8               1                                                              
+CSUSER(554)                                 46        542              8               1                                                              
+CSUSER(557)                                 46        542              8               1                                                              
+CSUSER(560)                                 46        542              8               1                                                              
+CSUSER(574)                                 46        594              8               1                                                              
+CSUSER(577)                                 46        594              8               1                                                              
+CSUSER(580)                                 46        594              8               1                                                              
+CSUSER(584)                                 46        594              8               1                                                              
+CSUSER(592)                                 46        598              8               1                                                              
+CSUSER(597)                                 46        598              8               1                                                              
+CSUSER(600)                                 46        598              8               1                                                              
+CSUSER(606)                                 46        598              8               1                                                              
+CSUSER(628)                               5284        249            343              24                                                              
+CSUSER(640)                             132333      51848          18938             300                                                              
+CSUSER(537)                               2130       2476            504              51                                                              
+CSUSER(545)                                 46        514              9               2                                                              
+CSUSER(564)                               5187        266            340              28                                                              
+CSUSER(565)                               1577      14708           3283              49                                                              
+CSUSER(578)                                 46        594              8               1                                                              
+CSUSER(591)                               1598        618            133               7                                                              
+CSUSER(593)                                 46        598              8               1                                                              
+CSUSER(598)                                 46        598              8               1                                                              
+CSUSER(599)                                 46        598              8               1                                                              
+CSUSER(603)                                 46        598              8               1                                                              
+CSUSER(609)                                 46        598              8               1                                                              
+CSUSER(610)                               5014        304            434              11                                                              
+CSUSER(612)                               1333       5563           1192              43                                                              
+CSUSER(621)                                 46         24              9               2                                                              
+CSUSER(630)                               7508        669            644              25                                                              
+CSUSER(641)                                 46         58              9               2                                                              
+CSUSER(538)                                 59        755            173              30                                                              
+CSUSER(540)                                 66       2044            444              25                                                              
+CSUSER(547)                                 46        542              8               1                                                              
+CSUSER(550)                                 46        542              8               1                                                              
+CSUSER(570)                                 46        463              9               2                                                              
+CSUSER(582)                                 46        594              8               1                                                              
+CSUSER(583)                                 46        594              8               1                                                              
+CSUSER(607)                                 46        598              8               1                                                              
+CSUSER(611)                                 46         22              9               2                                                              
+CSUSER(618)                               1513      15907           3594              67                                                              
+CSUSER(653)                               3969      12288           2923              49                                                              
+CSUSER(654)                                 62        629            132              44                                                              
+CSUSER(562)                                 71       1202            155              32                                                              
+CSUSER(567)                               7181       3708            848              39                                                              
+CSUSER(569)                                 46         71              9               2                                                              
+CSUSER(579)                                 46        594              8               1                                                              
+CSUSER(581)                                 46        594              8               1                                                              
+CSUSER(585)                                 46        594              8               1                                                              
+CSUSER(590)                               6400        384            532              13                                                              
+CSUSER(613)                               2644      11399           2645              57                                                              
+CSUSER(625)                               5995        424            438              41                                                              
+
+101 rows selected.
+        </pre>
+
+        <fieldset>
+        <legend>recursive calls</legend>
+Number of recursive calls generated at both the user
+and system level. Oracle maintains tables used for
+internal processing. When Oracle needs to make a
+change to these tables, it internally generates an internal
+SQL statement, which in turn generates a recursive call.
+        </fieldset>
+        <fieldset>
+        <legend>user calls</legend>
+Number of user calls such as login, parse, fetch, or
+execute
+When determining activity, the ratio of user calls to RPI
+calls, give you an indication of how much internal work
+gets generated as a result of the type of requests the user
+is sending to Oracle.
+        </fieldset>
+        <p>
+我理解的說法是user calls代表user請Oracle做的事情，然而Oracle還需要做其他相關的事情來達成user的需求。
+當現有的資訊無法讓Oracle完成的時候，Oracle就需要自己下一些SQL去查需要的資訊。這個時候就會看到
+recursive call增加。
+        </p>
+        <p>
+因此照道理講健康的application在運行一段時間後，recursive calls和user calls應該要維持user calls
+遠大於recursive calls的現象。網路上可以查到有些高手認為比率大概是1/10算正常。
+        </p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Oracle 10g Reference (b14237)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+    <address>
+    Terence Chao, 2009/10/05
+    </address>
+</body>
+</html>

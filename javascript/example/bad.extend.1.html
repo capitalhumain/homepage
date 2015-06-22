@@ -1,0 +1,27 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+// NEVER DO THIS WAY
+/*
+Array.prototype.push = function() {
+    alert( 'new push, do notthing' );
+};
+// OR 
+$.extend( Array.prototype, { push: function() {
+    alert( 'new push la, do nothing' );
+}} );
+*/
+
+$( function() {
+    var a = [];
+    
+    a.push( 10 );
+} );
+</script>
+</body>
+</html>

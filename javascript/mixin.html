@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css"type="text/css"  rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushRuby.js" ></script>
+    <title>mixin</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">mixin</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>沒想到吵雜的環境有助於整理讀書筆記...只是品質可能更差。</p>
+        <p style="color: white;">在貿易商做軟體開發的工作果然是非常消耗心力的地方，話說回來既然是靠做貿易賺錢的公司又何必想撈軟體開發的錢？做了又完全不管軟體開發的人怎麼寫，只要管好賣硬體和產品的利潤都是正就好（貿易商嘛！怎麼會知道軟體開發成本和時程怎麼估算勒），軟體開發部份只要養一批外面隨便找就有的人隨便寫寫，能撐過驗收期就好！！在貿易商做軟體開發的目的只是為了要協助賣硬體的創造賣硬體和產品的收益和賣硬體的人的獎金！所以軟體開發只要隨便弄弄，就算人操死再找就有，台灣啥沒有，會寫java的人最多。</p>
+        <p>許多語言都有提供mixin的功能，這裡就先用ruby為例，回頭再看看JavaScript在語言層級沒有定義mixin寫法，我們還是可以透過copy property輕易達成目的。</p>
+        <h2>Ruby's module mixin</h2>
+        <p>在ruby透過module mixin可以不需使用類別繼承就擴充class的能力，</p>
+        <pre name="code" class="ruby:controls:firstline[1]">
+class Person
+    include Comparable
+    attr_reader :name
+    def initialize( name )
+        @name = name
+    end
+    def to_s
+        "#{name}"
+    end
+    def <=>(other)
+        self.name <=> other.name
+    end
+end
+
+p1 = Person.new( "Matz" )    # Ruby 老大
+p2 = Person.new( "Guido" )   # Python 老大
+p3 = Person.new( "Larry" )   # Perl 老大
+
+if p1 > p2
+    puts "#{p1.name}'s name > #{p2.name}'s name"
+end
+
+puts "sorted list:"
+puts [p1, p2, p3].sort
+        </pre>
+        <p>沒有mixin Comparable module，有寫&lt;=&gt;()這個method也是枉然，因為Comparabe會加入許多仰賴&lt;=&gt;()的method。</p>
+        <pre name="code" class="ruby:controls:firstline[1]">
+# 有mixin Comparable之後會有<, >...這些method，因此即使提供<=>這個method也是沒用
+# 會收到 mixin_2.rb:22: undefined method `>' for #<Person:0xb77ff12c @name="Matz"> (NoMethodError) 這個錯誤
+class Person
+    attr_reader :name
+    def initialize( name )
+        @name = name
+    end
+    def to_s
+        "#{name}"
+    end
+    def <=>(other)
+        self.name <=> other.name
+    end
+end
+
+p1 = Person.new( "Matz" )    # Ruby 老大
+p2 = Person.new( "Guido" )   # Python 老大
+p3 = Person.new( "Larry" )   # Perl 老大
+
+if p1 > p2
+    puts "#{p1.name}'s name > #{p2.name}'s name"
+end
+
+puts "sorted list:"
+puts [p1, p2, p3].sort
+        </pre>
+        <h2>JavaScript版的mixin</h2>
+        <p>JavaScript語言本身並不像ruby, scala那些由語言本身的語法提供mixin。但是因為JavaScript的object就是property container，因此可以利用程式設計的方法來copy properties到另一個object達成mixin的功能。</p>
+        <h4>自食其力</h4>
+        <p>自己實作很簡單，下面程式mix()是源自JavaScript Petterns這本書。主要就是把每一個物件的property都copy到新的物件裡面。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[7]">
+    var mix = function() {
+        var arg, prop, child = {}, l;
+        for( arg=0, l=arguments.length; arg&lt;l; arg+=1 ){
+            for( prop in arguments[arg] ) {
+                if( arguments[arg].hasOwnProperty(prop) ) {
+                    child[prop] = arguments[arg][prop];
+                }
+            } // each property 
+        } // each arguments element
+        return child;
+    };
+    
+    var displayObject = function( elem, obj ) {
+        var prop, result = '&lt;ul>';
+        for( prop in obj ) {
+            result += ( '&lt;li>' + prop + ':' + obj[prop] + '&lt;/li>' );
+        } // each property
+        result += '&lt;/ul>';
+        elem.innerHTML = result;
+    };
+    
+    window.onload = function() {
+        var cake = mix( 
+                { eggs: 2, large: true },
+                { buffer: 1, salted: true },
+                { flour: "3 cups" },
+                { suger: "sure!" }
+            ), doc = document,
+            result = doc.getElementById( 'result' );
+        displayObject( result, cake );
+    };
+        </pre>
+        <p>這樣是產生shallow copy版本，而且如果有重複的property，後面的物件的property會把前面物件的property蓋掉。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[28]">
+    window.onload = function() {
+        var cake = mix( 
+                { eggs: 2, large: true },
+                { buffer: 1, salted: true },
+                { flour: "3 cups" },
+                { suger: "sure!" },
+                { milk: 1, large: false }
+            ), doc = document,
+            result = doc.getElementById( 'result' );
+        displayObject( result, cake );
+    }; 
+        </pre>
+        <h4>jQuery</h4>
+        <p>回想研究jQuery時，jQuery有一個好玩的東西jQuery.extend( target, source )。這個function也可以幫忙做到這件事情。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[17]">
+    window.onload = function() {
+        var cake = {}, doc = document,
+            result = doc.getElementById( 'result' );
+        $.extend( cake, { eggs: 2, large: true }, 
+                        { buffer: 1, salted: true },
+                        { flour: "3 cups" },
+                        { suger: "sure!" } );
+        displayObject( result, cake );
+    };
+        </pre>
+        <h2>Resource</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 3rd edition</li>
+                <li>ECMA-262 5th edition</li>
+                <li>JavaScript: The Good Parts (O'Reilly)</li>
+                <li>High Performance JavaScript (O'Reilly)</li>
+                <li>JavaScript Patterns (O'Reilly)</li>
+                <li>Programming Ruby 1.9 (Pragmatic Bookshelf)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/10/13</i>, latest update 2010/10/13
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

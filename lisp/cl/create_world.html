@@ -1,0 +1,376 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="LISP" />
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/style.css" />
+    <title>筆記： Create World</title>
+</head>
+<body>
+<div>
+    <h1 class="header">筆記： Create World</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>這次的functional programming之旅始於Haskell、Scala蔓延到Common Lisp、Erlang和Clojure，將來也將回歸於Haskell做個終結。不管未來是否能夠成為Lisper或Haskeller至少這段時間玩得相當愉快。也期望未來會有能力可以挑戰<em>lambda calculus</em>看看。</p>
+    <p>LISP既然是LISt Processing，之前幾章對list初步的介紹、幾個基本操作function與condition的作法，這裡作者就利用一個簡單的文字冒險遊戲當作在稍微深入了解list操作的範例。</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Utbuntu 10.10</li>
+            <li>GNU CLISP 2.48</li>
+        </ul>
+    </div>
+    <h2>Associate List (a.k.a. alist)</h2>
+    <p>首先，先看看<code>assoc</code> function他會把list中的每一個cell的list的第一個cell的值(key)拿來比對，找到<strong>第一個</strong>符合的list。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[5]> (assoc 'a '((a 1)(b 3)))
+(A 1)
+[6]> (assoc 'a '((a 1 2)(b 3 4)))
+(A 1 2)
+[7]> (assoc 'a '((a (1 2))(b (3 4))))
+(A (1 2))
+    </pre>
+    <h3>Figure. <code>assoc</code>由<em>alist</em>取key1的資料</h3>
+    <img src="../../images/lisp/associate_list_guess.png" />
+    <p>取出value部份的寫法</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[10]> (cadr (assoc 'b '((a (1 2))(b (3 4)))))
+(3 4)
+[11]> (cdr (assoc 'b '((a 1 2)(b 3 4))))
+(3 4)
+    </pre>
+    <p>在Lisp associate list跟hash table是不一樣的。下面就是Lisp的hash table。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (defvar *ht1* (make-hash-table))
+*HT1*
+[2]> (gethash 'yup *ht1*)
+NIL ;
+NIL
+[3]> (setf (gethash 'yup *ht1*) '25)
+25
+[4]> (gethash 'yup *ht1*)
+25 ;
+T
+[5]> (setf (gethash 'yup *ht1*) '21)
+21
+[6]> (gethash 'yup *ht1*)
+21 ;
+T
+[8]> *ht1*
+#S(HASH-TABLE :TEST FASTHASH-EQL (YUP . 21))
+    </pre>
+    <h2>描述點</h2>
+    <p>如果我們打算使用<em>alist</em>來存放資料，就必須先規劃好資料存放的方式，這會影響到取值function的撰寫。以書上創造的game world而言，就是以下面的方式表示</p>
+    <pre name="code" class="plain:controls:firstline[1]">
+(defvar *nodes* '( (living-room (you are in the living-room. a wizard is snooring loudly on the couch.)) 
+                   (garden (you are in a beautiful garden. there is a well in front of you))
+                   (attic (you are in the attic. there is a giant welding torch in the corner.)) )
+)
+    </pre>
+    <p>加上之前對<code>assoc</code>的了解，可以寫出取出description的<code>describe-location</code> function</p>
+    <pre name="code" class="plain:controls:firstline[6]">
+(defun describe-location (location nodes)
+    (cadr (assoc location nodes))
+)
+    </pre>
+    <h2>把點連起來</h2>
+    <p>已經有了點的資訊，接下來就是描述點和點之間的聯繫，來逐步建立game world。需要描述的資訊有出發點到各各目的地、方向、途徑。</p>
+    <pre name="code" class="plain:controls:firstline[10]">
+(defparameter *edges* '( (living-room (garden west door)
+                                      (attic upstairs ladder))
+                         (garden (living-room east door))
+                         (attic (living-room downstairs ladder))
+                       )
+)
+    </pre>
+    <p>這邊又從<code>defvar</code>改用<code>defparameter</code>的目的是為了加深自己兩個寫法都可以的印象。</p>
+    <h4><em>quasiquoting</em></h4>
+    <p>不知道有沒有誤解的解釋是「在data mode裡面嵌入一小段會執行到的lisp程式碼」。寫法就是data mode的宣告改成用「`」，然後要執行的程式碼之前用「,」修飾。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[9]> `(example ,(car '(2 2))-,(cadr '(2 2)))
+(EXAMPLE 2 - 2)
+    </pre>
+    <p></p>
+    <h4>描述路徑</h4>
+    <p>「路徑」描述目的地、方向和途徑，我們需要一個function可以跟使用者說明這個路徑。</p>
+    <h3>Listing. <code>describe-path</code> function</h3>
+    <pre name="code" class="plain:controls:firstline[17]">
+(defun describe-path (edge)
+    `(there is a ,(caddr edge) going ,(cadr edge) from here.)
+)
+    </pre>
+    <p>下面執行範例就是秀出由garden往living-room的路徑。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[8]> (describe-path '(living-room east door))
+(THERE IS A DOOR GOING EAST FROM HERE.)
+    </pre>
+    <p><code>apply</code>、<code>funcall</code> function跟<code>find-if</code>、<code>mapcar</code>一樣是都是higher-order function，這兩個function都可以用來invoke function。兩個使用的差別用下面例子看一下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (defvar *add* '+)
+*ADD*
+[2]> (apply *add* '(1 2))
+3
+[3]> (funcall *add* '(1 2))
+
+*** - +: (1 2) is not a number
+The following restarts are available:
+USE-VALUE      :R1      Input a value to be used instead.
+ABORT          :R2      Abort main loop
+Break 1 [4]> :R2
+[5]> (funcall *add* '1 '2)
+3
+[6]> (apply *add* '1 '2)
+
+*** - APPLY: argument list given to + is dotted (terminated by 2)
+The following restarts are available:
+ABORT          :R1      Abort main loop
+Break 1 [7]> :R1
+[8]> (apply *add* 1 2 nil)
+3
+[9]> (apply *add* (list 1 2))
+3
+[10]>
+    </pre>
+    <p>可以看到兩個的function arguments的寫法有差異。因此如reference裡那個網頁上寫的note一樣要記得下面的形式</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(funcall function arg1 arg2 ...)
+== (apply function arg1 arg2 ... nil)
+== (apply function (list arg1 arg2 ...))
+    </pre>
+    <p><code>append</code> function將傳入的參數串接程一個新的list，需注意的是每個參數會被copy過去新的list，也就是說1. 如果最後一個參數是不是一般list（如'a or '(a . b)）則代表會做出一個新的dotted list；2. 如果中間有一個參數是dotted list就會發生錯誤。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[6]> (setq lst '(a b c))
+(A B C)
+[7]> lst
+(A B C)
+[8]> (setq lst '(a b c))
+(A B C)
+[9]> (append lst '(d))
+(A B C D)
+[10]> lst
+(A B C)
+[11]> (setq lst2 '(d))
+(D)
+[12]> (append lst lst2)
+(A B C D)
+[13]> lst
+(A B C)
+[14]> lst2
+(D)
+[15]> (append '(a b c) '(d e f) '() '(g))
+(A B C D E F G)
+[16]> (append)
+NIL
+[17]> (append 'a)
+A
+    </pre>
+    <p>下面就是<code>append</code> function裡面有dotted list的情形，如果dotted list在最後一個參數就不會有錯誤，因為產生的也是另一個dotted list。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[28]> (append 'a '(b . c) 'd)
+
+*** - APPEND: A proper list must not end with C
+The following restarts are available:
+ABORT          :R1      Abort main loop
+Break 1 [29]> :R1
+[30]> (append '(a) '(b) '(c . d))
+(A B C . D)
+    </pre>
+    <p>接下來就可以寫一個function，目的是當我們在某一個點可以透過那個function告訴我們可以往哪些方向走。因為已經有了<code>describe-path</code>我們要做的只有從<code>*edges*</code>裡面取出某個點的value list，然後分別套到<code>describe-path</code>就可以做到我們要的功能。分解動作如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[18]> (assoc 'living-room *edges*)
+(LIVING-ROOM (GARDEN WEST DOOR) (ATTIC UPSTAIRS LADDER))
+[19]> (cdr (assoc 'living-room *edges*))
+((GARDEN WEST DOOR) (ATTIC UPSTAIRS LADDER))
+    </pre>
+    <p>接著就可以用熟悉的好朋友<code>mapcar</code>走過這個list，而list裡面每一個cell的資料又是可以餵給<code>describe-path</code>吃的樣子。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[22]> (mapcar #'describe-path (cdr (assoc 'living-room *edges*)))
+((THERE IS A DOOR GOING WEST FROM HERE.) (THERE IS A LADDER GOING UPSTAIRS FROM HERE.))
+    </pre>
+    <p>最後就是在<code>mapcar</code>一個一個丟出來的時候，透過<code>append</code>把結果串接起來。</p>
+    <h3>Listing. <code>describe-paths</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[21]">
+(defun describe-paths (location edges)
+    (apply #'append (mapcar #'describe-path (cdr (assoc location edges))))
+)
+    </pre>
+    <h4>初次逛大街</h4>
+    <p>跟書上順序不一樣，既然有了點和線就可以初步實現逛大街的夢想。所以先玩逛大街初版（建立一點信心）。</p>
+    <p>第一個我們需要一個function來跟玩家說現在的位置資訊。這個<code>look</code> function只需要global variable就可以運作，所以這個function不能算functional programming。</p>
+    <h3>Listing. <code></code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[27]">
+(defun look ()
+    (append (describe-location *location* *nodes*)
+            (describe-paths *location* *edges*))
+)
+    </pre>
+    <p>我們需要一個function由list的方向中比對我們輸入的方向比對。<code>find</code> function 最後一個是取得key的function。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (find 'bla (cdr '(a (foo bbb vv)(loo bla xx)))  #'cadr)
+(LOO BLA XX)
+    </pre>
+    <p>在這個game world的例子裡面我們由<code>*edges*</code>透過<code>assoc</code>可以取得目前位置（<code>*location*</code>）能夠去的edge，這個結果可以透過<code>cdr</code>取得edge list，每個edge都有是儲存<code>(target direction via)</code>，接著我們就可以透過<code>find</code>來找到玩家想去的edge的資訊。(如下面local function <code>next</code>幹的事情)</p>
+    <h3>Listing. <code>walk</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[32]">
+(defun walk(direction)
+    (let ((next (find direction (cdr (assoc *location* *edges*))
+                 :key #'cadr)))
+        (if next (progn (setf *location* (car next))
+                        (look))
+                 '(you cannot go that way))
+    )
+)
+    </pre>
+    <p>由<code>next</code>找到edge之後，就是要更改global variable <code>*location*</code>的值。接下來可以先玩玩看</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (load "game_world3")
+;; Loading file /home/terence/lab/lisp/cl/game_world3.lsp ...
+;; Loaded file /home/terence/lab/lisp/cl/game_world3.lsp
+T
+[2]> (look)
+(YOU ARE IN THE LIVING-ROOM. A WIZARD IS SNOORING LOUDLY ON THE COUCH. THERE IS A DOOR GOING WEST FROM HERE. THERE IS A LADDER
+ GOING UPSTAIRS FROM HERE.)
+[3]> (walk 'west)
+(YOU ARE IN A BEAUTIFUL GARDEN. THERE IS A WELL IN FRONT OF YOU THERE IS A DOOR GOING EAST FROM HERE.)
+[4]> *location*
+GARDEN
+[5]> 
+    </pre>
+    <h4>搞定物品</h4>
+    <p>這是簡易版物品設計，所謂簡易版就是一個物品只會出現在一個地方，因此在製作物品拾取的時候，因為是用<em>alist</em>可以透過<em>alist</em>的特性拾取起來的物品紀錄藉由同一個<em>alist</em>來存放。</p>
+    <h3>Listing. object data structure</h3>
+    <pre name="code" class="plain:nocontrols:firstline[42]">
+(defvar *objects* '(whiskey bucket frog chain))
+
+(defvar *object-locations* '( (whiskey living-room)
+                              (bucket living-room)
+                              (chain garden)
+                              (frog garden) ))
+    </pre>
+    <p>講物品相關的function之前先看幾個function。<code>remove-if-not</code> and <code>remove-if</code> function在lisp很多這樣成對的function，了解一個就知道另一個function的使用。<code>remove-if</code>也是一個higher-order function，如果傳入的list的cell值在傳進去function運算為T則不會在新的list裡看到。因此在下面第三行的程式，會把所有奇數的值由input list中拿掉。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[3]> (remove-if-not #'oddp '(1 2 3 4 5 6))
+(1 3 5)
+[4]> (remove-if #'oddp '(1 2 3 4 5 6))
+(2 4 6)
+    </pre>
+    <p>接著我們需要幾個協助遊戲運行的function，如1. 由location查詢該location的物件有那些 2. 另一個就是呈現用的當我們進入一個地方，執行<code>look</code>的時候要順便跟玩家說這位置有的東西。所以，首先是要由<code>*object-locations*</code>取得特定物品的位置，在REPL測試如下。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[8]> (assoc 'whiskey *object-locations*)
+(WHISKEY LIVING-ROOM)
+[9]> (cadr (assoc 'whiskey *object-locations*))
+LIVING-ROOM
+[10]> (eq 'living-room (cadr (assoc 'whiskey *object-locations*)))
+T
+    </pre>
+    <p>記得local function寫法除了<code>flet</code>還有<code>labels</code>，在這裡local function <code>at-loc-p</code>就是用來給<code>remove-if-not</code>使用的。</p>
+    <h3>Listing. <code>objects-at</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[49]">
+(defun objects-at (loc objs obj-locs)
+    (labels ((at-loc-p (obj)
+            (eq (cadr (assoc obj obj-locs)) loc)))
+        (remove-if-not #'at-loc-p objs)
+    )
+)
+    </pre>
+    <p>玩一下<code>objects-at</code>，可以取得特定位置的所有物件</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[25]> (objects-at 'garden *objects* *object-locations*)
+(FROG CHAIN)
+    </pre>
+    <p>接下來，要做一個<code>describe-objects</code>用來描述特定位址有哪些物件，同時也要作成比較友善訊息的結果。因此需要一個local function透過<em>quasiquoting</em>來做出比較可讀性的訊息。</p>
+    <h3>Listing. <code>describe-objects</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[56]">
+(defun describe-objects (loc objs obj-loc)
+    (flet ((describe-obj (obj)
+             `(you see a ,obj on the floor.)) )
+        (apply #'append (mapcar #'describe-obj (objects-at loc objs obj-loc)))
+    )
+)
+    </pre>
+    <h4>完整版逛大街</h4>
+    <p>完整版的逛大街就是<code>look</code>要多執行<code>describe-objects</code></p>
+    <h3>Listing. <code>look</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[27]">
+(defun look ()
+    (append (describe-location *location* *nodes*)
+            (describe-paths *location* *edges*)
+            (describe-objects *location* *objects* *object-locations*))
+)
+    </pre>
+    <h4>撿東西和檢查背包</h4>
+    <p>還記得之前講過<em>alist</em>的特性嗎？相同的key值會導致在後面的key的資料透過<code>assoc</code>查不到。這裡就是透過這個特性，所以只要把撿起來的物件多寫一筆紀錄到<code>*object-locations*</code>的前面標示位置是在玩家身上即可。（只是熟悉Lisp不要太在乎）</p>
+    <p><code>push</code> function用來將第一個參數的內容放到第二個參數list的最前面。如下面的例子</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[31]> (defparameter *aa* '((hydrophobic (ala ile leu met phe trp tyr val))(polar-charge (ser thr asn gln))))
+*AA*
+[32]> (assoc 'polar-charge *aa*)
+(POLAR-CHARGE (SER THR ASN GLN))
+[33]> (push '(polar-charge (S T N Q)) *aa*)
+((POLAR-CHARGE (S T N Q)) (HYDROPHOBIC (ALA ILE LEU MET PHE TRP TYR VAL)) (POLAR-CHARGE (SER THR ASN GLN)))
+[34]> (assoc 'polar-charge *aa*)
+(POLAR-CHARGE (S T N Q))
+    </pre>
+    <p><code>member</code> function則是用來在list中找資料，如果有找到則會回傳list中該筆資料以後的所有資料，反之則會回傳nil。而他也有key這個parameter我們也可以透過<code>:key</code>這樣設定取得用來取得key的function。這個東西又稱為<em>keyword parameter</em>。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[46]> (defparameter *aa* '((hydrophobic (ala ile leu met phe trp tyr val))(polar-charge (ser thr asn gln))))
+*AA*
+[47]> (member 'hydrophobic *aa* :key #'car)
+((HYDROPHOBIC (ALA ILE LEU MET PHE TRP TYR VAL)) (POLAR-CHARGE (SER THR ASN GLN)))
+[48]> (member 'hydrophobic *aa*)
+NIL
+    </pre>
+    <p><code>pickup</code>就是透過<code>cond</code>這個邏輯判斷，如果<code>member</code>運算有找到物件則代表這個物件可以由所在location取得，反之則要顯示無法取得該物品。如果可以取得則透過<code>push</code>把資訊放到<code>*object-locations</code>並且秀出已取得該物品訊息。</p>
+    <h3>Listing. <code>pickup</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[63]">
+(defun pickup (object)
+    (cond ((member object (objects-at *location* *objects* *object-locations*))
+           (push (list object 'body) *object-locations*)
+           `(you are now carrying the ,object))
+          (t '(you cannot get that.))
+    )
+)
+    </pre>
+    <p><code>inventory</code>的作法就是在<code>*object-location*</code>裡面找位置是body的物件就是玩家身上擁有的物品。</p>
+    <h3>Listing. <code>inventory</code> function</h3>
+    <pre name="code" class="plain:nocontrols:firstline[71]">
+(defun inventory ()
+    (cons 'Items- (objects-at 'body *objects* *object-locations*))
+)
+    </pre>
+    <p>完整的程式碼在這 <a href="../../samples/cl/game_world4.lsp">game_world4.lsp</a> (到4只是因為這個東西我玩到第四版才完成，一到三沒有在網站上。)</p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Land of LISP, Chapter 5</li>
+            <li>http://www.lispworks.com/documentation/HyperSpec/Body/f_apply.htm</li>
+            <li>http://www.lispworks.com/documentation/HyperSpec/Body/f_funcal.htm#funcall</li>
+            <li>http://www.lispworks.com/documentation/HyperSpec/Body/f_append.htm</li>
+            <li>http://www.lispworks.com/documentation/HyperSpec/Body/f_find_.htm</li>
+            <li>http://www.lispworks.com/documentation/HyperSpec/Body/f_mem_m.htm</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/03/01
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

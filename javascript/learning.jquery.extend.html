@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Learning jQuery - jQuery.extend()</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Learning jQuery - jQuery.extend()</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        接著看一個我覺得jQuery很重要的東西jQuery.extend()這個method，jQuery本身也是透過這個method來把jQuery物件擴充更多功能。
+        使用上有下列幾種用法
+        </p>
+        <div>
+            <ol>
+                <li>extend jQuery本身: 使用方式像這樣jQuery.extend( source ) </li>
+                <li>extend 特定Object: 使用方式像這樣jQuery.extend( target, source ) </li>
+                <li>deep copy extend: 要給三個參數，jQuery.extend( deep?, target, source )。如果deep? === true，則source object的所有properties會設定到source object裡面；反之若是deep? === false則會放到一個新的object instance裡面。</li>
+            </ol>
+        </div>
+        <p>
+        jQuery.extend() source code如下節錄，為了行數可以和1.3.2對應，我自己加的註解會因為太長而導致換行(為了區分自己和John Resig的comments，自己寫的註解用大寫TERENCE標示)。
+        </p>
+        <h3>Listing. jQuery.extend() source code</h3>
+        <pre name="code" class="javascript:controls:firstline[562]">
+jQuery.extend = jQuery.fn.extend = function() {
+	// copy reference to target object  // TERENCE: 在三個參數的狀況 if argumens[0] === false的時候，target = {}
+	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options;
+
+	// Handle a deep copy situation     // TERENCE: deep copy arguments依序為 (deep?, target object, source object)
+	if ( typeof target === "boolean" ) {
+		deep = target;
+		target = arguments[1] || {};
+		// skip the boolean and the target
+		i = 2;
+	}
+
+	// Handle case when target is a string or something (possible in deep copy)
+	if ( typeof target !== "object" && !jQuery.isFunction(target) )
+		target = {};
+
+	// extend jQuery itself if only one argument is passed  // TERENCE: 只有一個參數表示是extend jQuery自己
+	if ( length == i ) {
+		target = this;
+		--i;
+	}
+
+	for ( ; i < length; i++ )
+		// Only deal with non-null/undefined values
+		if ( (options = arguments[ i ]) != null )
+			// Extend the base object
+			for ( var name in options ) {
+				var src = target[ name ], copy = options[ name ];
+
+				// Prevent never-ending loop
+				if ( target === copy )
+					continue;
+
+				// Recurse if we're merging object values   // TERENCE: 如果enable deep copy，而且copy是object但必須不是DOM node
+				if ( deep && copy && typeof copy === "object" && !copy.nodeType )
+					target[ name ] = jQuery.extend( deep, 
+						// Never move original objects, clone them
+						src || ( copy.length != null ? [ ] : { } )
+					, copy );
+
+				// Don't bring in undefined values
+				else if ( copy !== undefined )
+					target[ name ] = copy;
+
+			}
+
+	// Return the modified object
+	return target;
+};
+        </pre>
+        <p>
+        接著，簡單寫一個程式來測試一下jQuery.extend()
+        </p>
+        <h3>Listing. Example for testing jQuery.extend()</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[24]">
+// this is global target object 
+var g_t = {
+};
+
+// this is global source object 
+var g_s = {
+    func1: function() {
+        alert( 'this is g_s.func1()' );
+    }
+};
+
+var foo = {
+};
+
+var bla = {
+    func1: function() {
+        alert( 'bla.func1()' );
+    },
+    blabla: {
+        funcWhat: function() {
+            alert( 'bla.blabla.funcWhat()' );
+        }
+    }
+};
+
+var foo2 = {
+};
+
+var bla2 = {
+    func1: function() {
+        alert( 'bla2.func1()' );
+    },
+    blabla2: {
+        funcWhat: function() {
+            alert( 'bla.blabla.funcWhat()' );
+        }
+    }
+};
+
+$( function() {
+    // Type 1
+    jQuery.extend( {
+        onlyForTest: function() {
+            alert( 'this is only for testing' );
+        }
+    } );
+    
+    // Type 2
+    $.extend( g_t, g_s );
+    
+    $( '#testType1' ).bind( 'click', function() {
+        jQuery.onlyForTest();
+    } );
+    
+    $( '#testType2' ).bind( 'click', function() {
+        g_t.func1();
+    } );
+    
+    $( '#testType3' ).bind( 'click', function() {
+        // type 3. deep? === true
+        $.extend( true, foo, bla );
+        foo.blabla.funcWhat();
+    } );
+    
+    $( '#testType4' ).bind( 'click', function() {
+        // type 3. deep? === false
+        var newfoo2 = $.extend( false, foo2, bla2 );
+        if( foo2.blabla2 ) 
+            foo2.blabla2.funcWhat();    // foo2.blabla2 is still undefined
+        if( foo2.func1 )                
+            foo2.func1();               // foo2.func1 is still undefined
+        
+        if( newfoo2.blabla2 )
+            newfoo2.blabla2.funcWhat();
+        if( newfoo2.func1 )
+            newfoo2.func1();
+    } );
+} );
+        </pre>
+        <a href="example/jquery.extend.1.html" target="_blank">Run Example</a>
+        <h2>重申一個基本觀念</h2>
+        <p>
+        雖然JavaScript這類dynamic language，因為property container的特性，提供相當大的彈性。但是不管如何(除非只是自己玩自己爽的)、不論在任何情況下都不應該去改變native objects的既有功能。
+        </p>
+        <p>
+        舉例來說，下列程式碼的寫法一個是透過jQuery.extend()，都修改了原本Array的push這個method，會影響其他人包含jQuery程式有用到Array.prototype.push的功能，很容易造成重大問題。
+        </p>
+        <pre name="code" class="javascript:nocontrols:firstline[9]">
+// NEVER DO THIS WAY
+Array.prototype.push = function() {
+    alert( 'new push, do notthing' );
+};
+// OR 
+$.extend( Array.prototype, { push: function() {
+    alert( 'new push la, do nothing' );
+}} );
+
+$( function() {
+    var a = [];
+    
+    a.push( 10 );
+} );
+        </pre>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>jQuery 1.3.2 source code</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/04/07</i>
+    </address>
+    <script type="text/javascript">
+    $( function() {
+        dp.SyntaxHighlighter.HighlightAll('code');
+    } );
+    </script>
+</body>
+</html>

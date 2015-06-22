@@ -1,0 +1,72 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" language="javascript" src="../../js/jquery-1.3.2.min.js"></script>
+    <script type="text/javascript" language="javascript">
+    var by = function( name ) {
+        return function( o, p ) {
+            var a, b;
+            if( typeof o === 'object' && typeof p === 'object' && o && p ) {
+                a = o[name];
+                b = p[name];
+                if( a === b ) {
+                    return 0;
+                }
+                if( typeof a === typeof b ) {
+                    return a < b ? -1 : 1;
+                }
+                if( a.toString && b.toString ) {
+                    return a.toString() < b.toString() ? -1 : 1;
+                }
+                // type不一樣的時候則比較a和b的type => type name的字串比較
+                return typeof a < typeof b ? -1 : 1;
+            } else {
+                throw {
+                    name: 'Error',
+                    message: 'Expected an object when sorting by ' + name
+                };
+            }
+        };
+    };
+    
+    var buildOption = function( arr ) {
+        var idx;
+        var result = '';
+        
+        for( idx=0; idx<arr.length; idx+=1 ) {
+            result = result + ('<option value="' + arr[idx].value + '">' + arr[idx].caption + '</option>');
+        }
+        
+        return result;
+    };
+    
+    var sortOption = function( id ) {
+        var arr = [];
+        var idx;
+        $( "#" + id + " option" ).each( function() {
+            var obj = {};
+            obj[ 'caption' ] = $(this).text();
+            obj[ 'value' ] = $(this).val();
+            obj[ 'compare' ] = $(this).text();
+            arr.push( obj );
+        } );
+        arr.sort( by( 'compare' ) );
+        
+        $( "#" + id ).html( buildOption( arr ) );
+    };
+    
+    window.onload = function() {
+        sortOption( 'last' );
+    };
+    </script>
+</head>
+<body>
+    <select id="last" name="last">
+        <option value="1">Besser</option>
+        <option value="2">Howard</option>
+        <option value="3">DeRita</option>
+        <option value="4">Fine</option>
+        <option value="5">ally</option>
+    </select>
+</body>
+</html>

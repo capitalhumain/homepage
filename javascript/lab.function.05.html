@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>Lab - Function 05 - Function Constructor</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Lab - Function 05 - Function Constructor</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+    這東西應該是一些好玩東西的基礎，不過也不是全然沒有缺點。不過首先還是<strong>了解各個知識的本質和極限</strong>，
+    在適當的時間、適當的使用所學到的知識。
+    </p>
+    <h2 class="Spec">規定的東西</h2>
+    <pre style='font-family: "Courier New";'>
+15.3 Function Objects
+    15.3.1 The Function Constructor Called as a Function
+        When Function is called as a function rather than as a constructor, it creates and initialises a new
+        Function object. Thus the function call Function(…) is equivalent to the object creation expression
+        new Function(…) with the same arguments.
+        15.3.1.1 Function (p1, p2, … , pn, body)
+            When the Function function is called with some arguments p1, p2, … , pn, body (where n might be
+            0, that is, there are no “p” arguments, and where body might also not be provided), the following steps
+            are taken:
+            1. Create and return a new Function object as if the function constructor had been called with the
+            same arguments (15.3.2.1).
+    15.3.2 The Function Constructor
+        When Function is called as part of a new expression, it is a constructor: it initialises the newly
+        created object.
+        15.3.2.1 new Function (p1, p2, … , pn, body)
+            The last argument specifies the body (executable code) of a function; any preceding arguments
+            specify formal parameters.
+            When the Function constructor is called with some arguments p1, p2, … , pn, body (where n might
+            be 0, that is, there are no “p” arguments, and where body might also not be provided), the following
+            steps are taken:
+            1. Let P be the empty string.
+            2. If no arguments were given, let body be the empty string and go to step 13.
+            3. If one argument was given, let body be that argument and go to step 13.
+            4. Let Result(4) be the first argument.
+            5. Let P be ToString(Result(4)).
+            6. Let k be 2.
+            7. If k equals the number of arguments, let body be the k’th argument and go to step 13.
+            8. Let Result(8) be the k’th argument.
+            9. Call ToString(Result(8)).
+            10. Let P be the result of concatenating the previous value of P, the string "," (a comma), and
+            Result(9).
+            11. Increase k by 1.
+            12. Go to step 7.
+            13. Call ToString(body).
+            14. If P is not parsable as a FormalParameterListopt then throw a SyntaxError exception.
+            15. If body is not parsable as FunctionBody then throw a SyntaxError exception.
+            16. Create a new Function object as specified in 13.2 with parameters specified by parsing P as a
+            FormalParameterListopt and body specified by parsing body as a FunctionBody. Pass in a scope
+            chain consisting of the global object as the Scope parameter.
+            17. Return Result(16).
+            A prototype property is automatically created for every function, to provide for the possibility that
+            the function will be used as a constructor.
+            NOTE
+            It is permissible but not necessary to have one argument for each formal parameter to be specified.
+            For example, all three of the following expressions produce the same result:
+            new Function("a", "b", "c", "return a+b+c")
+            new Function("a, b, c", "return a+b+c")
+            new Function("a,b", "c", "return a+b+c")
+    </pre>
+    <h2>踹踹Function Constructor</h2>
+    <p>
+    首先，就用Spec舉的例子。
+    </p>
+    <a href="example/function.constructor.01.html" target="_blank">Run Example</a>
+    <pre name="code" class="javascript:nocontrols:firstline[5]">
+    // 根據ECMA-262 15.3.1規定Function constructor 呼叫使用
+    // Function Invocation Pattern和Constructor Invocation Pattern是一樣的
+    var bla = Function( 'a', 'b', 'c', 'return a+b+c;' );
+    // var bla = Function( 'a, b', 'c', 'return a+b+c;' );  // OK!
+    // var bla = Function( 'a, b, c', 'return a+b+c;' );    // OK!
+    
+    window.onload = function() {
+        document.getElementById( 'result1' ).innerHTML = bla(1, 2, 3);
+    };
+    </pre>
+    <p>
+    第二個一般的例子，就是用一個textarea輸入javascript code用Function Constructor來產生該段javascript code
+    的內容的function object，然後呼叫他。
+    </p>
+    <a href="example/function.constructor.02.html" target="_blank">Run Example</a>
+    <pre name="code" class="javascript:nocontrols:firstline[8]">
+    var handler =  function() {
+        var fn;
+        var prog = document.getElementById( 'code' ).value;
+        if( /\W/.test( prog ) ) {
+            fn = Function( prog );
+            fn.apply();
+        } else {
+            alert( '請輸入程式' );
+        }
+    };
+    </pre>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>ECMA-262</li>
+            <li>反對使用的意見: <a href="http://yuiblog.com/blog/2006/11/13/javascript-we-hardly-new-ya/" target="_blank">JavaScript, We Hardly new Ya</a></li>
+            <div>
+            這篇認為不應該使用這種方法產生function object，主要是因為使用string來作function body的話，
+            無法讓compile早點進行語法檢查而<strong>及早</strong>發現語法錯誤的問題(如果有JavaScript錯誤在執行的時候還是會看到錯誤)，
+            另一個原因則是透過new呼叫function object產生的物件會有prototype property持有object這個問題。
+            </div>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/08/24
+</address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+            $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <title>Memo Maven: Copy dependencies jar files to target/lib</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Memo Maven: Copy dependencies jar files to target/lib</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>看起來當初以為很難理解的maven沒想像中難搞，而人類還是一樣難以理解。</p>
+        <h2>Maven Dependency Plugin</h2>
+        <p>這個package可以協助我們由local repository或remote repository來copy或者unpack artifacts。此外也可以檢視、分析甚至畫出這個project dependencies的樹狀圖。</p>
+        <p>當要交付stand alone程式的時候，以前常常為了把執行需要的jar files準備妥當而要花點時間，有這個plugin就可以派上用途。個人習慣在package這個goal的時候執行maven-dependency-plugin的copy-dependencise這件事，我自己的習慣用法跟其他網路上找到其他人的設定在這裡有點不一樣。</p>
+        <h3>Listing. 個人習慣用法</h3>
+        <pre name="code" class="xml:nocontrol:firstline[49]">
+            &lt;plugin>
+                &lt;artifactId>maven-dependency-plugin&lt;/artifactId>
+                &lt;executions>
+                   &lt;execution>
+                       &lt;phase>package&lt;/phase>
+                       &lt;goals>
+                           &lt;goal>copy-dependencies&lt;/goal>
+                       &lt;/goals>
+                       &lt;configuration>
+                           &lt;outputDirectory>${project.build.directory}/lib&lt;/outputDirectory>
+                       &lt;/configuration>
+                   &lt;/execution>
+                &lt;/executions>
+            &lt;/plugin>
+        </pre>
+        <p></p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>http://maven.apache.org/plugins/maven-dependency-plugin/
+                <div>官方網站，maven dependency plugin的goals和使用範例。</div>
+                </li>
+            </ol>
+        </div>
+    </div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+    <address>
+    Terence Chao, 2010/12/15
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>Lab - Array 02</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Lab - Array 02 - 還是length property</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+    繼續看JavaScript Array的length property
+    <span style="color: white;">景氣不好即使在沒有互信基礎的環境，像我這樣技術水準不夠又沒知識的人還是別亂動。</span>
+    </p>
+    <h2>Array length again</h2>
+    <p>
+    Array給值的方式除了在產生array物件、使用array提供的method來新增element還可以使用[index]
+    的方式針對某個index來給值。而array的length property是array物件中最大正整數property+1。
+    因此當發生index不連續的時候，javascript array是否有初值設定就是第一個想知道的東西。
+    <a href="example/research_length2.html">Example</a>
+    </p>
+    <pre name="code" class="javascript:controls:firstline[4]">
+window.onload = function() {
+    var arr = [ 'glycine', 'leucine', 'aspartate' ];
+    var i = 0;
+    var elem = document.getElementById( 'result' );
+    arr[5] = 'alanine';
+
+    for( i=0; i&lt;arr.length; i+=1) {
+        elem.innerHTML += ( "arr index(" + i + ") = " + arr[i] + "<br />" );
+    } // for
+}
+    </pre>
+    <p>
+    利用index的方式在index=5的位置新增'alanine'。按照所學的東西結果應該是在Line 8執行之後，
+    length變成6而index 3, 4的內容都是undefined。
+    </p>
+    <p>
+    既然JavaScript的array是一個物件，當然容許我們加入自己的property。而length這個property會由正整數的
+    properties來計算，因此當我們使用負數的index當作array的property時候，當然按照length
+    的計算方式不會鳥那些負數的elements，但是我們要iterate那些負數index的elements的時候也要自己記得起始點。
+    當我們變更length來刪除array elements的時候也只有大於length的index那些elements會被刪除。
+    </p>
+    <h3>負數的index</h3>
+    <a href="example/research_length3.html">Example</a>
+    <pre name="code" class="javascript:controls:firstline[5]">
+window.onload = function() {
+    var arr = [];
+    arr[-5] = 'glycine';
+    arr[-4] = 'leucine';
+    arr[-3] = 'aspartate';
+    var i = 0;
+    var elem = document.getElementById( 'result' );
+    var lengelem = document.getElementById( 'lengthval' );
+
+    lengelem.innerHTML = arr.length;
+    for( i=-5; i&lt;arr.length; i++) {
+        elem.innerHTML += ( "arr index(" + i + ") = " + arr[i] + "<br />" );
+    } // for
+}; // window.onload()
+    </pre>
+    <p>
+    都用負數的index的時候可以看到length是0，而且按照我們寫的iterate array的for in statement
+    起始的index也要修正。
+    </p>
+    <h3>使用變更length刪除array的elements</h3>
+    <a href="example/research_length4.html">Example</a>
+    <pre name="code" class="javascript:controls:firstline[5]">
+window.onload = function() {
+    var arr = [];
+    arr[-5] = 'glycine';
+    arr[-4] = 'leucine';
+    arr[-3] = 'aspartate';
+    arr[0] = 'alanine';
+    arr[1] = 'glutamate';
+    arr[2] = 'valine';
+    arr[3] = 'phenylalanine';
+    var i = 0;
+    var elem = document.getElementById( 'result' );
+    var lengelem = document.getElementById( 'lengthval' );
+
+    arr.length = 2;         // 負的index並不會砍掉
+    //arr.length = -1;      // 負的length會有錯誤訊息(invalid array length)
+    
+    lengelem.innerHTML = arr.length;
+    for( i=-5; i&lt;arr.length; i++) {
+        elem.innerHTML += ( "arr index(" + i + ") = " + arr[i] + "<br />" );
+    } // for
+    
+    if( arr[3] === undefined ) {
+        alert( 'index 3 is undefined' );
+    } // if
+}; // window.onload()
+    </pre>
+    <p>
+    首先，愚者無懼不管書上的定義，嘗試把length設定為負值會收到invalid array length
+    的error。接著當我們設定array的length小於目前的length的時候，所有大於目前length
+    的element都會從array物件中刪除，因此當line 18設定length=2之後，在line 26-28
+    我們可以知道原本arr[3]的phenylalanine已經從array物件刪除。
+    </p>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>JavaScript: The Good Parts</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/07/29
+</address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

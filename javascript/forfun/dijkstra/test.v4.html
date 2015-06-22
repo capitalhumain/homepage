@@ -1,0 +1,136 @@
+<html>
+<head>
+    <title>Dijkstra v3 Example</title>
+    <script type="text/javascript" src="../../../js/jquery-1.3.2.min.js"></script>
+    <script type="text/javascript" src="enhancement.js"></script>
+    <script type="text/javascript" src="dijkstra.v3.js"></script>
+    <script type="text/javascript">
+    var assert = function( value, desc ) {
+        var li = document.createElement("li");
+        li.className = value ? "pass" : "fail";
+        li.appendChild( document.createTextNode( desc ) );
+        document.getElementById("results").appendChild( li );
+    }
+    
+    var getMapClass = function(id) {
+        if(id === 1) {
+            return "ground";
+        } else if(id === 2) {
+            return "matal";
+        } else {
+            return "wall";
+        }
+    }
+    
+    var renderMap = function(field, wall, dijkstra, fx, fy, tx, ty) {
+        var x = field.length;
+        var y = field[0].length;
+        var i, j;
+        var str = '';
+        
+        for( i=0; i<x; i++) {
+            for( j=0; j<y; j++) {
+                if( dijkstra.dist[i][j] === undefined && field[i][j] !== wall ) {
+                    str += ('<div class="matrixr ' + getMapClass(field[i][j]) + '">*</div>');
+                } else if( dijkstra.dist[i][j] === undefined && field[i][j] === wall ) {
+                    str += '<div class="matrixr wall">&nbsp;</div>';
+                } else {
+                    if( i===fx && j===fy ) {
+                        str += '<div class="matrixr ' + getMapClass(field[i][j]) + '" style="color: blue;">' + dijkstra.dist[i][j] + '</div>';
+                    } else if( i===tx && j===ty ) {
+                        str += '<div class="matrixr ' + getMapClass(field[i][j]) + '" style="color: red;">' + dijkstra.dist[i][j] + '</div>';
+                    } else {
+                        str += '<div class="matrixr ' + getMapClass(field[i][j]) + '">' + dijkstra.dist[i][j] + '</div>';
+                    }
+                }
+            }
+            str += '';
+        }
+        $( '#matrix' ).html( str );
+    };
+
+    window.onload = function() {
+        var wall = -1;
+        var field = [[ 1,  1,  1,  1,  1,  1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+                     [ 1,  1,  1,  2,  1,  1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+                     [ 1,  1,  1,  1,  1,  1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+                     [-1, -1, -1, -1,  1,  1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+                     [-1,  1,  1, -1,  1,  1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+                     [-1,  1,  1,  1,  1,  1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+                     [-1,  1,  1, -1,  1,  1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+                     [-1, -1, -1, -1,  1,  1, -1, -1, -1, -1, -1, -1,  1, -1, -1, -1, -1, -1],
+                     [ 1,  1,  1,  1,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+                     [ 1,  1,  1,  1,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1, -1,  1,  1,  1],
+                     [ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1,  1,  1,  1],
+                     [ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1,  1,  1,  1],
+                     [ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1,  1,  1,  1],
+                     [ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1,  1,  1,  1],
+                     [ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1,  1,  1,  1],
+                     [ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1,  1,  1,  1]];
+        
+        var fx = 1;
+        var fy = 1;
+        var tx = 6;
+        var ty = 8;
+        var dijkstra = new Dijkstra( field, wall );
+        
+        var node;
+        var result = [];
+        
+        dijkstra.dist[fx][fy] = 'F';
+        dijkstra.dist[tx][ty] = 'T';
+        renderMap(field, wall, dijkstra, fx, fy, tx, ty);
+        
+        $( '#btnFind' ).bind('click', function() {
+            tx = parseInt($( '#tox' ).val());
+            ty = parseInt($( '#toy' ).val());
+            if(tx>=field.legth || ty >= field[0].length) {
+                alert("Out of map");
+            } else if(field[tx][ty] === -1) {
+                alert("It's wall!!!");
+            } else {
+                try {
+                    result = dijkstra.search( fx, fy, tx, ty );
+                } catch(e) {
+                    assert( 1===2, e.name + ': ' + e.message );
+                }
+
+                assert( 3 === dijkstra.dist[ 1 ][ 2 ], 'Position test' );
+
+                renderMap(field, wall, dijkstra, fx, fy, tx, ty);
+            }
+        } );
+        
+        $( '#btnReset' ).bind('click', function() {
+            dijkstra.reset();
+            dijkstra.dist[fx][fy] = 'F';
+            dijkstra.dist[tx][ty] = 'T';
+            renderMap(field, wall, dijkstra, fx, fy, tx, ty);
+        } );
+        /*
+        str = '';
+        j = result.length;      // 因為pop()會影響迴圈下次result.length取得的值
+        for( i=0; i<j; i++ ) {
+            node = result.pop();
+            str += '[' + node[0] + ',' + node[1] + ']';
+        }
+        $( '#route' ).html( str );
+        */
+    };
+    </script>
+    <style>
+        #results li.pass { color: green; }
+        #results li.fail { color: red; }
+    </style>
+    <link href="css/tiles.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <ul id="results" style="display: none;"></ul>
+    <div id="matrix" style="font-family: 'courier new';">
+    </div>
+    <div id="route" style="display: none;">
+    </div>
+    To: (x, y) := (<input type="text" id="tox" value="6"/>, <input type="text" id="toy" value="8"/>)
+    <input type="button" id="btnFind" value="Find!!"/>&nbsp;<input type="button" id="btnReset" value="Reset"/>
+</body>
+</html>

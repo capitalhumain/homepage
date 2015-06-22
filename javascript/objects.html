@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css"type="text/css"  rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Objects</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Objects</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>工作快十年還是太天真，始終無法認清所謂軟體專案管理、什麼軟體開發流程...這些東西，在現實面都是騙肖ㄟ的東西，都是需要強力洗腦自己或用現在比較夯的名詞「自我感覺良好」的東西。滅絕希望的世界早該看破、絕望的東西，還在那邊搞的心情不好。現在就很像堅持在軌域之外硬要找到電子這樣的行為，最終就只是累自己。</p>
+        <p>看清的現實就是這些東西只存在幾個地方一、面試的時候拿出來唬爛求職者，二、專案銜接的空檔時期，會從那些人大腦冒出來，三、突然間腦袋壞掉想到員工發展或Performance review，四、也是最後一個最常出現的地方就是跟客戶唬爛自己公司軟體開發多厲害的時候。</p>
+        <p>回來看確實存在的東西，所謂property就是由name和value組成(常見的寫法是key/value pair)的一個單元。而JavaScript的Object則可以視為一個property container，就很像其他語言(eg. perl)的associative arrays的東西、Ruby的Hash、Python的dictionary。</p>
+        <h2>Object literals</h2>
+        <h3>Figure 1. javascript object literal syntax diagram (from Reference 2)</h3>
+        <img src="../images/javascript/object_literal_crockford.png" />
+        <p>從Crockford書上的object literal syntax diagram可以看出來，property value可以是expression。</p>
+        <h3>Figure 2. javascript expression syntax diagram (from Reference 2)</h3>
+        <img src="../images/javascript/expression_crockford.png" />
+        <p>一般而言，常用的到應該是literal，就以delete expression來做一個簡單的實驗看看會發生啥事。</p>
+        <pre name="code" class="javascript:controls:firstline[10]">
+// 可憐的傢伙
+var gobj = {
+    toDelete: true
+};
+
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = ('before obj evaluate => gobj.toDelete = ' + gobj.toDelete + '<br/>'),
+        obj = {
+            attr1: 1,
+            isToDeleteRemoved: delete gobj.toDelete,
+            toString: function() {
+                var ret = '', prop;
+                for( prop in this ) {
+                    if( Object.prototype.toString.call( this[prop] ) !== '[object Function]' )
+                        ret += ( prop + ': ' + this[prop] + '<br/>' );
+                } // for
+                return ret;
+            }
+        };
+    msg += ( 'After obj evaluate => gobj.toDelete = ' + gobj.toDelete + '<br/>' );
+    msg += ( 'obj = <blockquote>' + obj.toString() + '</blockquote>' );
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>上面程式重點在於line 21行obj的isToDeleteRemoved這個property，他的value是一個delete expression。而這個delete expression會去delete global object gobj的toDelete這個property。因為這個expression在obj的程式被執行的時候就會被執行到，因此特別把msg放在obj之前，先把gobj的toDelete當時的值記錄下來。可以看到結果有兩個重點，首先delete expression會被執行到，因此在obj執行完成之後，gobj.toDelete是undefined；其次，obj.isToDeleteRemoved的值是delete expression執行完return的值。</p>
+        <p>另外這裡還有一個跟object無關，但是跟程式效能有關的議題順便提一下。我都把結果放到id=result的div裡面，這邊先把所有要輸出的結果先放到一個function scope variable，在最後面才把這個結果透過dom操作放到div裡面。如果改成省略msg變數，每次輸出都用<code>result.innerHTML += .....</code>這樣的寫法，每執行一次這樣的程式都會引法dom tree的變動，因此瀏覽器就需要處理這個現象；反過看使用一個function scope variable儲存結果的好處是只會引發一次dom tree的變動。除此之外，別忘記用<code>result.innerHTML +=</code>還附帶每次由dom裡面取值的成本。</p>
+        <p>以上執行順序和dom tree變動都可以透過firebug觀察到。</p>
+        <h2>產生物件的另一條路 - 透過constructor (the constructor invocation pattern)</h2>
+        <p>JavaScript不是Java那類物件導向語言，他沒有透過class來約定產生object的能力。但是他卻有方法可以把function當成constructor呼叫，在Crockford書上稱為The Constructor Invocation Pattern。一個約定成俗的良好習慣，就是可以透過<code>new</code> operator來呼叫的function的function name第一個字用大寫英文表示。</p>
+        <h4>內建constructor (built-in constructor)</h4>
+        <p>JavaScript有許多內建constructor，比如說Object(), Date(), String(), Array()...等。<strong>下面範例是很不好的寫法千萬不要學</strong>工作到現在常看到有的Java高手寫的javascript code（我想大概是因為context switch太麻煩），寫javascript不使用object literal、array literal直接new Object()、new Array()。</p>
+        <pre name="code" class="javascript:controls:firstline[]">
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        obj = new Object();    // bad idea
+        
+    obj.s = Object.prototype.toString;
+    obj.attr1 = 1;
+    obj.attr2 = [1, 2, 3];
+    obj.toString = function() {
+        var ret = '', prop;
+        for( prop in this ) {
+            if( this['s'].call( this[prop] ) !== '[object Function]' ) {
+                ret += ( prop + ': ' + this[prop] + '<br/>' );
+            } // if
+        } // for
+        return ret;
+    };
+
+    msg += ( 'obj = <blockquote>' + obj.toString() + '</blockquote>' );
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>除了寫程式碼長度等原因和這個function如果沒用constructor invocation呼叫時，this到底是誰的混亂狀況需要考量並處理(ECMAScript 5th edition的strict mode可以避免這個問題)之外，還有一個效能因素支持不要這樣寫，就是function look up的成本。使用constructor invocation pattern的話javascript engine必須從scope chain中找到那個function object（以Oject()為例，會先從funcion execution context找，找不到再往外找。），然後才能透過constructor invocation pattern的方式呼叫他來產生物件。</p>
+        <p>猜想一下，把上面那個範例改成像下面程式裡line 14那樣惡搞的結果，一方面也可以證明built-in constructor也是透過scope chain找的。line 20的改變是因應line 14那樣惡搞。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[10]">
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        Object = function() {
+            return { isMe: true };
+        },
+        obj = new Object();    // bad idea
+        
+        
+    obj.s = window.Object.prototype.toString;
+    obj.attr1 = 1;
+    obj.attr2 = [1, 2, 3];
+    obj.toString = function() {
+        var ret = '', prop;
+        for( prop in this ) {
+            if( this['s'].call( this[prop] ) !== '[object Function]' ) {
+                ret += ( prop + ': ' + this[prop] + '<br/>' );
+            } // if
+        } // for
+        return ret;
+    };
+
+    msg += ( 'obj = <blockquote>' + obj.toString() + '</blockquote>' );
+    result.innerHTML = msg;
+};
+        </pre>
+        <p></p>
+        <h4>自己寫constructor function的課題</h4>
+        <p>重說一次約定成俗的好習慣，自己寫的function如果是打算當成constructor使用時，<strong>function name第一個字母請用大寫</strong>。但這也只是約定成俗，也是有看過自稱很厲害的java很厲害的高手，class name是小寫開頭。</p>
+        <p>使用function literal和使用var expression + function literal在透過constructor invocation產生的物件的<code>constructor</code> property的value印出來有些許的差異。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[10]">
+function MyObject() {
+};
+
+var MyObject2 = function() {
+};
+
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        obj = new MyObject(),
+        obj2 = new MyObject2(),
+        toString = Object.prototype.toString;
+    msg += ("typeof obj: " + typeof obj + '<br/>');
+    msg += ("obj.constructor: " + obj.constructor + '<br/>');
+    msg += ("toString(obj): " + toString.apply( obj ) + '<br/>');
+    msg += ("typeof obj2: " + typeof obj2 + '<br/>');
+    msg += ("obj2.constructor: " + obj2.constructor + '<br/>');
+    msg += ("toString(obj2): " + toString.apply( obj2 ) + '<br/>');
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>由上面的程式可以知道透過constructor invocation呼叫function一定會回傳一個物件，即使該function本身沒有寫return statement。但如果該function有寫return statement會發生怎樣的事？！</p>
+        <pre name="code" class="javascript:controls:firstline[10]">
+function MyObject() {
+    this.attr1 = 100;
+    this.attr2 = 101;
+};
+function MyObject2() {
+    this.attr1 = 100;
+    this.attr2 = 102;
+    return {
+        attr1: "haha"
+    };
+};
+
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        obj = new MyObject(),
+        obj2 = new MyObject2(),
+        toString = Object.prototype.toString;
+    msg += ("obj[attr1]: " + obj['attr1'] + '<br/>');    // 100
+    msg += ("obj2[attr1]: " + obj2['attr1'] + '<br/>');  // "haha"
+    msg += ("obj[attr2]: " + obj['attr2'] + '<br/>');    // 101
+    msg += ("obj2[attr2]: " + obj2['attr2'] + '<br/>');  // undefined
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>在上面範例裡面MyObject()是很平常會看到的程式碼，MyObject2()就是來亂的，哈～即是是來亂的卻可以讓我們學到東西。首先，使用constructor invocation雖然會先配置一個物件，然後把這個物件當成thisArg傳給function，但是如果function裡面自己return一個物件時，一切都是枉然，因為使用者拿到的是最後return那個物件。</p>
+        <p>其次即使我們使用第一個字母大寫的function約定說這個function要用constructor invocation，但是說穿了跟一般function並沒有兩樣。使用者還是可以把MyObject(), MyObject2()當成一般function呼叫。改寫後的window.onload()如下面</p>
+        <pre name="code" class="javascript:nocontrols:firstline[22]">
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        v1 = MyObject(),
+        v2 = MyObject2(),
+        toString = Object.prototype.toString;
+    msg += ('v1: ' + v1 + '<br/>');                       // undefined
+    msg += ('v2: ' + v2 + '<br/>');                       // [object Object]
+    msg += ('window.attr1: ' + window.attr1 + '<br/>' );  // 100
+    msg += ('window.attr2: ' + window.attr2 + '<br/>' );  // 102
+    msg += ('v2.attr1: ' + v2.attr1 + '<br/>' );          // "haha"
+    msg += ('v2.attr2: ' + v2.attr2 + '<br/>' );          // undefined
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>當成一般function呼叫的結果意外嗎？！在v1 = MyObject();執行MyObject()時，this是global object。執行MyObject2()的this也是global object，attr1剛好兩個function設定的一樣，所以不會發現，看attr2就知道window.attr2在MyObject2()執行的時候被覆蓋成102。</p>
+        <p>MyObject2()可以看出一個似乎可行的解法，所以把MyObject()改成下面這樣寫。Stefanov書上是用that，雖然他有寫看自己有人用self或me。我是比較習慣看到self，所以這裡寫self。</p>
+        <pre name="code" class="javascript:controls:firstline[10]">
+function MyObject() {
+    var self = {};
+    self.attr1 = 100;
+    self.attr2 = 102;
+    return self;
+};
+
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        v1 = MyObject(),
+        v2 = new MyObject(),
+        toString = Object.prototype.toString;
+    msg += ('v1: ' + v1 + '<br/>');                       // [object Object]
+    msg += ('v2: ' + v2 + '<br/>');                       // [object Object]
+    msg += ('window.attr1: ' + window.attr1 + '<br/>' );  // undefined
+    msg += ('window.attr2: ' + window.attr2 + '<br/>' );  // undefined
+    msg += ('v1.attr1: ' + v1.attr1 + '<br/>' );          // 100
+    msg += ('v1.attr2: ' + v1.attr2 + '<br/>' );          // 102
+    msg += ('v2.attr1: ' + v2.attr1 + '<br/>' );          // 100
+    msg += ('v2.attr2: ' + v2.attr2 + '<br/>' );          // 102
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>這樣寫不管使用的人用constructor invocation或非constructor invocation呼叫MyObject()，都可以拿到預期的結果。嗯～看起來解決了...如果不考慮prototypal inheritance的話...</p>
+        <p>下面的例子是使用prototypal inheritance的簡單範例，在child的prototype property設定parent object。然後透過constructor invocation呼叫MyObject()產生的物件就可以使用到parent object的property。</p>
+        <pre name="code" class="javascript:controls:firstline[10]">
+var MyParent = function() {
+    this.p1 = 'abc';
+};
+
+var MyObject = function() {
+    this.attr1 = 100;
+    this.attr2 = 200;
+};
+
+MyObject.prototype = new MyParent();
+
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        obj = new MyObject(),
+        toString = Object.prototype.toString;
+    msg += ('obj.p1: ' + obj.p1 + '<br/>');    // 'abc'
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>如果用剛剛的解法來寫MyObject()的時候，就會發現失去prototypal inheritance的特點，obj.p1是undefined。這樣的結果是因為使用者拿到的object是MyObject()裡面的self變數那個object literal。</p>
+        <p>回想一下，目前為止針對使用constructor invocation和非constructor invocation問題的處理，我們都是使用return object literal的方式解決。而這兩者最大的差異是function body裡面拿到的thisArg是不一樣的。既然return object literal會在prototypal inheritance觸礁，那就是針對thisArg嚕。</p>
+        <p>使用非constructor invocation pattern呼叫constructor function時，thisArg是global scope (以browser環境來看就是window)，也就是說thisArg不是MyObject的話，我們就視為非constructor invocation的情形。處理方法很簡單就是由construtor幫忙呼叫constructor就好</p>
+        <pre name="code" class="javascript:controls:firstline[10]">
+var MyParent = function() {
+    this.p1 = 'abc';
+};
+
+var MyObject = function() {
+    if( !(this instanceof MyObject) ) {
+        return new MyObject();
+    }
+    this.attr1 = 100;
+    this.attr2 = 200;
+};
+
+MyObject.prototype = new MyParent();
+
+window.onload = function() {
+    var doc = document,
+        result = doc.getElementById( 'result' ),
+        msg = '',
+        obj1 = MyObject(),
+        obj2 = new MyObject(),
+        toString = Object.prototype.toString;
+    msg += ('obj1.p1: ' + obj1.p1 + '<br/>');    // "abc"
+    msg += ('obj2.p1: ' + obj2.p1 + '<br/>');    // "abc"
+    result.innerHTML = msg;
+};
+        </pre>
+        <p>還記得<a href="lab.function.02.html">Function Arguments</a>裡講到ECMA-262 3rd edition(會這樣寫就代表第五版strict mode是不能用的) arguments物件有一個callee的property嗎？！這邊其實就可以用<code>arguments.callee</code>來改寫。</p>
+        <pre name="code" class="javascript:nocontrols:firstline[14]">
+var MyObject = function() {
+    if( !(this instanceof arguments.callee) ) {
+        return new arguments.callee();
+    }
+    this.attr1 = 100;
+    this.attr2 = 200;
+};
+        </pre>
+        <p></p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 3rd edition</li>
+                <li>JavaScript: The Good Parts (O'Reilly)</li>
+                <li>JavaScript Patterns (O'Reilly)</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/10/19</i>, latest update 2010/10/19
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

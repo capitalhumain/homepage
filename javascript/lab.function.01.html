@@ -1,0 +1,229 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushSql.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushGroovy.js" ></script>
+    <title>Lab - Function 01</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Lab - Function 01 - Function Invocation</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>
+    Douglas Crockford書上有下列一段話覺得還蠻有感覺的(節錄在下面block)，以前(現在偶而也會)自己會因為對IT
+    技術的好惡而用自以為公正的角度評斷技術和知識。太多的自以為公正的各說各話(拿自己喜歡技術的優點攻擊其他技術的缺點等)。
+    現在老了覺得老是吵哪個好哪個不好、各說各話真是太無聊了，寧願把心力放在學習更多有趣、好玩的東西。
+    </p>
+    <div class="quote">
+    We all find the good parts in products that we use. We value simplicity, and when simplicity isn't offered to 
+    us, we make it ourselves. My microwave oven has tons of features, but the only ones I use are cook and the
+    clock. And setting the clock is a struggle. We cope with complexity of feature-driven design by finding and
+    sticking with good parts.
+    </div>
+    <h2 style="font-family: 微軟正黑體 標楷體 'Courier New';">規定的東東</h2>
+    <pre style='font-family: "Courier New";'>
+4.3.3 Object
+        An object is a member of the type Object. It is an unordered collection of properties each of which
+        contains a primitive value, object, or function. A function stored in a property of an object is called a
+        method.
+4.3.4 Constructor
+        A constructor is a Function object that creates and initialises objects. Each constructor has an associated
+        prototype object that is used to implement inheritance and shared properties.
+4.3.5 Prototype
+        A prototype is an object used to implement structure, state, and behaviour inheritance in ECMAScript.
+        When a constructor creates an object, that object implicitly references the constructor’s associated
+        prototype for the purpose of resolving property references. The constructor’s associated prototype can be
+        referenced by the program expression constructor.prototype, and properties added to an object’s
+        prototype are shared, through inheritance, by all objects sharing the prototype.
+15.3.4.3 Function.prototype.apply (thisArg, argArray)
+        The apply method takes two arguments, thisArg and argArray, and performs a function call using
+        the [[Call]] property of the object. If the object does not have a [[Call]] property, a TypeError
+        exception is thrown.
+        If thisArg is null or undefined, the called function is passed the global object as the this value.
+        Otherwise, the called function is passed ToObject(thisArg) as the this value.
+        If argArray is null or undefined, the called function is passed no arguments. Otherwise, if argArray
+        is neither an array nor an arguments object (see 10.1.8), a TypeError exception is thrown. If
+        argArray is either an array or an arguments object, the function is passed the
+        (ToUint32(argArray.length)) arguments argArray[0], argArray[1], …,
+        argArray[ToUint32(argArray.length)–1].
+        The length property of the apply method is 2.
+15.3.4.4 Function.prototype.call (thisArg [ , arg1 [ , arg2, … ] ] )
+        The call method takes one or more arguments, thisArg and (optionally) arg1, arg2 etc, and performs
+        a function call using the [[Call]] property of the object. If the object does not have a [[Call]] property,
+        a TypeError exception is thrown. The called function is passed arg1, arg2, etc. as the arguments.
+        If thisArg is null or undefined, the called function is passed the global object as the this value.
+        Otherwise, the called function is passed ToObject(thisArg) as the this value.
+        The length property of the call method is 1.
+    </pre>
+    <h2>Function Invocation</h2>
+    <div>
+        <p>
+        根據Douglas Crockford分類JavaScript function invocation有下列四類:
+        比較耳熟能詳的是前兩個，首先在這裡method的定義是function放在某個object的某個property
+        裡面則稱呼這個function為method。因此當我們使用object_name.function_name()這樣的型式執行function
+        就稱為Method Invocation Pattern。而Function Invocation Pattern則是和Method相反的invocation狀況。
+        </p>
+        <ul>
+            <li>The Method Invocation Pattern</li>
+            <li>The Function Invocation Pattern</li>
+            <li>The Constructor Invocation Pattern</li>
+            <li>The Apply Invocation Pattern</li>
+        </ul>
+    </div>
+    <h3>The Apply Invocation Pattern</h3>
+    <p>
+    這個東西就是規格書上的Function.prototype.apply這個東東來呼叫function。這個function接受兩個參數
+    </p>
+    <div>
+        <ol>
+            <li>thisArg: this Argument</li>
+            <li>argArray: arguments Array</li>
+        </ol>
+    </div>
+    <p>
+    可見得1. 透過Function.prototype.apply這個function我們可以控制呼叫的function的this物件。2. 
+    他接受的是arguments <strong>Array</strong>和我們所知每個function都會拿到的this和arguments
+    的arguments是不一樣的。
+    為了觀察apply() function做了bla這個function和Bla的constructor，然後寫兩個method。method1()
+    不需要傳入任何argument會使用instance variable index；method2()接受一個argument
+    也一樣會使用instance variable index。
+    </p>
+    <a href="example/apply.01.html" target="_blank">Run Example</a>
+    <h4>Listing. 測試用的function和object</h4>
+    <pre name="code" class="javascript:nocontrols:firstline[5]">
+    var bla = function( i ) {
+        // 這個this用來看看apply傳物件進來的是啥碗糕
+        alert( this );
+        alert( 'this is general javascript function argument i=' + i );
+    };
+    
+    var Bla = function( i ) {
+        this.index = i;
+    };
+    
+    Bla.prototype.method1 = function() {
+        alert( this.index + 1 );
+    };
+    
+    Bla.prototype.method2 = function( step ) {
+        alert( this.index + step );
+    };
+    </pre>
+    <h4>Listing. 測試的程式</h4>
+    <pre name="code" class="javascript:nocontrols:firstline[23]">
+    window.onload = function() {
+        // 傳null的時候
+        bla.apply( null, [100] );   // this 就是 object Window
+        
+        var obj = new Bla( 9 );
+        Bla.prototype.method1.apply( obj );
+        Bla.prototype.method2.apply( obj, [5] );
+        
+        // in this case this.index is undefined
+        // undefined + 99 = NaN
+        Bla.prototype.method2.apply( null, [99] );  
+        
+        // 傳一個物件當成this，
+        bla.apply( obj, [1] );      // this 是 object Object
+    };
+    </pre>
+    <h3>The Constructor Invocation Pattern</h3>
+    <p>
+    Constructor Invocation就是透過new來呼叫function(或者說constructor)。當我們使用new來呼叫一個function
+    的時候那個function object的時候建立的物件會和這個function object的prototype property建立關聯。
+    這樣建立的關聯讓我們可以使用prototype property設定的那個物件的功能。這也就是JavaScript的prototypal 
+    inheritance。而function object接收到的this則是指向新建立的object。
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[4]">
+    var Bla = function() {
+        this.name = 'bbbb';
+    };
+    
+    var obj = new Bla();
+    alert( Bla.prototype );
+    </pre>
+    <p>
+    以上面的程式碼而言，透過Firebug設定中斷點我們也可以觀察Bla function object。當我們目前沒有設定prototype
+    property的物件時，Bla的prototype property是Object。因為Bla只是一個function object，
+    因此我們當我們呼叫的時候不是透過new的方式(也就是只是一般的Function Invocation Pattern)，
+    其實並不會有任何的錯誤。此時this指向的很可能是window物件。從下面的例子可以觀察到這個現象。
+    </p>
+    <pre name="code" class="javascript:nocontrols:firstline[4]">
+    var Bla = function() {
+        this.name = 'bbbb';
+    };
+    
+    // all function will return a value
+    // if the return value is not specified, then undefined is returned
+    var obj = Bla();                // obj is undefined
+    alert( obj === undefined );     // true
+    alert( window.name );           // 'bbbb'
+    </pre>
+    <p>
+    需要補充的一點就是根據規定只有Result(2).type是return或者throw才會回傳Result(2).value；否則回傳undefined。
+    因此以這個例子我們的obj就是undefined。而呼叫Bla()時this就是Browser的window物件，所以name會變成window
+    object的一個property。
+    </p>
+    <p>
+    下面是另一個簡單的例子觀察一個function object使用Constructor Invocation Pattern和Function Invocation Pattern
+    呼叫的狀況。
+    </p>
+    <h3>Listing. lab_CI_01.js</h3>
+    <pre name="code" class="javascript:nocontrols:firstline[1]">
+    var Qoo = function(name, price) {
+        this.name = name;
+        this.price = price;
+    };
+    </pre>
+    <h3>Listing. 部分lab_CI_01.html</h3>
+    <pre name="code" class="javascript:nocontrols:firstline[6]">
+    window.onload = function() {
+        var malobj = Qoo( 'Undefined', 10.5 );     // missing new
+        document.getElementById( 'malobj' ).innerHTML = (typeof malobj === 'undefined');
+        document.getElementById( 'thisname' ).innerHTML = this.name;
+        document.getElementById( 'thisprice' ).innerHTML = this.price;
+        document.getElementById( 'iswindow' ).innerHTML = ( this === window );
+        
+        var obj = new Qoo( 'Water', 20 );
+        document.getElementById( 'obj' ).innerHTML = (typeof obj === 'object');
+        document.getElementById( 'objname' ).innerHTML = obj.name;
+        document.getElementById( 'objprice' ).innerHTML = obj.price;
+    };
+    </pre>
+    <a href="example/lab_CI_01.html" target='_blank'>Run Example</a>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>ECMA-262</li>
+            <li>JavaScript: The Good Parts</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/08/03
+</address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

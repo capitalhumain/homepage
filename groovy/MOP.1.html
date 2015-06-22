@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Groovy - Meta-Object Protocol 1</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Groovy - Meta-Object Protocol 1</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>從國中在姑丈的指導下接觸GW-Basic之後就喜歡寫程式，求學期間雖然家裡環境不能玩貴貴的硬體；靠著壓歲錢和零用錢也陸陸續續敗了Quick Basic、Turbo C、MASM…等compiler來玩。而也能依據自己的興趣跑去唸生物化學研究所，雖然研究所因為自己奇怪的個性造成蕭介夫老師的困擾。工作之後可以有幸一直做自己喜歡的programming的工作，人生如此還有啥好抱怨的？！</p>
+    <p>跟學習不同programming paradigm一樣，Meta-Object Protocol跟garbage collection一樣學習自Lisp的有趣的東西。Programming Groovy Part 3就是講這個很好玩的課題在Groovy的實現手法。</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.7.3</li>
+            <li>Sun JDK 1.6.0_22</li>
+        </ul>
+    </div>
+    <h2>Method Call on Plain-Old Groovy Object (POGO)</h2>
+    <p>總則就是書裡面這張圖</p>
+    <h3>Figure. Handle method call on POGO (翻拍 from Programming Groovy chapter 12 via Dia Diagram Editor)</h3>
+    <img src="../images/groovy/handles_method_calls_on_pogo.png" />
+    <p></p>
+    <h2><code>GroovyInterceptable</code></h2>
+    <p>由上圖可以知道在Groovy如果class有實作<code>GroovyInterceptable</code>時，所有method call都會被<code>invokeMethod()</code>「搶劫」。</p>
+    <h3>Listing. <code>GroovyInterceptable</code>派的搶劫實錄</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+
+class Bla implements GroovyInterceptable {
+   def flo () {
+      println "method: flo called"
+   }
+   
+   def invokeMethod (String name, args) {
+      // 這樣寫是有目的的喔！自己想想如果
+      // 用println "Calling $name"會怎樣
+      // 會再走一次 handle method call on POGO那個流程
+      // 然後會再進來 invokeMethod()
+      // 最終就是跑到 Stack Overflow => 爆掉
+      System.out.println( "Calling $name" )
+      def validMethod = Bla.metaClass.getMetaMethod( name, args )
+      if( validMethod != null ) {
+          System.out.println( "hey~~~" )
+      } else {
+          System.out.println( "Whao~~~" )
+      }
+      System.out.println( "After call $name" )
+   }
+}
+
+def obj = new Bla()
+obj.abc()
+obj.flo()
+    </pre>
+    <p></p>
+    <h3>Listing. 執行結果</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@M1210:~/lab/groovy$ groovy Interceptable_1.groovy 
+Calling abc
+Whao~~~
+After call abc
+Calling flo
+hey~~~
+After call flo
+    </pre>
+    <p></p>
+    <h2><code>MetaClass</code>#invokeMethod()</h2>
+    <p></p>
+    <h3>Listing. <code>MetaClass</code>派的搶劫實錄</h3>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Bla {
+   def flo () {
+      println "method: flo called"
+   }
+}
+
+Bla.metaClass.invokeMethod = { String name, args ->
+    System.out.println( "Before invoke $name" )
+    def validMethod = Bla.metaClass.getMetaMethod( name, args )
+    if( validMethod != null ) {
+        System.out.println( "hey~~~" )
+    } else {
+        System.out.println( "Whao~~~" )
+    }
+    System.out.println( "After invoke $name" )
+}
+
+def obj = new Bla()
+obj.abc()
+obj.flo()
+    </pre>
+    <p><code>GroovyInterceptor</code>和<code>MetaClass</code>的<code>invokeMethod()</code>都可以讓我們完成intercepting method的工作。可以針對想做特別處理的method做處理只後透過invoke()呼叫該method完成該做的事情；如果遇到method不存在也可以透過<code>MetaClass</code>的<code>invokeMissingMethod()</code>來呼叫<code>methodMissing()</code>。</p>
+    <p></p>
+    <h2><code>MetaObjectProtocol</code>#respondsTo()</h2>
+    <p>除了<code>getMetaMethod()</code>之外，還有<code>MetaObjectProtocol</code> interface的<code>respondsTo()</code>可以用來找method。</p>
+    <h3>Listing. Example for respondsTo()</h3>
+    <pre name="code" class="groovy:nocontrols:firstline[1]">
+class Foo {
+    def bla() {
+        println "Foo#bla()"
+    }
+}
+
+def obj = new Foo()
+def methods = obj.metaClass.respondsTo( obj, 'bla' )
+println methods
+
+methods.each { method ->
+    method.invoke( obj, null )
+}
+    </pre>
+    <p></p>
+    <p>後記：有點想敗20年前的古書The Art of Metaobject Protocol來拜讀…</p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Programming Groovy</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/02/14
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

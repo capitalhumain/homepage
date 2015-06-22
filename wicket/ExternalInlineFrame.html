@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushJScript.js" ></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushXml.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+	<script language="javascript">
+	window.onload = function () {
+		dp.SyntaxHighlighter.HighlightAll('code');
+	};
+	</script>
+	<title>Wicket Component - ExternalInlineFrame</title>
+</head>
+<body>
+<div>
+	<h1 class="header">Wicket Components - Implement ExternalInlineFrame</h1>
+</div>
+<div class="articlecontent">	
+    <h2>Preface</h2>
+    <p>
+ 本篇來自自己部落格以前寫的一篇的一部分。在wicket的世界，要製作Component是相當簡單的一件事，
+ 在這邊就因為某些狀況而做了兩個簡單的component。ExternalInlineFrame是一個是連結到Wicket
+ 之外的iframe的component。
+    </p>
+    <h2>Environment</h2>
+    <div>
+    	<ul>
+    		<li>Netbeans 6.5.1 with Wicket Plug-ins</li>
+    		<li>Apache Wicket 1.3.6</li>
+    	</ul>
+    </div>
+    <h2>Implement ExternalInlineFrame</h2>
+    <p>
+ 首先，雖然Wicket有InlineFrame這個Componet可以用，但是在某些狀況只是需要做出iframe的
+ 連結連到jsp或其他東西的狀況。所以就搞一個ExternalInlineFrame這個東西，只是很單純的把
+ iframe的src指向我們想呈現的jsp或其他網頁。程式碼如下 
+    </p>
+    <div class="memo">
+    	NOTE: <em>Line 26 source code部分為了在網頁可以正常顯示有修改</em>
+    </div>
+    <h3>Listing. ExternalInlineFrame.java</h3>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+package com.myapp.component;
+
+import org.apache.wicket.markup.ComponentTag;
+import org.apache.wicket.markup.html.WebMarkupContainer;
+import org.apache.wicket.util.string.Strings;
+
+/**
+ *
+ * @author Terry
+ */
+public class ExternalInlineFrame extends WebMarkupContainer {
+    private String to;
+
+    public ExternalInlineFrame(String id, String to) {
+        super(id);
+        this.to = to;
+    }
+
+    protected final void onComponentTag(final ComponentTag tag) {
+        checkComponentTag(tag, "iframe");
+
+        // Set href to link to this frame's frameRequested method
+        CharSequence url = to;
+
+        // generate the src attribute
+        tag.put("src", Strings.replaceAll(url, "&", "&amp;amp;"));
+
+        super.onComponentTag(tag);
+    }
+}
+    </pre>
+    <p>
+使用ExternalInlineFrame的範例程式如下
+    </p>
+    <h3>Listing. HomePage.html (部分)</h3>
+    <pre name="code" class="xml:nocontrols:firstline[11]">
+    &lt;iframe wicket:id="inner" style=""&gt;
+    &lt;/iframe&gt;
+    </pre>
+    <h3>Listing. HomePage.java (部分)</h3>
+    <pre name="code" class="java:nocontrols:firstline[11]">
+        ExternalInlineFrame inner = new ExternalInlineFrame(
+            "inner", 
+            "/Sandbox/jsp/test.jsp");
+        inner.add(new AttributeModifier(
+            "style", 
+            true, 
+            new Model("border: 1px solid rgb(204, 0, 0);width:500px; height:300px;")));
+        add(inner);
+    </pre>
+    <h2>執行結果</h2>
+    <img src="../images/wicket/ExternalInlineFrame01.png" />
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<!--/Creative Commons License-->
+
+<!--
+<rdf:RDF xmlns="http://web.resource.org/cc/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <Work rdf:about="">
+    <license rdf:resource="http://creativecommons.org/licenses/by/2.5/tw/" />
+    <dc:title>[著作名稱]</dc:title>
+    <dc:date>[著作權啟始年份]</dc:date>
+    <dc:description>[著作描述]</dc:description>
+    <dc:creator>
+      <Agent>
+        <dc:title>[作者]</dc:title>
+      </Agent>
+    </dc:creator>
+    <dc:rights>
+      <Agent>
+        <dc:title>[著作權持有人]</dc:title>
+      </Agent>
+    </dc:rights>
+    <dc:source rdf:resource="原始著作的網址。若非衍生著作則本行可刪除" />
+  </Work>
+  <License rdf:about="http://creativecommons.org/licenses/by/2.5/tw/">
+    <permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+    <permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+    <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+    <requires rdf:resource="http://web.resource.org/cc/Notice"/>
+    <requires rdf:resource="http://web.resource.org/cc/Attribution"/>
+  </License>
+</rdf:RDF>
+-->
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2009/06/22
+</address>
+</body>
+</html>

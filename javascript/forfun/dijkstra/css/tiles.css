@@ -1,0 +1,26 @@
+#matrix {
+    width: 640px;
+    height: 600px;
+}
+.wall {
+    background-image: url(../images/brick.png); MARGIN: 0px 0px 0px 0px;
+}
+
+.ground {
+    background-image: url(../images/ground.png); MARGIN: 0px 0px 0px 0px;
+}
+
+.matal {
+    background-image: url(../images/matal.png); MARGIN: 0px 0px 0px 0px;
+}
+
+.matrixr {
+    line-height:2em;
+    width: 32px;
+    height: 32px;
+    display: inline;
+    float: left;
+    padding: 1px 1px 1px 1px;
+    text-align: center;
+    color: #fff;
+}

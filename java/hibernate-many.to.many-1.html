@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="hibernate,many-to-many" />
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css" type="text/css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <title>Hibernate - many-to-many - traditional way</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Hibernate - many-to-many - traditional way</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p></p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 10.04</li>
+                <li>MySQL</li>
+            </ul>
+        </div>
+        <h2>Table Schema</h2>
+        <p>範例要做的是每個產品類別(<code>Category</code>)有許多授權許可證(<code>License</code>)，當然多項產品類別可能都具備同一授權許可證。而且客戶的需求是每項產品類別還可以設定預設的授權許可證，當然預設的授權許可證這個欄位就會放到associate table上。因此我畫出來的ER Model就如Figure 1所示。</p>
+        <h3>Figure 1. Many-to-Many example</h3>
+        <img src="../images/java/hibernate.many-to-many.png" alt="Many-to-Many ER Model" />
+        <p></p>
+        <h2>Mapping Configuration</h2>
+        <p>不考慮inverse, lazy...等狀況，單純看many-to-many的設定如下。在<code>Category</code>重點在於設定</p>
+        <h3>Listing 1. Category.hbm.xml</h3>
+        <pre name="code" class="xml:controls:firstline[3]">
+&lt;hibernate-mapping package="net.greenrivers.hibernate.manytomany.core">
+  &lt;class name="Category" table="Category">
+    &lt;id column="id" name="id" type="java.lang.Integer">
+      &lt;generator class="native"/>
+    &lt;/id>
+    &lt;property column="name" name="name" not-null="true" type="java.lang.String" />
+    &lt;set name="licenses" table="Certified">
+        &lt;key column="categoryid" />
+        &lt;many-to-many column="licenseid" class="License" />
+    &lt;/set>
+  &lt;/class>
+&lt;/hibernate-mapping>
+        </pre>
+        <p></p>
+        <h3>Listing 2. License.hbm.xml</h3>
+        <pre name="code" class="xml:controls:firstline[3]">
+&lt;hibernate-mapping package="net.greenrivers.hibernate.manytomany.core">
+  &lt;class name="License" table="License">
+    &lt;id column="id" name="id" type="java.lang.Integer">
+      &lt;generator class="native"/>
+    &lt;/id>
+    &lt;property column="name" name="name" not-null="true" type="java.lang.String"/>
+    &lt;set name="categories" table="Certified">
+        &lt;key column="licenseid" />
+        &lt;many-to-many column="categoryid" class="Category" />
+    &lt;/set>
+  &lt;/class>
+&lt;/hibernate-mapping>
+        </pre>
+        <p></p>
+        <h3>Listing 3. Certified.hbm.xml</h3>
+        <pre name="code" class="xml:controls:firstline[3]">
+&lt;hibernate-mapping package="net.greenrivers.hibernate.manytomany.core">
+  &lt;class name="Certified" table="Certified">
+    &lt;id column="id" name="id" type="java.lang.Integer">
+      &lt;generator class="native"/>
+    &lt;/id>
+    &lt;many-to-one name="license" class="License">
+      &lt;column name="Licenseid" not-null="true" />
+    &lt;/many-to-one>
+    &lt;many-to-one name="category" class="Category">
+      &lt;column name="categoryid" not-null="true" />
+    &lt;/many-to-one>
+    &lt;property column="isDefault" name="isDefault" not-null="true" type="java.lang.Boolean" />
+  &lt;/class>
+&lt;/hibernate-mapping>
+        </pre>
+        <p></p>
+        <a href="../samples/hibernate-lab.tar.gz">my hibernate lab source</a>
+        <p></p>
+        <h2>回到現實一點</h2>
+        <p>以下面這個unit test的例子而言，用上面的mapping file的設定就會有問題。依照上面那種設定方法程式寫法必須先save <code>License</code>, <code>Category</code>之後，再save <code>Certified</code>。如果現實狀況資料和該系統運作真的真的會是這樣的狀況的話，那就還好。但是如果不是就很鳥，會被很多人罵到爆。</p>
+        <h3>Listing. Unit Test</h3>
+        <pre name="code" class="java:nocontrols:firstline[57]">
+    @Test
+    public void testHappy () {
+        HibernateTemplate hibernateTemplate = (HibernateTemplate) SpringContextHolder.ctx.getBean( "hibernateTemplate" );
+
+        License lic2 = new License();
+        lic2.setName( "License-2" );
+        
+        Category cat1 = new Category();
+        cat1.setName( "Category-1" );
+        
+        Certified certified = new Certified();
+        certified.setCategory( cat1 );
+        certified.setLicense( lic2 );
+        certified.setIsDefault( Boolean.FALSE );
+        
+        hibernateTemplate.save( certified );
+    }
+        </pre>
+        <p>依照這個使用狀況我們只需要在Certified.hbm.xml裡面加上下列cascade設定，視實際的需要設定cascade的level</p>
+        <pre name="code" class="xml:nocontrols:firstline[8]">
+    &lt;many-to-one name="license" class="License" cascade="save-update">
+      &lt;column name="Licenseid" not-null="true" />
+    &lt;/many-to-one>
+    &lt;many-to-one name="category" class="Category" cascade="save-update">
+      &lt;column name="categoryid" not-null="true" />
+    &lt;/many-to-one>
+        </pre>
+        <p></p>
+        <pre class="console">
+Running net.greenrivers.hibernate.manytomany.FunctionTest
+Hibernate: insert into License (name) values (?)
+Hibernate: insert into Category (name) values (?)
+Hibernate: insert into Certified (Licenseid, categoryid, isDefault) values (?, ?, ?)
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.404 sec
+        </pre>
+        <p>看看下面的寫法會發生啥事</p>
+        <pre name="code" class="java:nocontrols:firstline[105]">
+    @Test
+    public void testHappy3 () {
+        System.out.println( "===== testHapp3" );
+        HibernateTemplate hibernateTemplate = (HibernateTemplate) SpringContextHolder.ctx.getBean( "hibernateTemplate" );
+
+        License lic2 = new License();
+        lic2.setName( "License-2" );
+        
+        Category cat1 = new Category();
+        cat1.setName( "Category-1" );
+        
+        Certified certified = new Certified();
+        certified.setCategory( cat1 );
+        certified.setLicense( lic2 );
+        certified.setIsDefault( Boolean.FALSE );
+        
+        lic2.getCategories().add( cat1 );
+        cat1.getLicenses().add( lic2 );
+        
+        hibernateTemplate.save( certified );
+    }
+        </pre>
+        <p>慘劇發生會看到資料庫多兩筆資料出來。</p>
+        <pre class="console">
+===== testHapp3
+Hibernate: insert into License (name) values (?)
+Hibernate: insert into Category (name) values (?)
+Hibernate: insert into Certified (Licenseid, categoryid, isDefault) values (?, ?, ?)
+Hibernate: insert into Certified (licenseid, categoryid) values (?, ?)
+Hibernate: insert into Certified (categoryid, licenseid) values (?, ?)
+        </pre>
+        <p>這個時候就需要幫<code>Category</code>和<code>License</code>加上inverse的設定</p>
+        <h3>Listing. Category.hbm.xml</h3>
+        <pre name="code" class="xml:nocontrols:firstline[9]">
+    &lt;set name="licenses" table="Certified" lazy="false" inverse="true">
+        &lt;key column="categoryid" />
+        &lt;many-to-many column="licenseid" class="License" />
+    &lt;/set>
+        </pre>
+        <h3>Listing. License.hbm.xml</h3>
+        <pre name="code" class="xml:nocontrols:firstline[9]">
+    &lt;set name="categories" table="Certified" lazy="false" inverse="true">
+        &lt;key column="licenseid" />
+        &lt;many-to-many column="categoryid" class="Category" />
+    &lt;/set>
+        </pre>
+        <p></p>
+        <pre class="console">
+===== testHapp3
+Hibernate: insert into License (name) values (?)
+Hibernate: insert into Category (name) values (?)
+Hibernate: insert into Certified (Licenseid, categoryid, isDefault) values (?, ?, ?)
+        </pre>
+        <p></p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>Hibernate Community Document</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2010/09/30
+    </address>
+    <script language="javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

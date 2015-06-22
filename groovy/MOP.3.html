@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Groovy - Meta-Object Protocol 3</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Groovy - Meta-Object Protocol 3</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>之前已經玩過<code>GroovyInterceptable</code>、<code>invokeMethod</code>、<code>Categories</code>、<code>ExpandoMetaClass</code>、<code>methodMissing</code>…，就剩下透過<code>Expando</code> class產生一個可擴充的物件。</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.7.0</li>
+            <li>Sun JDK 1.6.0_24</li>
+        </ul>
+    </div>
+    <h2><code>Expando</code></h2>
+    <p>就如同JavaDoc上唯一的那句<em>Represents a dynamically expandable bean.</em>可以如Listing 1.隨自己高興為Exapando instance增加attributes。或者如Listing 2.增加methods。</p>
+    <div class="codehead">Listing 1. 書本上的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+carA = new Expando()
+carB = new Expando(year: 2007, miles: 0)
+
+carA.year = 2007
+carA.miles = 10
+
+println "carA: " + carA
+println "carB: " + carB
+    </pre>
+    <div class="codehead">Listing 2. 修改自書本上的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+car = new Expando(year: 2007, miles: 0, turn: { println 'turning...' })
+
+println "Before add drive(): $car"
+
+car.drive = {
+    miles += 10
+    println "$miles miles driven"
+}
+
+car.drive2 = {
+    car.miles += 10
+    println "$car.miles miles driven"
+}
+
+println "After add drive(): $car"
+
+car.drive()
+car.drive()
+car.turn()
+println car
+println "miles: $miles"
+
+println '======== use drive2 ========'
+car.drive2()
+println car
+println "miles: $miles"
+
+    </pre>
+    <div class="codehead">執行結果</div>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/lab/groovy/mop$ groovy expando_2.groovy 
+Before add drive(): {year=2007, miles=0, turn=expando_2$_run_closure1@3b19e583}
+After add drive(): {year=2007, miles=0, turn=expando_2$_run_closure1@3b19e583, drive=expando_2$_run_closure2@5fc6e818, drive2=expando_2$_run_closure3@7bafb0c7}
+10 miles driven
+20 miles driven
+turning...
+{year=2007, miles=0, turn=expando_2$_run_closure1@3b19e583, drive=expando_2$_run_closure2@5fc6e818, drive2=expando_2$_run_closure3@7bafb0c7}
+miles: 20
+======== use drive2 ========
+10 miles driven
+{year=2007, miles=10, turn=expando_2$_run_closure1@3b19e583, drive=expando_2$_run_closure2@5fc6e818, drive2=expando_2$_run_closure3@7bafb0c7}
+miles: 20
+    </pre>
+    <p>比書本上的範例多加了那麼多行程式，執行之後就會注意到奇特點了吧。怪異的事情發生在<code>miles</code>。看實際的需求而可能會用不同的寫法。只是跟我光看成是預期的不同，我一開始預期原本版本的<code>drive</code>應該會異動的是<code>car</code>的<code>miles</code> property的值，但是實際執行卻不是如此，所以最後寫了<code>drive2</code>的版本順便看一下是那個<code>miles</code>在改變。</p>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Programming Groovy</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/05/06
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

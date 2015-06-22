@@ -1,0 +1,62 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <style type="text/css">
+    #sqr1 {
+        margin-top: 5px;
+        width: 100px;
+        height: 100px;
+        border: 1px solid blue;
+    }
+    
+    #sqr2 {
+        position: absolute;
+        left: 15px;
+        top: 40px;
+        width: 100px;
+        height: 100px;
+        border: 1px solid red;
+    }
+    </style>
+    <script type="text/javascript" src="my/event-min.js"></script>
+</head>
+<body>
+<a href="#" id="show">Show</a>
+<div style="display:none;" id="sqr1">
+</div>
+<div style="display:none;" id="sqr2">
+</div>
+<script type="text/javascript">
+var attrChangeListener = function( elem, fn ) {
+    if( elem.onpropertychange === undefined ) {
+        EventUtil.addHandler( elem, 'DOMAttrModified', fn );
+    } else {
+        EventUtil.addHandler( elem, 'propertychange', fn );
+    }
+};
+
+EventUtil.addHandler( window, 'load', function() {
+    var showElem = document.getElementById( 'show' );
+    var sqr1 = document.getElementById( 'sqr1' );
+    
+    EventUtil.addHandler( showElem, 'click', function() {
+        if( sqr1.style.setAttribute ) {
+            sqr1.style.setAttribute( 'display', 'block' );
+        } else {
+            sqr1.setAttribute( 'style', 'display:block;' );
+        }
+    } )
+    
+    attrChangeListener( sqr1, function( event ) {
+        var sqr2 = document.getElementById( 'sqr2' );
+        if( sqr2.style.setAttribute ) {
+            sqr2.style.setAttribute( 'display', 'block' );
+        } else {
+            sqr2.setAttribute( 'style', 'display:block;' );
+        }
+    } );
+} );
+</script>
+</body>
+</html>

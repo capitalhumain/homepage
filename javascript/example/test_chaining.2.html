@@ -1,0 +1,24 @@
+<html>
+<head>
+    <script type="text/javascript" src="chaining.js"></script>
+    <script type="text/javascript">
+    $( window ).addEvent( 'load', function() {
+        $( 'btn1' ).addEvent( 'click', function( evt ) {
+            $( 'myBlock' )
+            .setStyle( 'border', '1px solid #cccccc' )
+            .setStyle( 'margin', '10px' )
+            .setStyle( 'width', '300px' )
+            .setStyle( 'height', '200px' )
+            .show();
+            alert( this );
+        } );
+    } );
+    </script>
+</head>
+<body>
+    <input type="button" value="btn" id="btn1" />
+    <div id="myBlock" style="display: none;">
+    This is my block
+    </div>
+</body>
+</html>

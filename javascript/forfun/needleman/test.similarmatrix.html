@@ -1,0 +1,25 @@
+<html>
+<head>
+    <script type="text/javascript" src="needleman.js"></script>
+    <script type="text/javascript">
+    var assert = function( value, desc ) {
+        var li = document.createElement("li");
+        li.className = value ? "pass" : "fail";
+        li.appendChild( document.createTextNode( desc ) );
+        document.getElementById("results").appendChild( li );
+    };
+    
+    window.onload = function() {
+        assert( s['AA'] === 10, 'test similar matrix' );
+        assert( gap === -5, 'test gap ³x»@' );
+    };
+    </script>
+    <style>
+        #results li.pass { color: green; }
+        #results li.fail { color: red; }
+    </style>
+</head>
+<body>
+    <ul id="results"></ul>
+</body>
+</html>

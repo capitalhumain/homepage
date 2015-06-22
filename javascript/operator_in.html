@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>Operator - in</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Operator - in</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>時間就該浪費在會讓自己維持在activated form的事情～</p>
+        <h2>Context</h2>
+        <p>語法就像是<span>RationalExpression <strong>in</strong> ShiftExpression</span>，執行時會分別先取得左右兩邊evaluate的結果(lval, rval)，然後判斷ShiftExpression的result (rval)是不是Object。如果不是就throw TypeError的錯誤；反之則在rval使用[[HasProperty]]這個internal method傳入ToString(lval)來查詢是否有這個property。</p>
+        <p>看起來很複雜，其實很簡單。直接看程式就知道這個operator是怎樣。</p>
+        <h3>Listing 1. simple example</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+function test() {
+    console.log( 'setTimeout in this:', ('setTimeout' in this) );
+    console.log( 'this.hasOwnProperty(setTimeout):', this.hasOwnProperty( 'setTimeout' ) );
+}
+
+test();
+        </pre>
+        <p>使用function invocation pattern呼叫test()的時候，<code>this</code>是head object，加property到<code>this</code>會變成global scope property。這裡使用某本書上的用詞head object的原因是，在瀏覽器執行會是window，如果用node執行則是<code>global</code>。</p>
+        <h3>執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence-mba:operator_in tzuyichao$ node simple_in.js 
+setTimeout in this: true
+this.hasOwnProperty(setTimeout): true
+        </pre>
+        <p>單從這個例子「看起來」用<code>in</code>和用<code>hasOwnProperty</code>會得到一樣的結果。但那只是看起來，實際上是有差異的。要注意spec上寫使用的是使用[[HasProperty]]。</p>
+        <h3>Listing 2. <code>in</code>和<code>hasOwnProperty</code>的差別</h3>
+        <pre name="code" class="javascript:controls:firstline[1]">
+function Adder() {
+};
+
+var obj1 = new Adder();
+
+console.log( "'isPrototypeOf' in obj1:", ('isPrototypeOf' in obj1) );
+console.log( "obj1.hasOwnProperty( 'isPrototypeOf' ):", obj1.hasOwnProperty( 'isPrototypeOf' ) );
+        </pre>
+        <h3>執行結果</h3>
+        <pre name="code" class="plain:nocontrols:firstline[1]">
+terence-mba:operator_in tzuyichao$ node diff_in_and_hasOwnProperty.js 
+'isPrototypeOf' in obj1: true
+obj1.hasOwnProperty( 'isPrototypeOf' ): false
+        </pre>
+        <p>注意到差別了嗎？！使用<code>in</code>會沿著prototype chain找()，而<code>hasOwnProperty</code>不會。根據spce告訴我們的是[[HasProperty]]會透過另一個叫做[[GetProperty]] internal method找property，如果[[GetProperty]]回傳<code>undefined</code>則return false；反之則return true。</p>
+        <p>[[GetProperty]]就是透過[[GetOwnPropety]]找，如果找不到就從prototype property那個物件一直找上去，如果一直找不到當prototype property是null時，就return undefined。</p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>ECMA-262 5.1</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2013/07/09
+    </address>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <script type="text/javascript" src="../js/shBrushPlain.js" ></script>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+    };
+    </script>
+</body>
+</html>

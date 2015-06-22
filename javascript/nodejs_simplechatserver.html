@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link href="../css/style.css"type="text/css"  rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.6.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <title>Node.js: Simple Chat Server</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Node.js: Simple Chat Server</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>昨天才知道原來在自稱當年寫Cobol和C都是自己寫code generation程式來generate客戶要得程式碼的"高人"而言，我不夠格說想走技術...</p>
+        <h2>Environment</h2>
+        <div>
+            <ul>
+                <li>Ubuntu 11.04</li>
+                <li>Node.js v0.4.10</li>
+            </ul>
+        </div>
+        <h2>Simple Chat Server</h2>
+        <p>一個簡單的chat server，主要是把每個connection和每個connection打的訊息記錄下來，當新的connection進來的時候就把已經存在的message送給新的connection；當某條connection輸入某個訊息的時候，會把這個訊息吐給其他connection；當然server還要能夠在connection離開的時候從原本記錄connection那邊的array把這個connection移掉。</p>
+        <p>因為V8 JavaScript Engine實作ECMA-262第五版，所以array有一些好用的新method可以用，這裡用了<code>forEach()</code>、<code>indexOf()</code>。</p>
+        <p>在chat server本身的功能，在server本身的callback要將connection記錄到connections的array裡面送已經存在msgs裡的訊息之外，我們要針對connection(net.Socket)提供兩個event handler分別處理<code>data</code>和<code>end</code>兩個events。</p>
+        <pre name="code" class="javascript:controls:firstline[1]">
+( function() {
+    var net = require( "net" );
+    var connections = [];
+    var msgs = [];
+    var server = net.createServer( function( conn ) {
+            connections.push( conn );
+            conn.write( "Welcome " + conn.remoteAddress + "\n" );
+            console.log( conn.remoteAddress + " connected" );
+            msgs.forEach( function( item ) {
+                    conn.write( item );
+                } );
+            conn.on( 'data', function( data ) {
+                    if( data.toString().trim() === "exit" ) {
+                        conn.end( "goodbye!\n" );
+                    } else {
+                        var message = conn.remoteAddress + ": " + data;
+                        msgs.push( message );
+                        connections.forEach( function( connection ) {
+                                if( connection !== conn ) {
+                                    connection.write( message );
+                                }
+                            } );
+                    }
+                } );
+            conn.on( 'end', function() {
+                    connections.splice( connections.indexOf( conn ), 1 );
+                } );
+        } ); 
+    server.listen( 20001, 'localhost' );
+    console.log( "Server Start ..." );
+} )();
+        </pre>
+        <p>不管"高人"認為我夠不夠格，至少我工作之餘玩這些東西，玩得很高興就夠了。</p>
+        <h2>Resource</h2>
+        <div>
+            <ol>
+                <li>http://nodejs.org</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, 2011/08/18
+    </address>
+    <script type="text/javascript">
+    $( function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    } );
+    </script>
+</body>
+</html>

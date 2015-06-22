@@ -1,0 +1,334 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <script type="text/javascript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../js/shBrushJScript.js" ></script>
+    <script type="text/javascript" src="../js/shBrushXml.js" ></script>
+    <title>Learning jQuery - jQuery.fn.init(selector, context)</title>
+</head>
+<body>
+    <div>
+        <h1 class="header">Learning jQuery - jQuery.fn.init(selector, context)</h1>
+    </div>
+    <div class="articlecontent">
+        <h2>Preface</h2>
+        <p>
+        有些討厭的傢伙的公司靠政府保護和租稅優惠才能長大，在長大之後就自以為自己多了不起，換了一顆腦袋認為公司會長大都是自己的功勞。那些礙眼的傢伙又一天到晚被吹捧成多厲害多有遠見，也真的自以為自己很厲害的，以為自己跟iWoz那種在車庫用自己創造力創業的一樣厲害的大放厥詞，看了就很傻眼...覺得台灣電視台一堆垃圾的畫面。厚顏無恥莫此為甚...
+        </p>
+        <p>
+        跟屁有關的話寫完回到主題，先給沒用過JavaScript framework的(沒有要比較framework的意思，本人認為比較framework
+        這種東西是浪費生命的行為，認為那個framework可以解決自己看重的問題點，好好的用、好好的了解才是重點)，
+        分別做使用jQuery和使用DOM操作的簡單的範例。範例大概就是兩個章節的文章，
+        第一個章節有三個段落文字，第二個章節有一段落文字。第一個章節每個段落之前都有一個anchor，
+        按下去會把第一個章節其他段落隱藏，只看的到該段落的內容。
+        </p>
+        <div>
+            <ul>
+                <li><a href="example/jq.example.trad.html" target="_blank">DOM操作的做法</a></li>
+                <li><a href="example/jq.example.html" target="_blank">用jQuery的做法</a></li>
+            </ul>
+        </div>
+        <p>
+        兩個範例的html element結構都一樣如下
+        </p>
+        <pre name="code" class="xml:nocontrols:firstline[1]">
+    <div id="preface" class="segment">
+        <a class="apply" href="#">[show paragraph 1]</a>
+        <p>
+        </p>
+        <a class="apply" href="#">[show paragraph 2]</a>
+        <p>
+        </p>
+        <a class="apply" href="#">[show paragraph 3]</a>
+        <p>
+        </p>
+    </div>
+    <div id="seg1" class="segment">
+        <p>
+        </p>
+    </div>
+        </pre>
+        <p>
+        使用DOM操作的程式碼如下，我把某些操作拉出去用top level function和top level object做掉
+        </p>
+        <h3>Listing. 用DOM操作的方式(JavaScript部份)</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+    /**
+     * this function is for registering element event handler
+     * IE和FF註冊的方法不同, addEventListener第三個參數請看DOM event相關文章
+     */
+    var addEvent = function( elem, type, handler ) {
+        if( elem ) {
+            if( elem.addEventListener ) {
+                elem.addEventListener( type, handler, false );
+            } else if( elem.attachEvent ) {
+                elem.attachEvent( 'on' + type, handler );
+            }
+        }
+    };
+    
+    var EventUtil = {
+        /**
+         * Get event object target html element
+         * 取得方法IE和FF也不同
+         */
+        target: function( event ) {
+            if( event ) {
+                if( event.target ) {
+                    return event.target;
+                } else {
+                    return event.srcElement;
+                }
+            }
+        }
+    };
+    
+    var DOMUtil = {
+        /**
+         * Next Sibling Element
+         * IE沒有nextElementSibling可以用，所以透過nextSibling和
+         * nodeType判斷找Element Node
+         */
+        nextSibling: function( elem ) {
+            if( elem.nextElementSibling ) {
+                return elem.nextElementSibling;
+            } else {
+                var next = elem.nextSibling;
+                while( next !== undefined && next.nodeType !== 1 ) {
+                    next = next.nextSibling;
+                }
+                return next;
+            }
+        }
+    };
+    
+    addEvent( window, 'load', function() {
+        var doc = document,
+            anchornodelist = doc.getElementsByTagName( 'a' ),
+            i, len, anchorelem;
+        
+        // getElementsByClassName not for ie => using getElementsByTagName
+        for( i=0, len=anchornodelist.length; i&lt;len; i++ ) {
+            anchorelem = anchornodelist[ i ];
+            if( anchorelem.className === 'apply' ) {
+                addEvent( anchorelem, 'click', function(event) {
+                    var preface = doc.getElementById( 'preface' ),
+                        pnodelist = preface.getElementsByTagName( 'p' ),
+                        nextElem = DOMUtil.nextSibling( EventUtil.target( event ) ),
+                        i, len;
+                    for( i=0, len = pnodelist.length; i&lt;len; i++ ) {
+                        pnodelist[i].style[ 'display' ] = 'none';
+                    }
+                    nextElem.style[ 'display' ] = 'block';
+                } );
+            }
+        }
+    } );
+        </pre>
+        <p>
+        使用jQuery的話，則可以透過jQuery自己的CSS Selector API和他在後面幫忙做掉的事情把事情簡化
+        </p>
+        <h3>Listing. 用jQuery的方式(JavaScript部份)</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+    $( function() {
+        $( '.apply' ).bind( 'click', function() {
+            // 選擇笨的實作方法把同一個章節的paragraph都隱藏，
+            // 在打開要打開的paragraph
+            $( 'div#preface p' ).hide();
+            $( this ).next().show();
+        } );
+    } );
+        </pre>
+        <h2>進入jQuery</h2>
+        <p>
+        在使用jQuery協助操作頁面的element的時候，很仰賴神奇的$。良好的javascript寫作習慣會盡量避免在global scope
+        建立properties，一方面也為了information hidden會透過類似下面片段這個很常見的寫法。
+        </p>
+        <pre name="code" class="javascript:nocontrols:firstline[1]">
+( function() {
+    var _entry = {
+        serviceA: function() {
+            // ...
+        },
+        // ...
+    };
+    
+    window.Entry = _entry;
+} )();
+        </pre>
+        <p>
+        如此一來只使用一個global scope的property來提供服務。使用的時候只要透過Entry.serviceA()這樣的就可以。
+        相同的jQuery神奇的$就是透過這樣的方法。jQuery同時會在global scope定義jQuery這個property。
+        也就是說jQuery不在乎global scope的$ property被別的framework用掉。
+        </p>
+        <pre name="code" class="javascript:nocontrols:firstline[24]">
+    jQuery = window.jQuery = window.$ = function( selector, context ) {
+		// The jQuery object is actually just the init constructor 'enhanced'
+		return new jQuery.fn.init( selector, context );
+	},
+        </pre>
+        <h2>jQuery.fn.init(selector, context)</h2>
+        <p>
+        歸納來說神奇的$，第一個參數selector有下列幾種狀況
+        </p>
+        <div>
+            <ul>
+                <li>#id: 就像$( '#col1' )這樣取得HTML element id="col1"的HTML element</li>
+                <li>HTML Fragment String: 舉例說像$( '&lt;div&gt;&lt;/div&gt;' )這樣是走create element的過程</li>
+                <li>DOM object: 既然您都已經透過如 document.getElementById()取得DOM物件...就是這樣嚕</li>
+                <li>Selector String: 這樣就是走John Resig實作的Selector API找到要處理的element(s)</li>
+                <li>Function object: 這個function是要在document ready的時候執行的function</li>
+            </ul>
+        </div>
+        <p>
+        第二個參數context則是讓使用者可以限定jQuery的selector在某個範圍之內找目標。
+        </p>
+        <h3>Listing. test.src.1.html HTML部分</h3>
+        <pre name="code" class="xml:nocontrols:firstline[26]">
+<div id="abcd">
+</div>
+<div class="cls">
+</div>
+<div class="cls1">
+</div>
+<div id="container1">
+    <div class="cls1">
+    </div>
+</div>
+<span id="root"></span>
+        </pre>
+        <h3>Listing. test.src.1.html javascript部份</h3>
+        <pre name="code" class="javascript:nocontrols:firstline[38]">
+$( function() {
+    $( '#abcd' ).text( 'Hello, World!' );
+    $( '.cls' ).text( 'class selector' );
+    
+    // test for context
+    var container1Elem = document.getElementById( 'container1' );
+    $( '.cls1', container1Elem ).text( 'context test' );
+    
+    // test html 把HTML內容放到$()裡面是把內容叫jQuery做create elements
+    $( container1Elem ).append( $( '<div></div>' ).addClass( 'sqr1' ).text( 'add by jQuery' ) );
+    
+    // 沒有寫selector selector = selector || document, 最終 回傳的物件的context property就是 => document物件
+    var doc = $();
+    $( '#root' ).text( doc.context.nodeName + ";" + (doc.context === document) );
+    
+} );
+        </pre>
+        <a href="example/test.src.1.html" target="_blank">Simple Selector Test Run</a>
+        <p>
+        由上一個小節最後的source code可以知道真正研究的目標應該是jQuery.fn.init(selector, context)這個function。
+        上面測試最後一個剛好符合jQuery.fn.init(selector, context)第一行程式碼的狀況。當沒有給selector的時候，
+        預設的selector = context = document。(Line 38)
+        </p>
+        <p>
+        接著jQuery就要根據使用者給予不同的selector做不同的處理，最容易可以區分的就是使用者給DOM element，
+        在這個時候就直接把selector設定到context property。(Line 41 ~ 45)
+        </p>
+        <p>
+        緊接著可以區分的selector型態可以分為function和string這兩個類型，如果使用者提供的是function object
+        就執行return jQuery( document ).ready( selector );(Line 83)；如果是字串類型的話，jQuery透過regular 
+        expression(pattern定義在Line 31)來區分可以從selector字串中取出html code, #id的類型和CSS selector query。
+        如果是CSS selector query無法由quickExpr pattern找到match group，會走Line 78透過Selector API查詢；
+        反之如果是html code則會走create element的流程，如同上面使用的範例程式中create一個div，在設定CSS class、
+        並且在div內容加上一個字串之後append到container1的div裡面。如果selector是#id類型的字串的話，會透過document.getElementById()
+        來取得DOM element。
+        </p>
+        <pre name="code" class="javascript:nocontrols:firstline[36]">
+	init: function( selector, context ) {
+		// Make sure that a selection was provided
+		selector = selector || document;
+
+		// Handle $(DOMElement)
+		if ( selector.nodeType ) {
+			this[0] = selector;
+			this.length = 1;
+			this.context = selector;
+			return this;
+		}
+		// Handle HTML strings
+		if ( typeof selector === "string" ) {
+			// Are we dealing with HTML string or an ID?
+			var match = quickExpr.exec( selector );
+
+			// Verify a match, and that no context was specified for #id
+			if ( match && (match[1] || !context) ) {
+
+				// HANDLE: $(html) -> $(array)
+				if ( match[1] )
+					selector = jQuery.clean( [ match[1] ], context );
+
+				// HANDLE: $("#id")
+				else {
+					var elem = document.getElementById( match[3] );
+
+					// Handle the case where IE and Opera return items
+					// by name instead of ID
+					if ( elem && elem.id != match[3] )
+						return jQuery().find( selector );
+
+					// Otherwise, we inject the element directly into the jQuery object
+					var ret = jQuery( elem || [] );
+					ret.context = document;
+					ret.selector = selector;
+					return ret;
+				}
+
+			// HANDLE: $(expr, [context])
+			// (which is just equivalent to: $(content).find(expr)
+			} else
+				return jQuery( context ).find( selector );
+
+		// HANDLE: $(function)
+		// Shortcut for document ready
+		} else if ( jQuery.isFunction( selector ) )
+			return jQuery( document ).ready( selector );
+
+		// Make sure that old selector state is passed along
+		if ( selector.selector && selector.context ) {
+			this.selector = selector.selector;
+			this.context = selector.context;
+		}
+
+		return this.setArray(jQuery.isArray( selector ) ?
+			selector :
+			jQuery.makeArray(selector));
+	}
+        </pre>
+        <p>
+        為了更了解除了透過firebug trace之外，模擬jQuery.fn.init(selector, context)寫了一個簡單的程式如下<a href="example/quickExpr.html" target="_blank">example</a>
+        </p>
+        <h2>Reference</h2>
+        <div>
+            <ol>
+                <li>jQuery 1.3.2 source code</li>
+            </ol>
+        </div>
+    </div>
+    <div>
+    <a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+    本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+    <span class="home"><a href="../index.html">Home</a></span>
+    </div>
+    <address>
+    Terence Chao, <i>since 2010/04/01</i>
+    </address>
+    <script type="text/javascript">
+    window.onload = function () {
+        dp.SyntaxHighlighter.HighlightAll('code');
+        $( 'table tr:even' ).css( 'background-color', '#E5EECC' );
+        $( 'h2.Spec' ).next().hide();
+        $( 'h2.Spec' ).bind( 'click', function() {
+        $( this ).next().toggle();
+        });
+    };
+    </script>
+</body>
+</html>

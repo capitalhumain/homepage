@@ -1,0 +1,40 @@
+<html>
+<head>
+<script language="JavaScript" type="text/javascript">
+var isArray = function( value ) {
+    return value &&
+        typeof value === 'object' &&
+        value.constructor === Array;
+};
+
+var rightArr = [ 'q', 'h', 'i' ];
+
+window.onload = function() {
+    var leftF = parent.leftFrame;
+    if( typeof console !== 'undefined' ) {
+        console.log( 'leftarr.constructor===Array: ' + (leftF.leftarr.constructor === Array) );
+    }
+    document.getElementById( 'ia1_larr' ).innerHTML = isArray( leftF.leftarr );
+    document.getElementById( 'ia1_rarr' ).innerHTML = isArray( rightArr );
+};
+</script>
+</head>
+<body>
+<pre style='font-family: "Courier New"; border: 1px solid #0000cc;'>
+var rightArr = [ 'q', 'h', 'i' ];
+
+var isArray = function( value ) {
+    return value &&
+        typeof value === 'object' &&
+        value.constructor === Array;
+};
+</pre>
+This is right frame
+<div>
+    leftArr isArray: <span id="ia1_larr"></span>  
+</div>
+<div>
+    rightArr isArray: <span id="ia1_rarr"></span> 
+</div>
+</body>
+</html>

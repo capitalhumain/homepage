@@ -1,0 +1,503 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script type="text/javascript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link href="../css/shCore.css" type="text/css" rel="stylesheet" />
+    <link href="../css/shThemeDefault.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" href="../css/style.css" rel="stylesheet"/>
+    <title>groovy.lang - annotations</title>
+</head>
+<body>
+<div>
+    <h1 class="header">groovy.lang - annotations</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>一直覺得自己還不夠努力…</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Groovy 1.7.0/1.8.0</li>
+            <li>Sun JDK 1.6.0_24</li>
+        </ul>
+    </div>
+    <h2><code>Newify</code> annotation</h2>
+    <p><code>Newify</code> annotation可以用在class definition或者method definition上，當我們使用這個annotation的時候，create instance的寫法就可以使用python style或者ruby style的方式建立物件，不需要一定要使用new Class_name的寫法。</p>
+    <div class="codehead">Listing 1. 用在Class定義使用@Newify(Python style)</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+@Newify([Expando])
+class Test {
+    def carA = Expando()
+    def carB = Expando(year: 2007, miles: 0)
+
+    public Test() {
+	carA.year = 2007
+	carA.miles = 10
+    }
+}
+
+def obj = new Test()
+println "carA: " + obj.carA
+println "carB: " + obj.carB
+    </pre>
+    <div class="codehead">Listing 2. 用在Class定義使用@Newify(Ruby style)</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+@Newify()
+class Test {
+    def carA = Expando.new()
+    def carB = Expando.new(year: 2007, miles: 0)
+
+    public Test() {
+	carA.year = 2007
+	carA.miles = 10
+    }
+}
+
+def obj = new Test()
+println "carA: " + obj.carA
+println "carB: " + obj.carB
+    </pre>
+    <div class="codehead">Listing 3. 用在method定義使用@Newify(Python style)</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+@Newify([ArrayList])
+def foo() {
+    def arr = ArrayList()
+    def i=0
+    for(i=0; i<10; i++) {
+        arr.add(i)
+    }
+    return arr
+}
+
+def result = foo()
+println result
+    </pre>
+    <h2><code>Delegate</code> annotation</h2>
+    <p>這是個field annotation，會把method ivocation的搜尋找到有設定<code>@Delegate</code>的attribute物件裡面。以下面這個例子而言，會呼叫<code>Date</code>物件的<code>before</code> method。</p>
+    <div class="codehead">Listing 4. <code>Delegate</code> JavaDoc裡的第一個範例</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Event {
+    @Delegate
+    Date when
+    String title, url
+}
+
+def gr8conf = new Event(title: "GR8 Conference", 
+                        url: "http://www.gr8conf.org",
+                        when: Date.parse( "yyyy/MM/dd", "2009/05/18" ))
+
+def javaOne = new Event(title: "JavaOne",
+                        url: "http://java.sun.com/javaone/",
+                        when: Date.parse( "yyyy/MM/dd", "2009/06/02" ))
+
+assert gr8conf.before(javaOne.when)
+    </pre>
+    <p>也就是說如果arguments list不同(如Listing 5.)就會發生MethodMissingException</p>
+    <div class="codehead">Listing 5. 找method的探索 一</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Event {
+    @Delegate
+    Date when
+    String title, url
+}
+
+def gr8conf = new Event(title: "GR8 Conference", 
+                        url: "http://www.gr8conf.org",
+                        when: Date.parse( "yyyy/MM/dd", "2009/05/18" ))
+
+def javaOne = new Event(title: "JavaOne",
+                        url: "http://java.sun.com/javaone/",
+                        when: Date.parse( "yyyy/MM/dd", "2009/06/02" ))
+
+try {
+    gr8conf.before(javaOne)
+} catch(ex) {
+    println(ex)
+}
+    </pre>
+    <p>執行的情形如下</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+terence@terence-Latitude-E6410:~/lab/groovy$ groovy delegate_1_e.groovy 
+groovy.lang.MissingMethodException: No signature of method: Event.before() is applicable for argument types: (Event) values: [Event@1fe903d5]
+Possible solutions: before(java.util.Date), getUrl(), every(), after(java.util.Date), setUrl(java.lang.String), every(groovy.lang.Closure)
+
+    </pre>
+    <p>稍微修改一下，在<code>Event</code>加上一個接受<code>Event</code>物件的<code>before</code> method，然後在讓Groovy透過<code>@Delegate</code>去找<code>Date</code>的<code>before</code> method。</p>
+    <div class="codehead">Listing 6. 找method的探索 二</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Event {
+    @Delegate
+    Date when
+    String title, url
+
+    def boolean before(Event e) {
+        before(e.when)
+    }
+}
+
+def gr8conf = new Event(title: "GR8 Conference", 
+                        url: "http://www.gr8conf.org",
+                        when: Date.parse( "yyyy/MM/dd", "2009/05/18" ))
+
+def javaOne = new Event(title: "JavaOne",
+                        url: "http://java.sun.com/javaone/",
+                        when: Date.parse( "yyyy/MM/dd", "2009/06/02" ))
+
+assert gr8conf.before(javaOne)
+    </pre>
+    <p></p>
+    <div class="codehead">Listing 7. 優先權的問題，如果<code>Event</code>也有一個相同signature的method的話，優先權會優於<code>@Delegate</code> field裡的method。</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Event {
+    @Delegate
+    Date when
+    String title, url
+
+    def boolean before(Event e) {
+        before(e.when)
+    }
+
+    def boolean before(Date d) {
+        println("Event#before called!!")
+        when.before(d)
+    }
+}
+
+def gr8conf = new Event(title: "GR8 Conference", 
+                        url: "http://www.gr8conf.org",
+                        when: Date.parse( "yyyy/MM/dd", "2009/05/18" ))
+
+def javaOne = new Event(title: "JavaOne",
+                        url: "http://java.sun.com/javaone/",
+                        when: Date.parse( "yyyy/MM/dd", "2009/06/02" ))
+
+assert gr8conf.before(javaOne.when)
+    </pre>
+    <p>除此了影響method finding之外，<code>@Delegate</code>預設還會把field有實作的interface「交代」出來，也就是說用<code>instanceof</code>會對有反應。</p>
+    <div class="codehead">Listing 8. 修改自JavaDoc的程式碼</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Event {
+    @Delegate
+    Date when
+    String title, url
+}
+
+class Session {
+}
+
+def gr8conf = new Event(title: "GR8 Conference", 
+                        url: "http://www.gr8conf.org",
+                        when: Date.parse( "yyyy/MM/dd", "2009/05/18" ))
+
+def sess = new Session()
+
+assert gr8conf instanceof Cloneable
+assert !(sess instanceof Cloneable)
+    </pre>
+    <p></p>
+    <div class="codehead">Listing 9. 設定<code>Delegate</code>的<code>interfaces</code>的範例</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Event {
+    @Delegate(interfaces=false)
+    Date when
+    String title, url
+}
+
+class Session {
+}
+
+def gr8conf = new Event(title: "GR8 Conference", 
+                        url: "http://www.gr8conf.org",
+                        when: Date.parse( "yyyy/MM/dd", "2009/05/18" ))
+
+def sess = new Session()
+
+assert !(gr8conf instanceof Cloneable)
+assert !(gr8conf instanceof Comparable)
+assert gr8conf instanceof Serializable
+assert !(sess instanceof Cloneable)
+assert !(sess instanceof Comparable)
+assert sess instanceof Serializable
+    </pre>
+    <p>預設的行為下deprecated method並不會被加到owner class，透過<code>deprecated</code>參數可以設定是否要groovy把deprecated methods加到owner class。</p>
+    <p>JavaDoc裡有提到下列該注意的事項</p>
+    <ul>
+	<li>Static methods, synthetic methods or methods from the <code>GroovyObject</code> interface
+	are not candidates for delegation
+	</li><li>Non-abstract non-static methods defined in the owner class or its superclasses take
+	precedence over methods with identical signatures from a <code>@Delegate</code> field
+	</li><li>All methods defined in the owner class (including static, abstract or private etc.)
+	take precedence over methods with identical signatures from a <code>@Delegate</code> field
+	</li><li>Recursive delegation to your own class is not allowed
+	</li><li>Mixing of <code>@Delegate</code> with default method arguments is known not to work in some cases. We recommend
+	not using these features together.
+	</li>
+    </ul>
+    <h2><code>Lazy</code> annotation</h2>
+    <p>這是個field annotation，所謂lazy就是要groovy針對該field做出lazy 的bytecode。</p>
+    <div class="codehead">Listing 10. 沒用<code>@Lazy</code>的groovy class</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class EventNL {
+    Date when
+    String title, url
+}
+    </pre>
+    <p>這裡是透過<em>groovyc</em>由groovy source code編譯出java class，然後透過Java Decompiler看java code。</p>
+    <div class="codehead">Listing 11. 反組譯EventNL.class的內容</div>
+    <pre name="code" class="java:controls:firstline[1]">
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
+import java.util.Date;
+import org.codehaus.groovy.runtime.callsite.CallSite;
+import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
+
+public class EventNL
+  implements GroovyObject
+{
+  private Date when;
+  private String title;
+  private String url;
+
+  public EventNL()
+  {
+    EventNL this;
+    CallSite[] arrayOfCallSite = $getCallSiteArray();
+    MetaClass localMetaClass = $getStaticMetaClass();
+    this.metaClass = localMetaClass;
+  }
+
+  static
+  {
+    __$swapInit();
+    Long localLong1 = (Long)DefaultTypeTransformation.box(0L);
+    __timeStamp__239_neverHappen1305276415142 = DefaultTypeTransformation.longUnbox(localLong1);
+    Long localLong2 = (Long)DefaultTypeTransformation.box(1305276415142L);
+    __timeStamp = DefaultTypeTransformation.longUnbox(localLong2);
+  }
+
+  public Date getWhen()
+  {
+    return this.when;
+  }
+
+  public void setWhen(Date paramDate)
+  {
+    this.when = paramDate;
+  }
+
+  public String getTitle()
+  {
+    return this.title;
+  }
+
+  public void setTitle(String paramString)
+  {
+    this.title = paramString;
+  }
+
+  public String getUrl()
+  {
+    return this.url;
+  }
+
+  public void setUrl(String paramString)
+  {
+    this.url = paramString;
+  }
+}
+    </pre>
+    <div class="codehead">Listing 12. 用<code>@Lazy</code>的groovy class</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+class Event {
+    @Lazy
+    Date when
+    String title, url
+}
+    </pre>
+    <p>重點在Line 23的<code>getWhen()</code>這裡會產生跟javadoc裡面說明會產生的pseudo code的程式碼。</p>
+    <div class="codehead">Listing 13. 反組譯Event.class的內容</div>
+    <pre name="code" class="java:controls:firstline[1]">
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
+import java.util.Date;
+import org.codehaus.groovy.runtime.ScriptBytecodeAdapter;
+import org.codehaus.groovy.runtime.callsite.CallSite;
+import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
+
+public class Event
+  implements GroovyObject
+{
+  private Date $when;
+  private String title;
+  private String url;
+
+  public Event()
+  {
+    Event this;
+    CallSite[] arrayOfCallSite = $getCallSiteArray();
+    MetaClass localMetaClass = $getStaticMetaClass();
+    this.metaClass = localMetaClass;
+  }
+
+  public Date getWhen()
+  {
+    CallSite[] arrayOfCallSite = $getCallSiteArray();
+    if (ScriptBytecodeAdapter.compareNotEqual(this.$when, null))
+    {
+      return (Date)this.$when;
+    }
+    else
+    {
+      Object localObject = arrayOfCallSite[0].callConstructor($get$$class$java$util$Date());
+      this.$when = ((Date)ScriptBytecodeAdapter.castToType(localObject, $get$$class$java$util$Date()));
+      return (Date)ScriptBytecodeAdapter.castToType(localObject, $get$$class$java$util$Date());
+    }
+    return null;
+  }
+
+  static
+  {
+    __$swapInit();
+    Long localLong1 = (Long)DefaultTypeTransformation.box(0L);
+    __timeStamp__239_neverHappen1305275125197 = DefaultTypeTransformation.longUnbox(localLong1);
+    Long localLong2 = (Long)DefaultTypeTransformation.box(1305275125197L);
+    __timeStamp = DefaultTypeTransformation.longUnbox(localLong2);
+  }
+
+  public Date get$when()
+  {
+    return this.$when;
+  }
+
+  public void set$when(Date paramDate)
+  {
+    this.$when = paramDate;
+  }
+
+  public String getTitle()
+  {
+    return this.title;
+  }
+
+  public void setTitle(String paramString)
+  {
+    this.title = paramString;
+  }
+
+  public String getUrl()
+  {
+    return this.url;
+  }
+
+  public void setUrl(String paramString)
+  {
+    this.url = paramString;
+  }
+}
+    </pre>
+    <p>這個annotation有一個attribute可以設定<code>soft</code>如果設定成<code>true</code>，則表示除了lazy initialization之外，還會針對construct的instance(指field)建立soft reference。就本人對Java粗淺的了解是如果你希望這些field持有物件佔有的空間的在記憶體或head不足的時候，這些物件可以先被garbage collector回收，擠出更多空間的話可以加上這個設定。</p>
+    <h2><code>Singleton</code> annotation</h2>
+    <p>這是個class annotation，顧名思義就是讓class變成<em>Singleton</em>。</p>
+    <div class="codehead">Listing 14. 簡單的例子</div>
+    <pre name="code" class="groovy:controls:firstline[1]">
+@Singleton
+class EventService {
+    def execute() {
+        "Execute..."
+    }
+}
+
+def obj1 = EventService.instance
+assert obj1.execute() == "Execute..."
+
+def obj2 = EventService.getInstance()
+assert obj2.execute() == "Execute..."
+    </pre>
+    <p>回想一下GoF裡Singleton pattern的實作，constructor會透過access modifier保護，一般而言會有一個static factory method(ref 2)，讓我們取得物件，在groovy就會有一個<code>getInstance</code>的static factory method。</p>
+    <div class="codehead">Listing 15. 簡單的例子(decompiled EventService.class source)</div>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
+import org.codehaus.groovy.runtime.ScriptBytecodeAdapter;
+import org.codehaus.groovy.runtime.callsite.CallSite;
+import org.codehaus.groovy.runtime.typehandling.DefaultTypeTransformation;
+
+public class EventService
+  implements GroovyObject
+{
+  public static final EventService instance;
+
+  private EventService()
+  {
+    EventService this;
+    CallSite[] arrayOfCallSite = $getCallSiteArray();
+    MetaClass localMetaClass = $getStaticMetaClass();
+    this.metaClass = localMetaClass;
+    if (ScriptBytecodeAdapter.compareNotEqual(instance, null))
+      throw ((Throwable)arrayOfCallSite[0].callConstructor($get$$class$java$lang$RuntimeException(), "Can't instantiate singleton EventService. Use EventService.instance"));
+  }
+
+  public Object execute()
+  {
+    CallSite[] arrayOfCallSite = $getCallSiteArray(); return "Execute..."; return null;
+  }
+
+  public static EventService getInstance()
+  {
+    CallSite[] arrayOfCallSite = $getCallSiteArray();
+    return instance;
+    return null;
+  }
+
+  static
+  {
+    __$swapInit();
+    Long localLong1 = (Long)DefaultTypeTransformation.box(0L);
+    __timeStamp__239_neverHappen1305530274887 = DefaultTypeTransformation.longUnbox(localLong1);
+    Long localLong2 = (Long)DefaultTypeTransformation.box(1305530274887L);
+    __timeStamp = DefaultTypeTransformation.longUnbox(localLong2);
+    Object localObject = $getCallSiteArray()[1].callConstructor($get$$class$EventService());
+    instance = (EventService)ScriptBytecodeAdapter.castToType(localObject, $get$$class$EventService());
+  }
+}
+    </pre>
+    <p>了解這個傳說最被濫用的design pattern的話，就知道singleton也有lazy initialization的實作則。當然<code>Singleton</code>也有<code>lazy</code> attribute。<code>lazy</code>設定為true的時候就是使用lazy initialization。</p>
+    <h2>Groovy Grape</h2>
+    <p>用過maven或ivy有去mvnrepository查過東西應該會注意到，每個library的POM dependency的範例，除了maven、ivy之外，還有Groovy Grape，當然現在還可以看到Buildr和SBT。</p>
+    <p>像我一樣只是個單純的maven使用者的話，大致上對於dependency libraries相關的設定常用的有</p>
+    <ol>
+        <li>repository設定：Groovy Grape的annotation是<code>GrabResolver</code></li>
+        <li>directly dependency libraries設定：Groovy Grap的annotation有<code>Grab</code>和<code>Grapes</code></li>
+        <li>exculde indirectly deoendency libraries設定：Groovy Grape的annotation是<code>GrabExclude</code></li>
+        <li>設定執行時的Class Loader：透過<code>GrabConfig</code></li>
+    </ol>
+    <h2>Reference</h2>
+    <div>
+        <ol>
+            <li>Groovy JavaDoc</li>
+            <li>Effective Java</li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/05/06
+</address>
+<script language="javascript">
+$(function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

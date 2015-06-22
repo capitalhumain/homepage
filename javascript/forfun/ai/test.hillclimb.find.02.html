@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>Test Suite</title>
+<script type="text/javascript" src="core.js"></script>
+<script type="text/javascript" src="hillclimbing.js"></script>
+<script type="text/javascript">
+function assert( value, desc ) {
+    var li = document.createElement("li");
+    li.className = value ? "pass" : "fail";
+    li.appendChild( document.createTextNode( desc ) );
+    document.getElementById("results").appendChild( li );
+}
+
+window.onload = function(){
+    var hill = new HillClimbing();
+    var i = 0;
+    var theflights;
+    
+    hill.addFlightInfo( 'Taipei', 'Taichung', 200 );
+    hill.addFlightInfo( 'Taipei', 'Taoyuan', 50 );
+    hill.addFlightInfo( 'Taipei', 'Yi', 56 );
+    hill.addFlightInfo( 'Taoyuan', 'Yi', 30 );
+    hill.addFlightInfo( 'Taichung', 'Hua', 45 );
+    hill.addFlightInfo( 'Taichung', 'Yi', 145 );
+    hill.addFlightInfo( 'Yi', 'Hua', 180 );
+    
+    solve( hill, 'Taipei', 'Hua' );
+    
+    assert( hill.btStack.length > 0, "Testing for HillClimbing algorithm ..." );
+    
+    with( hill ) {
+        theflights = '<ul>';
+        if( btStack.length > 0 ) {
+            for( i=0; i<btStack.length; i++ ) {
+                theflights += ('<li>' + btStack[i].from + ' -> ' + btStack[i].to + ' d: ' + btStack[i].distance + '</li>');
+            }
+        }
+        theflights += '</ul>';
+    }
+    document.getElementById( 'flight_results' ).innerHTML = theflights;
+};
+</script>
+<style>
+    #results li.pass { color: green; }
+    #results li.fail { color: red; }
+</style>
+</head>
+<body>
+    <ul id="results"></ul>
+    ¤º®e:
+    <div id="flight_results"></div>
+</body>
+</html>

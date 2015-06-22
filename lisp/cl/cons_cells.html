@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="LISP" />
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/style.css" />
+    <title>筆記： cons cells</title>
+</head>
+<body>
+<div>
+    <h1 class="header">筆記： cons cells</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <div style="display:none;">
+    <p>不管怎樣頭洗了就快樂的打下<code>(exit)</code>或<code>halt.</code>來結束混亂的局面。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">[9]> (exit)</pre>
+    <p>或</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">| ?- halt.</pre>
+    </div>
+    <p>剛剛發現原來mit-scheme也是用<code>(exit)</code>或<code>(quit)</code>離開交談模式。</p>
+    <p>想多用心體會數學家弄出來的語言，雖然偶已經太老了，還是期望可以讓腦袋靈活一點。呵 。據說Common Lisp和Scheme都是LISP的dialect，大概從網路上瞄一下Scheme的資料只覺得自己還真是見識淺薄，不知道之前在自大啥。</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Utbuntu 10.04</li>
+            <li>GNU CLISP 2.44.1</li>
+        </ul>
+    </div>
+    <h2>兩種模式</h2>
+    <p></p>
+    <h4>code mode</h4>
+    <p>一般而言在REPL輸入的東西，lisp都會認為妳/你是要執行他，所以會嘗試去執行輸入的東西。以下面這個例子而言，REPL一開始認為是要問他expt的值，所以出了錯誤訊息。在定義expt之後，就可以看到REPL把變數值印出來。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> expt
+
+*** - EVAL: variable EXPT has no value
+The following restarts are available:
+USE-VALUE      :R1      You may input a value to be used instead of EXPT.
+STORE-VALUE    :R2      You may input a new value for EXPT.
+ABORT          :R3      Abort main loop
+Break 1 [2]> :R3
+[3]> (defparameter expt 13)
+EXPT
+[4]> expt
+13
+[5]> 
+    </pre>
+    <p>如果是要執行的程式碼則要用list的形式輸入，這種list第一個是command通常是function，而後面的則是要餵給command服用的東西。比如說<code>(expt 2 3)</code>給REPL就會算出來8。稍微超前一下進度看一下下面的例子</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[5]> (car (one two three))
+
+*** - EVAL: undefined function ONE
+The following restarts are available:
+USE-VALUE      :R1      You may input a value to be used instead of (FDEFINITION 'ONE).
+RETRY          :R2      Retry
+STORE-VALUE    :R3      You may input a new value for (FDEFINITION 'ONE).
+ABORT          :R4      Abort main loop
+Break 1 [6]> :R4
+[7]> (car '(one two three))
+ONE
+    </pre>
+    <p>在code mode第一行REPL會先嘗試執行<code>(one two tree)</code>，然後REPL會發現one不是內建function而且是個沒有定義的function，所以就會出error message。接下來在第10行把原本<code>(one two three)</code>使用data mode來表示，則<code>car</code>可以從這個list中取出第一個slot的內容。</p>
+    <h4>data mode</h4>
+    <p>在這個模式所有的東西都被視為資料，也就是說lisp REPL不會嘗試執行他。只要加上單引號不論是list、sybmol或數字就都是在data mode。從下面範例可以看出來</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> 'sdfsd
+SDFSD
+[2]> '(expt 2 3)
+(EXPT 2 3)
+[3]> '12
+12
+    </pre>
+    <h2>list您好！初次見面</h2>
+    <p>list在lisp裡面使用<em>cons cells</em>的結構串接起來的方式儲存。cons cells就如下面圖一</p>
+    <h3>Figure 1. 書上偷下來的圖一</h3>
+    <img src="../../images/lisp/cons_cells_basic.png" />
+    <p>下面圖二表示<code>'(one two three)</code>這個list的儲存樣子。</p>
+    <h3>Figure 2. 書上偷下來的圖二</h3>
+    <img src="../../images/lisp/cons_cells_example.png" />
+    <p></p>
+    <h4>基礎的functions</h4>
+    <p><code>cons</code>這個function是把傳進去的一個一個放到一個cell裡面串成一個list。</p>
+    <p><code>car</code>這個function是用來由list中取出第一個cell的內容。</p>
+    <p><code>cdr</code>這個function是用來將list中第二個以後每一個cell取出，結果會是一個list。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (car '(dog cat wolf))
+DOG
+[2]> (cdr '(dog cat wolf))
+(CAT WOLF)
+    </pre>
+    <p><code>list</code>把傳給這個function的東東串成一個list。需注意如果給list的時候會產生nested list。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[24]> (list 1 2 3 4)
+(1 2 3 4)
+[25]> (list '(1 2) 3 4)
+((1 2) 3 4)
+    </pre>
+    <h4>傳說中的<code>c</code><em>x</em><code>r</code></h4>
+    <p><code>car</code>和<code>cdr</code>可以組合使用讓lisper方便操作list。所謂的組合使用就是可以看到類似下面的樣子</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[14]> (cdaddr '(one two (three four five)))
+(FOUR FIVE)
+    </pre>
+    <p><code>cdaddr</code>解讀也是由右至左，所以一步一步拆解來看</p>
+    <ol>
+        <li>d: <code>(two (three four five))</code></li>
+        <li>d: <code>((three four five))</code></li>
+        <li>a: <code>(three four five)</code></li>
+        <li>d: <code>(four five)</code></li>
+    </ol>
+    <p>很難懂？看看下面REPL執行狀況就知道</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[16]> (cdr '(one two (three four five)))
+(TWO (THREE FOUR FIVE))
+[17]> (cddr '(one two (three four five)))
+((THREE FOUR FIVE))
+[18]> (caddr '(one two (three four five)))
+(THREE FOUR FIVE)
+[19]> (cdaddr '(one two (three four five)))
+(FOUR FIVE)
+    </pre>
+    <p>想到書上火車的漫畫....暈</p>
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Land of LISP, Chapter 3</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/02/23
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

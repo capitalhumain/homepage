@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script language="JavaScript" src="../js/jquery-1.3.2.min.js" ></script>
+    <script language="JavaScript" src="../js/shCore.js" ></script>
+    <script language="JavaScript" src="../js/shLegacy.js"></script>
+    <script language="JavaScript" src="../js/shBrushSql.js" ></script>
+    <script language="JavaScript" src="../js/shBrushJava.js" ></script>
+    <script language="JavaScript" src="../js/shBrushGroovy.js" ></script>
+    <script language="JavaScript" src="../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../css/style.css" />
+    <title>Smart API</title>
+</head>
+<body>
+<div>
+    <h1 class="header">Smart API</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>不管最終是會遇到黑白雙雄、Χάρων或者Dean客串過的Death...不論是另一個境界或狀態的開始或者煙消雲散時候到了自然會知道；但是運動神經元的疾病、意外造成的傷害或者老化等原因都可能讓意識被關在皮囊裡面，只能夠透過備受限制的方式與外界溝通。陷入那種情境心裡的無助、無奈甚至憤怒等情緒，現在的狀況或許可以想像幾分，但是絕對無法體會。依照現在「幸福」的狀況，真的是要努力過快樂的日子。</p>
+    <p>當年開始學寫程式時，想說如果可以做一個可以自己寫程式控制機器人做一些事情應該很酷，在高中時認清物理搞不定而確定做機器人這個目標是很難達成。後來又很不自量力選了三個目標，其中一個就是language design。也沒想到現在有那個膽把這個分類列到自己的筆記網頁裡面。</p>
+    <p>Smart API是internal DSL最常見的實作方法之一，實踐的手法也很常見，其實應該也很多人這個做過，只是現在有一個專有名詞稱呼吧。這個筆記的主要大綱是綜合體，Smart API是Ref 1的說法而Expression Builder和Method Chaining這兩個pattern是Martin Fowler書的說法(Ref 2)。</p>
+    <h2>Smart API (fluent interface)</h2>
+    <p>眼前對於<strong>fluent interface</strong>的理解程度是這是一種API design的手法，目的在讓使用的人撰寫出可讀性更高的程式碼。而常見的實現方法有<strong>expression builder</strong>、<strong>method chaining</strong>這些patterns。</p>
+    <p>跟DSL的關係，大概就是因為目的是可以讓程式碼可讀性更高，也因此domain expert能夠利用這個API明確的描述出需求。當然還是必須受限於使用語言的基礎語法的限制（以java而言，比如說statement結束的「;」）。</p>
+    <h2>Method Chaining (Cascade)</h2>
+    <blockquote>
+    <em>Make modifier methods return the host object, so that multiple modifiers can be invoked in a single expression.</em><span class="ref">(ref 2)</span>
+    </blockquote>
+    <p><strong>Method Chaining</strong>對熟悉script language的人應該很習慣這個programming skill。用過jQuery的應該也很熟悉怎麼使用這個東西，在Douglas的書上稱這個programming skill為Cascade，可以參考之前看書的筆記(<a href="#ref">Ref 4</a>)。</p>
+    <p>關鍵點就在上面引用那段文字，也就是return this嚕。</p>
+    <div class="codehead">Listing. before apply method chaining</div>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+package org.examples.dsl.smartapi.before;
+
+public class HardDrive {
+    private long capacity;
+    private int speed;
+    private boolean external;
+
+    public HardDrive() {}
+
+    public void setCapacity(long capacity) {
+        this.capacity = capacity;
+    }
+    public long getCapacity() {
+        return capacity;
+    }
+    public void setSpeed(int speed) {
+        this.speed = speed;
+    }
+    public int getSpeed() {
+        return speed;
+    }
+    public void setExternal(boolean isExternal) {
+        this.external = isExternal;
+    }
+    public boolean getExternal() {
+        return external;
+    }
+}
+    </pre>
+    <p>使用這個類別要像下面這樣寫</p>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+        HardDrive hd2000 = new HardDrive();
+        hd2000.setCapacity(2000);
+        hd2000.setSpeed(7200);
+        hd2000.setExternal(false);
+    </pre>
+    <p>如果加上一個簡單的技巧，把setter類的行為1. signature加上return host type，2. 最後return this。像下面這個例子</p>
+    <div class="codehead">Listing. after apply method chaining</div>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+package org.examples.dsl.smartapi.after;
+
+public class HardDrive {
+    private long capacity;
+    private int speed;
+    private boolean external;
+
+    public HardDrive() {}
+
+    public HardDrive setCapacity(long capacity) {
+        this.capacity = capacity;
+        return this;
+    }
+    public long getCapacity() {
+        return capacity;
+    }
+    public HardDrive setSpeed(int speed) {
+        this.speed = speed;
+        return this;
+    }
+    public int getSpeed() {
+        return speed;
+    }
+    public HardDrive setExternal(boolean isExternal) {
+        this.external = isExternal;
+        return this;
+    }
+    public boolean getExternal() {
+        return external;
+    }
+}
+    </pre>
+    <p>接著用法就不同了</p>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+        HardDrive hd2000 = new HardDrive()
+                                .setCapacity(2000)
+                                .setSpeed(7200)
+                                .setExternal(false);
+    </pre>
+    <p>當然setter不見得一定要set開頭，改一下可讀性就更高了比如說下面這樣</p>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+        HardDrive hd2000 = new HardDrive()
+                                .capacity(2000)
+                                .speed(7200)
+                                .external(false);
+    </pre>
+    <h2>Expression Builder</h2>
+    <blockquote>
+    <em>An object, or family of objects, that provides a fluent interface over a normal command-query API.</em><span class="ref">(ref 2)</span>
+    </blockquote>
+    <p>以上面before apply method chaining<code>HardDrive</code>這個例子，是developer熟悉的樣子，實際的狀況可能會有更多不同種類的物件們的關係才能描述domain的需求，透過expression builder我們可以提供fluent interface的API。</p>
+    <div class="codehead">Listing. HardDriveBuilder class</div>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+package org.examples.dsl.smartapi.builder;
+
+import org.examples.dsl.smartapi.before.HardDrive;
+
+public class HardDriveBuilder {
+    private HardDrive hd = new HardDrive();
+
+    private HardDriveBuilder() {}
+
+    public static HardDriveBuilder start() {
+        return new HardDriveBuilder();
+    }
+
+    public HardDrive getContent() {
+        return hd;
+    }
+
+    public HardDriveBuilder capacity(long capacity) {
+        hd.setCapacity( capacity );
+        return this;
+    }
+
+    public HardDriveBuilder speed(int speed) {
+        hd.setSpeed( speed );
+        return this;
+    }
+
+    public HardDriveBuilder isExternal(boolean isExternal) {
+        hd.setExternal( isExternal );
+        return this;
+    }
+}
+    </pre>
+    <p>一個簡單的使用狀況</p>
+    <pre name="code" class="java:nocontrols:firstline[1]">
+package org.examples.dsl.smartapi.builder;
+
+import org.examples.dsl.smartapi.before.HardDrive;
+
+public class Program {
+    public static void main(String[] args) {
+        HardDrive hd2000 = HardDriveBuilder.start()
+                               .capacity( 2000 )
+                               .isExternal( false )
+                               .speed( 7200 )
+                               .getContent();
+    }
+}
+    </pre>
+    <p>以ref 1作者舉的例子而言，使用inner class來實作builder可以讓使用者不需要又面對一個class，可能更貼近使用者的想法。就如同ref 1作者寫的一句話<em>The expressiveness of a DSL is judged by your user.</em></p>
+    <h2>Reference</h2>
+    <a id="ref"></a>
+    <div>
+        <ol>
+            <li>DSLs in Action</li>
+            <li>Domain-Specific Language</li>
+            <li>http://martinfowler.com/bliki/FluentInterface.html</li>
+            <li><a href="../javascript/lab.function.03.html">JavaScript Cascade note</a></li>
+        </ol>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/06/20
+</address>
+<script language="javascript">
+$(function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+});
+</script>
+</body>
+</html>

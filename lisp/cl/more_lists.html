@@ -1,0 +1,315 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="keywords" content="Common LISP" />
+    <script type="text/javascript" src="../../js/jquery-1.3.2.min.js" ></script>
+    <script type="text/javascript" src="../../js/shCore.js" ></script>
+    <script type="text/javascript" src="../../js/shLegacy.js"></script>
+    <script type="text/javascript" src="../../js/shBrushJava.js" ></script>
+    <script type="text/javascript" src="../../js/shBrushPlain.js" ></script>
+    <link type="text/css" rel="stylesheet" href="../../css/shCore.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/shThemeDefault.css" />
+    <link type="text/css" rel="stylesheet" href="../../css/style.css" />
+    <title>筆記： More Lists</title>
+</head>
+<body>
+<div>
+    <h1 class="header">筆記： More Lists</h1>
+</div>
+<div class="articlecontent">
+    <h2>Preface</h2>
+    <p>講一些無關的屁話，以小弟一個非本科系的外行人而言，總是以為資字輩的既然有必修的programming language的洗禮，面對任何programming paradigms而言，就如同學會獨孤九劍這種窮天下武器變化的心法，所差的火候只有對各種API和平台的熟悉而已。</p>
+    <p>第七章就再深入講一下lisp的list，然後利用graphviz這個open source tool來產生由node和edge描繪出來的圖形。因此，Conrad就安排寫了一個產生DOT script的程式，這個程式在後面章節也會用到。</p>
+    <h2>Environment</h2>
+    <div>
+        <ul>
+            <li>Utbuntu 10.10</li>
+            <li>GNU CLISP 2.48</li>
+        </ul>
+    </div>
+    <h2>Lists</h2>
+    <h4>Dotted Lists</h4>
+    <p>在對cons cells初步的了解之後，知道一般list最後一個cell都是指向<code>nil</code>；而dotted list則是一個結尾是指向有意義資料的list。為了讓lisp知道這種list已經到了最後一筆資料，所以在最後一筆之前會有一個句號跟lisp說下一個cell放得東西就是這個list的最後一個cell嚕。</p>
+    <h4>Pairs</h4>
+    <p>所謂的pair就是key/value，2和3的pair就如<code>(2 . 3)</code>這樣。</p>
+    <h4>Circular Lists</h4>
+    <p>一般的list就是最後一個cell指向<code>nil</code>；而circular list則是最後一個cell指向第一個cell。這個東西偶做不出來 ><" 我的clisp都會跑到掛掉。</p>
+    <h4>Association Lists</h4>
+    <p>重複講一個重點，重複的key透過<code>assoc</code>是無法找到第二個key值儲存的資料。如果真的要hashtable就用<code>make-hash-table</code>。</p>
+    <h2>Graph Drawing</h2>
+    <p></p>
+    <h4><em>graphviz</em></h4>
+    <p><em>graphviz</em>是一個open source tool可以協助我們把我們建構的graph結構用圖形表現出來。只是我們要把list表現的graph轉換成<em>graphviz</em>的DOT的表示法。</p>
+    <h4>From Lisp list to DOT</h4>
+    <p>在開始製作產生DOT的程式前有幾個function要先研究一下。</p>
+    <p><code>substitute-if</code>、<code>substitute-if-not</code>用來取代的function，第一個參數是取代後的新值、第二個參數是一個function，最後一個參數是苦主。如果苦主是字串會把苦主一個character一個character丟進去第二個參數的function裡面去做判斷，然後根據使用<code>substitute-if</code>或<code>substitute-if-not</code>的xxx-if, xxx-if-not來決定是否要置換掉。如果苦主是list也一樣可以運作，則是針對一個cell一個cell的值來做，替代完也是產生一個新的list。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[16]> (substitute-if #\g (lambda (x) (eq x #\3)) "I'm a l33t hack3r4")
+"I'm a lggt hackgr4"
+[17]> 
+"09x112x456"
+[18]> (substitute-if #\g (lambda (x) (print x)) "lisp")
+
+#\l 
+#\i 
+#\s 
+#\p 
+"gggg"
+    </pre>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[3]> (defparameter *glist* '(1 2 3 4 5 6 7 8 9))
+*GLIST*
+[4]> (substitute-if 'x #'oddp *glist*)
+(X 2 X 4 X 6 X 8 X)
+[5]> *glist*
+(1 2 3 4 5 6 7 8 9)
+    </pre>
+    <p><code>complement</code>顧名思義就是取互補值，<code>T</code>-><code>Nil</code>、<code>Nil</code>-><code>T</code>。有了這個還需要xxxx-if和xxxx-if-not這樣對應的這種higher-order function?!</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[7]> 
+(X 2 X 4 X 6 X 8 X)
+[8]> (substitute-if 'x (complement #'oddp) '(1 2 3 4 5 6 7 8 9))
+(1 X 3 X 5 X 7 X 9)
+[9]> (substitute-if-not 'x (complement #'oddp) '(1 2 3 4 5 6 7 8 9))
+(X 2 X 4 X 6 X 8 X)
+    </pre>
+    <p><code>alphanumericp</code></p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[11]> (alphanumericp #\1)
+T
+[12]> (alphanumericp #\a)
+T
+[13]> (alphanumericp #\_)
+NIL
+[14]> (alphanumericp #\-)
+NIL
+[15]> (alphanumericp #\G)
+T
+    </pre>
+    <p><code>fresh-line</code></p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[2]> (mapc (lambda (x)(fresh-line)(prin1 x)) '(1 2 3))
+1
+2
+3
+(1 2 3)
+    </pre>
+    <p><code>digit-char-p</code>用來檢查後面那個character是不是數字，如果是數字就傳回數字，如果不是數字就會傳回<code>nil</code>。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (digit-char-p #\1)
+1
+[2]> (digit-char-p #\_)
+NIL
+[3]> (digit-char-p #\a)
+NIL
+[4]> (digit-char-p #\space)
+NIL
+[5]> (digit-char-p #\newline)
+NIL
+    </pre>
+    <p><code>prin1-to-string</code>跟<code>write-to-string</code>、<code>princ-to-string</code>一樣就是把物件弄成字串。比方說使用<code>concatenate</code>的時候用物件和字串串接會出問題，就可以先透過這類function的協助。</p>
+    <p><code>maplist</code>會把吃進去的list由左邊的方向走向右邊，可以看到下面例子lambda function吃到的是<code>(A B C D)</code>、<code>(B C D)</code>、<code>(C D)</code>、<code>(D)</code>。最後一個REPL吐的訊息不用理他。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[6]> (maplist (lambda (x) (print (concatenate 'string "Result: " (prin1-to-string x)))) '(a b c d))
+
+"Result: (A B C D)" 
+"Result: (B C D)" 
+"Result: (C D)" 
+"Result: (D)" 
+("Result: (A B C D)" "Result: (B C D)" "Result: (C D)" "Result: (D)")
+
+    </pre>
+    <p><code>concatenate</code> function用來組合字串，比較特別的是要指定result type（'string or 'list...）。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (concatenate 'string "all" " " "together" " " "now")
+"all together now"
+[2]> (concatenate 'list "ABC" '(d e f) #(1 2 3) #*1011)
+(#\A #\B #\C D E F 1 2 3 1 0 1 1)
+    </pre>
+    <p><code>with-open-file</code>讓我們做file I/O的處理。<code>*standard-output*</code>這是built-in的global variable。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> *standard-output*
+#&lt;IO SYNONYM-STREAM *TERMINAL-IO*&gt;
+    </pre>
+    <p>寫一個簡單的程式會產生兩個用<code>mapcar</code>和<code>mapc</code>印出來的東西，然後把standard output的東西寫到檔案去。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+;; for test mapcar and mapc
+;; *standard-output* is lisp built-in global vairbale
+(with-open-file (*standard-output*
+                 "mapcar.txt"
+                 :direction :output
+                 :if-exists :supersede)
+  (mapcar #'print '(one two three)))
+
+(with-open-file (*standard-output*
+                 "mapc.txt"
+                 :direction :output
+                 :if-exists :supersede)
+  (mapc #'print '(one two three)))
+    </pre>
+    <p>dot name的處理，為啥需要處理給<em>graphviz</em>吃的node的名稱？！看一下下面的例子</p>
+    <h3>Listing. test1.dot</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+digraph {
+    a-1->b;
+}
+    </pre>
+    <p>執行完<code>neato -Tpng -O test1.dot</code>可以看到png檔有產生，但是是悲劇。</p>
+    <h3>Figure. 悲劇發生，這絕對不是想要的結果。（>"<）</h3>
+    <img src="../../images/lisp/test1.dot.png" />
+    <p>因此，雖然「-」對lisp而言沒有影響，但是卻需要幫<em>graphviz</em>調整一下。</p>
+    <h3>Listing. <code>dot-name</code> function</h3>
+    <pre name="code" class="plain:controls:firstline[1]">
+(defun dot-name (exp)
+  (substitute-if #\_ (complement #'alphanumericp) (prin1-to-string exp))
+)
+    </pre>
+    <p>這裡用<code>prin1-to-string</code>的原因就只是人家是吃字串不要亂餵。看一下下面例子的錯誤訊息就知道。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (defparameter *node1* '(taoyuan (dayuan yangmei)))
+*NODE1*
+[2]> (substitute-if #\_ (complement #'alphanumericp) (car *node1*))
+
+*** - SUBSTITUTE-IF: TAOYUAN is not a SEQUENCE
+The following restarts are available:
+ABORT          :R1      Abort main loop
+Break 1 [3]> :R1
+[4]> (substitute-if #\_ (complement #'alphanumericp) (prin1-to-string (car *node1*)))
+"TAOYUAN"
+    </pre>
+    <p></p>
+    <h3>Listing. 完整的graph-util.lisp</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+(defvar *max-label-length* 30)
+
+(defun dot-label (exp)
+  (if exp 
+    (let ((s (write-to-string exp :pretty nil)))
+      (if (> (length s) *max-label-length*)
+        (concatenate 'string (subseq s 0 (- *max-label-length* 3)) "...")
+        s))
+    ""))
+
+(defun dot-name (exp)
+  (substitute-if #\_ (complement #'alphanumericp) (prin1-to-string exp)))
+
+(defun edges->dot (edges)
+  (mapc (lambda (node)
+          (mapc (lambda (edge)
+                  (fresh-line)
+                  (princ (dot-name (car node)))
+                  (princ "->")
+                  (princ (dot-name (car edge)))
+                  (princ "[label=\"")
+                  (princ (dot-label (cdr edge)))
+                  (princ "\"];"))
+                (cdr node)))
+        edges))
+
+(defun nodes->dot (nodes) 
+  (mapc (lambda (node)
+          (fresh-line)
+          (princ (dot-name (car node)))
+          (princ "[label=\"")
+          (princ (dot-label node))
+          (princ "\"];"))
+        nodes))
+
+(defun graph->dot (nodes edges)
+  (princ "digraph {")
+  (nodes->dot nodes)
+  (edges->dot edges)
+  (princ "}"))
+
+;; first custom higher-order function
+;; using ext:run-program replace ext:shell
+(defun dot->png (fname thunk)
+  (with-open-file (*standard-output*
+                    fname
+                    :direction :output
+                    :if-exists :supersede)
+    (funcall thunk))
+  (ext:run-program "/usr/bin/dot" :arguments (list "-Tpng" "-O" fname)))
+
+(defun graph->png (fname nodes edges)
+  (dot->png fname (lambda () (graph->dot nodes edges))))
+
+;; undirection graph
+(defun uedges->dot (edges)
+  (mapc (lambda (node)
+          (mapc (lambda (edge)
+                  (fresh-line)
+                  (princ (dot-name (car node)))
+                  (princ "--")
+                  (princ (dot-name (car edge)))
+                  (princ "[label=\"")
+                  (princ (dot-label (cdr edge)))
+                  (princ "\"];"))
+                (cdr node)))
+        edges))
+
+(defun ugraph->dot (nodes edges)
+  (princ "digraph {")
+  (nodes->dot nodes)
+  (uedges->dot edges)
+  (princ "}"))
+
+(defun ugraph->png (fname nodes edges)
+  (dot->png fname (lambda () (ugraph->dot nodes edges))))
+
+    </pre>
+    <p>在之前create game world的時候我們使用一個<em>alist</em>來儲存每一個可以到的點的資訊，然後再用另一個<em>alist</em>來儲存點和點之間連接的資訊。在這裡就是寫一些程式讓我們可以針對那兩個資料結構產生graphviz的DOT語法的script，然後透過執行<code>dot</code>來產生png file。</p>
+    <p>在<code>dot->png</code>這個function我把<code>ext:shell</code>換成<code>ext:run-program</code>。</p>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+[1]> (load "graph-util")
+;; Loading file /home/terence/lab/lisp/cl/graph-util.lisp ...
+;; Loaded file /home/terence/lab/lisp/cl/graph-util.lisp
+T
+[2]> (load "game_world6")
+;; Loading file /home/terence/lab/lisp/cl/game_world6.lsp ...
+;; Loaded file /home/terence/lab/lisp/cl/game_world6.lsp
+T
+[3]> (graph->png "game_world.dot" *nodes* *edges*)
+NIL
+    </pre>
+    <h3>Listing. game_world.dot</h3>
+    <pre name="code" class="plain:nocontrols:firstline[1]">
+digraph {
+LIVING_ROOM[label="(LIVING-ROOM (YOU ARE IN TH..."];
+GARDEN[label="(GARDEN (YOU ARE IN A BEAUT..."];
+ATTIC[label="(ATTIC (YOU ARE IN THE ATTI..."];
+LIVING_ROOM->GARDEN[label="(WEST DOOR)"];
+LIVING_ROOM->ATTIC[label="(UPSTAIRS LADDER)"];
+GARDEN->LIVING_ROOM[label="(EAST DOOR)"];
+ATTIC->LIVING_ROOM[label="(DOWNSTAIRS LADDER)"];}
+    </pre>
+    <h3>Figure. result of wizard game world map (filename: game_world.dot.png)</h3>
+    <img src="../../images/lisp/game_world.dot.png" />
+    <h2>Reference</h2>
+    <div>
+        <ul>
+            <li>Land of LISP, Chapter 7</li>
+            <li>http://www.graphviz.org/</li>
+            <li><code>concatenate function</code>: http://www.lispworks.com/documentation/HyperSpec/Body/f_concat.htm</li>
+            <li><code>prin1-to-string function</code>: http://clhs.lisp.se/Body/f_wr_to_.htm</li>
+            <li>http://blog.ciaranbradley.com/land-of-lisp-chapter-7-using-sbcl</li>
+            <li>http://www.gnu.org/software/clisp/impnotes/shell.html#exec</li>
+        </ul>
+    </div>
+</div>
+<div>
+<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/"><img alt="Creative Commons License" src="http://i.creativecommons.org/l/by/3.0/88x31.png" border="0"></a>
+本著作係採用<a rel="license" href="http://creativecommons.org/licenses/by/2.5/tw/">創用 CC 「姓名標示 2.5 台灣版」授權條款</a>釋出。
+<span class="home"><a href="../../index.html">Home</a></span>
+</div>
+<address>
+Terence Chao, 2011/03/06
+</address>
+<script language="javascript">
+window.onload = function () {
+    dp.SyntaxHighlighter.HighlightAll('code');
+};
+</script>
+</body>
+</html>

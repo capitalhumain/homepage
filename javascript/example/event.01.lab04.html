@@ -1,0 +1,48 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Prevent Default</title>
+    <script type="text/javascript" language="javascript">
+    var addEvent = function( elem, type, fn, isCapture ) {
+        var capture = isCapture || false;
+        if( window.addEventListener ) {
+            // 第三個參數 true: capturing; false: bubbling
+            elem.addEventListener( type, fn, capture );    
+        } // if
+        else if( window.attachEvent ) {
+            elem.attachEvent( 'on' + type, fn );
+        } // else if
+    };
+    
+    window.onload = function() {
+        var age = document.getElementById( 'age' );
+            
+        addEvent( age, 'keypress', function( e ) {
+            var code = e.which || e.keyCode;
+            var preventDefault = function( evt ) {
+                if( evt.preventDefault ) {
+                    evt.preventDefault();
+                } else {
+                    evt.returnValue = false;
+                }
+            };
+            
+            if( !/[0-9]/.test( String.fromCharCode( code ) ) && code !== 8 ) {
+                // 使用stopPropagation
+                // 阻擋Capturing & Bubbling但是卻無法阻擋default behavior
+                // e.stopPropagation();     
+                preventDefault( e );
+            }
+        }, false );
+    };
+    </script>
+    <style type="text/css">
+    input {
+        border: 1px solid #cccccc;
+    }
+    </style>
+</head>
+<body>
+    Age: <input id="age" name="age" maxlength="3" size="3" />
+</body>
+</html>

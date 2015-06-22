@@ -1,0 +1,103 @@
+<html>
+<head>
+    <title>Dijkstra 2 Example</title>
+    <script type="text/javascript" src="../../../js/jquery-1.3.2.min.js"></script>
+    <script type="text/javascript" src="enhancement.js"></script>
+    <script type="text/javascript" src="dijkstra.v2.js"></script>
+    <script type="text/javascript">
+    var assert = function( value, desc ) {
+        var li = document.createElement("li");
+        li.className = value ? "pass" : "fail";
+        li.appendChild( document.createTextNode( desc ) );
+        document.getElementById("results").appendChild( li );
+    }
+
+    window.onload = function() {
+        var wall = 'x';
+        var field = [['o', 'o', 'o', 'o', 'o', 'o'],
+                     ['o', 'o', 'o', 'o', 'o', 'o'],
+                     ['o', 'o', 'o', 'o', 'o', 'o'],
+                     ['x', 'x', 'x', 'x', 'o', 'o'],
+                     ['x', 'o', 'o', 'x', 'o', 'o'],
+                     ['x', 'o', 'o', 'o', 'o', 'o'],
+                     ['x', 'o', 'o', 'x', 'o', 'o'],
+                     ['x', 'x', 'x', 'x', 'o', 'o']];
+        var x = field.length;
+        var y = field[0].length;
+        var fx = 1;
+        var fy = 1;
+        var tx = 5;
+        var ty = 2;
+        var dijkstra = new Dijkstra( field, wall );
+        var i, j;
+        var result = dijkstra.search( fx, fy, tx, ty );
+        var node;
+        
+        assert( 1 === dijkstra.dist[ 1 ][ 2 ], 'Position test' );
+        
+        var str = '';
+        for( i=0; i<x; i++) {
+            for( j=0; j<y; j++) {
+                if( dijkstra.dist[i][j] === undefined && field[i][j] === 'o' ) {
+                    str += '<div class="matrixr ground">*</div>';
+                } else if( dijkstra.dist[i][j] === undefined && field[i][j] === wall ) {
+                    str += '<div class="matrixr wall">&nbsp;</div>';
+                } else {
+                    if( i===fx && j===fy ) {
+                        str += '<div class="matrixr ground" style="color: blue;">' + dijkstra.dist[i][j] + '</div>';
+                    } else if( i===tx && j===ty ) {
+                        str += '<div class="matrixr ground" style="color: red;">' + dijkstra.dist[i][j] + '</div>';
+                    } else {
+                        str += '<div class="matrixr ground">' + dijkstra.dist[i][j] + '</div>';
+                    }
+                }
+            }
+            str += '';
+        }
+        $( '#matrix' ).html( str );
+        
+        str = '';
+        j = result.length;      // 因為pop()會影響迴圈下次result.length取得的值
+        for( i=0; i<j; i++ ) {
+            node = result.pop();
+            str += '[' + node[0] + ',' + node[1] + ']';
+        }
+        $( '#route' ).html( str );
+    };
+    </script>
+    <style>
+        #results li.pass { color: green; }
+        #results li.fail { color: red; }
+        #matrix {
+            width: 230px;
+            height: 300px;
+        }
+        .wall {
+            background-image: url(images/brick.png); MARGIN: 0px 0px 0px 0px;
+        }
+
+        .ground {
+            background-image: url(images/ground.png); MARGIN: 0px 0px 0px 0px;
+        }
+
+        .matrixr {
+            line-height:2em;
+            width: 32px;
+            height: 32px;
+            display: inline;
+            float: left;
+            padding: 1px 1px 1px 1px;
+            text-align: center;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <ul id="results"></ul>
+    <div id="matrix" style="font-family: 'courier new';">
+    </div>
+    <br/>
+    <div id="route" >
+    </div>
+</body>
+</html>
