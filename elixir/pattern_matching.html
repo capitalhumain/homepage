@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Elixir |> Pattern Matching</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/styles/default.min.css">
+    <link rel="stylesheet" href="styles/layout.css">
+</head>
+<body>
+  <div class="head">
+    <div class="container">
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <p class="navbar-brand">Pattern Matching</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </div>
+  <div class="container">
+    <p class="main">Elixir是一個廣義的functional programming language，他是Ruby和Erlang結婚生出來的小孩。Elixir是個很有趣的語言，這裡簡單介紹Elixir的Pattern Matching。Elixir很有趣的一點是他沒有assignment operator。在Elixir的程式碼可以看到=，在一般人熟悉的語言裡，=通常是assignment operator；在Elixir稱為match operator。</p>
+    <p class="main">在iex或者程式碼裡面執行下列程式，在Elixir都不會看到到錯誤訊息。</p>
+    <code class="hljs elixir">
+a = 2
+2 = a
+    </code>
+    <p class="main">第一行看起來或許跟一般語言的assignment沒有差別，經過match運算之後，Elixir會把2這個整數存到a這個變數；但是第二行在一般語言就會收到錯誤訊息，因為一般assignment語法檢查left-hand如果是一般data的時候，看到=就會產生syntax error。但是，在Elixir只是match operator的判斷，在第二行因為a這個參數在第一行運算後內容是2，因此match operator執行成功。</p>
+    <p class="main">如果我們把程式改寫成下列這樣，在第二行就會收到第三行註解寫的MatchError的錯誤，而且訊息會說no match of right hand side value: 1。</p>
+    <code class="hljs elixir">
+a = 1
+2 = a
+# ** (MatchError) no match of right hand side value: 1
+1 = x
+# ** (RuntimeError) undefined function: x/0
+    </code>
+    <p class="main">上述程式第四行要講一個特點，之前x都沒有經過任何match operator的運算，執行第三行的時候會遇到RuntimeError，錯誤訊息就是這裡要講的特點。此時候會到undefined function: x/0。因此我們可以知道未定義過的變數，Elixir都當作他是一個沒有參數的function。</p>
+    <p class="main">接下來，來看稍微複雜點的例子。</p>
+    <code class="hljs elixir">
+test = [123, "abc", 1]
+IO.inspect test
+
+[a, b, c] = test
+IO.puts a
+IO.puts b
+IO.puts c
+
+[x, _, _] = test
+IO.puts x
+
+[head | tail] = test
+IO.puts head
+IO.inspect tail
+    </code>
+    <code class="hljs elixir">
+fizz_buzz = fn
+  {0, 0, _} -> "FizzBuzz"
+  {0, _, _} -> "Fizz"
+  {_, 0, _} -> "Buzz"
+end
+
+IO.puts fizz_buzz.({0, 1, 1})
+IO.puts fizz_buzz.({0, 0, 1})
+IO.puts fizz_buzz.({1, 0, 1})
+    </code>
+    <code class="hljs elixir">
+defmodule Utils do
+  def sum([]), do: 0
+  def sum([head | tail]), do: head + sum(tail)
+end
+
+IO.puts Utils.sum([])
+IO.puts Utils.sum([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    </code>
+  </div>
+    <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/highlight.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/elixir.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('code').each(function(i, block) {
+            hljs.highlightBlock(block)
+        });
+    });
+    </script>
+</body>
+</html>

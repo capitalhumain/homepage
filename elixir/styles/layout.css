@@ -1,0 +1,17 @@
+
+code {
+  white-space: pre;
+}
+
+.main {
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+/*
+@media (min-width: 1200px) {
+  .container {
+    width: 970px;
+  }
+}
+*/
