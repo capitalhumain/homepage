@@ -1,18 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <title>Elixir |> Pattern Matching</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/styles/default.min.css">
+    <link rel="stylesheet" href="styles/layout.css">
 </head>
 <body>
-    <code class="elixir">
+  <div class="head">
+    <div class="container">
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <p class="navbar-brand">Pattern Matching</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </div>
+  <div class="container">
+    <p class="main">Text here</p>
+    <code class="hljs elixir">
 sum = fn(a, b) -> a+b end
 IO.puts sum.(1, 2)
     </code>
+  </div>
     <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/highlight.min.js"></script>
-    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.6/languages/elixir.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('code').each(function(i, block) {
+            hljs.highlightBlock(block)
+        });
+    });
+    </script>
 </body>
 </html>
