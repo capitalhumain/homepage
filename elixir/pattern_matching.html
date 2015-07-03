@@ -37,7 +37,7 @@ a = 1
 # ** (RuntimeError) undefined function: x/0
     </code>
     <p class="main">上述程式第四行要講一個特點，之前x都沒有經過任何match operator的運算，執行第三行的時候會遇到RuntimeError，錯誤訊息就是這裡要講的特點。此時候會到undefined function: x/0。因此我們可以知道未定義過的變數，Elixir都當作他是一個沒有參數的function。</p>
-    <p class="main">接下來，來看稍微複雜點的例子。</p>
+    <p class="main">接下來，來看稍微複雜點的例子。第一行沒什麼特別的，第二行只是透過IO.inspect把list內容印出來，第三行的程式碼會分別將test這個list的內容分別match到left hand side的list裡那三個變數。_則代表我們不在乎match的內容，|則可以將right hand side第一個和後續的內容分開match。</p>
     <code class="hljs elixir">
 test = [123, "abc", 1]
 IO.inspect test
@@ -54,6 +54,7 @@ IO.puts x
 IO.puts head
 IO.inspect tail
     </code>
+    <p class="main">Pattern Matching在multi bodies function也扮演重要角色。如下面這個例子中，針對給function不一樣pattern的tuple，我們要撰寫不同的邏輯時，有pattern matching就不需要寫imperative的程式碼可以達到一樣的效果。要注意的是function pattern matching的順序是top down，因此要特別注意pattern順序。</p>
     <code class="hljs elixir">
 fizz_buzz = fn
   {0, 0, _} -> "FizzBuzz"
@@ -65,6 +66,8 @@ IO.puts fizz_buzz.({0, 1, 1})
 IO.puts fizz_buzz.({0, 0, 1})
 IO.puts fizz_buzz.({1, 0, 1})
     </code>
+    <p class="main">最後，來另一個有意思的程式碼。這個Utils module只有一個sum function，會把list的內容加總起來。再提醒一次，因為Elixir是top down match pattern，先拿到符合的pattern就開工，因此pattern順序很重要。</p>
+    <p class="main">首先，第一個pattern是空的list計算總和為0，第二個pattern會把match部份第一個放到head，其餘的放到tail裡，在function body則是將head加上recursive呼叫sum function傳入tail內容。很有趣吧！原本使用imperative programming language我們會使用loop structure來做list加總，但是functional programming language提供另一個思考的方向。</p>
     <code class="hljs elixir">
 defmodule Utils do
   def sum([]), do: 0
@@ -74,6 +77,16 @@ end
 IO.puts Utils.sum([])
 IO.puts Utils.sum([1, 2, 3, 4, 5, 6, 7, 8, 9])
     </code>
+    <p class="main">難怪Martin Odersky在Coursera的課說到</p>
+    <blockquote>
+      <p>In restricted sense, functional programming language is one which does not have mutable variables, assignments, or imperative control structores.</p>
+    </blockquote>
+    <h4>Reference</h4>
+    <ol>
+      <li>Programming Elixir</li>
+      <li><a href="http://learnelixir.com">http://learnelixir.com</a></li>
+      <li><a href="https://www.coursera.org/course/progfun">https://www.coursera.org/course/progfun</a></li>
+    </ol>
   </div>
     <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
