@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Index.html</title>
+</head>
+<body>
+  <h1>It works</h1>
+  <input type="text" name="msg" id="msg">
+  <input type="button" name="send" id="send" value="send">
+  <pre id="messages">
+  </pre>
+  <script>
+  window.onload = function() {
+    var doc = document,
+        messages = doc.getElementById("messages"),
+        btn = doc.getElementById("send"),
+        msg = doc.getElementById("msg");
+        var ws = new WebSocket("ws://localhost:8888/websocket")
+        ws.onmessage = function(evt) {
+          var content = messages.innerText;
+          content += (evt.data + "\n");
+          messages.innerText = content;
+        };
+
+        btn.addEventListener("click", function(evt) { ws.send(msg.value); });
+  };
+  </script>
+</body>
+</html>
