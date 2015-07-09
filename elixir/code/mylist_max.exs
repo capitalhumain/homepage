@@ -5,8 +5,11 @@ defmodule MyList do
   def greater(l, r) when l>r do
     l
   end
-  
-  def max_val([head|tail]) do
+  def greater(l, r) when l==r do
+    r
+  end
+
+  def maxelm([head|tail]) do
     _max_val(tail, head)
   end
 
@@ -18,4 +21,4 @@ defmodule MyList do
   end
 end
 
-IO.puts MyList.max_val([1, 3, 4, 5, 10, 9])
+IO.puts MyList.maxelm([1, 3, 10, 4, 5, 10, 9])
