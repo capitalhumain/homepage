@@ -55,19 +55,23 @@ public class DefaultModelExp1 {
 			GraphMem graphMem = (GraphMem) g;
 			TripleStore store = graphMem.store;
 			logger.info(String.format("%s", store));
-			GraphTripleStoreMem storemem = (GraphTripleStoreMem) store;
-			
-			NodeToTriplesMapMem subjects = storemem.getSubjects();
-			logger.info(String.format("Subjects: %s", subjects.bunchMap));
-			dumpBunchMap(subjects.bunchMap);
-			
-			NodeToTriplesMapMem predicates = storemem.getPredicates();
-			logger.info(String.format("Predicates: %s", predicates.bunchMap));
-			dumpBunchMap(predicates.bunchMap);
-			
-			NodeToTriplesMapMem objects = storemem.getObjects();
-			logger.info(String.format("Objects: %s", objects.bunchMap));
-			dumpBunchMap(objects.bunchMap);
+			if(store instanceof GraphTripleStoreMem) {
+				GraphTripleStoreMem storemem = (GraphTripleStoreMem) store;
+				
+				NodeToTriplesMapMem subjects = storemem.getSubjects();
+				logger.info(String.format("Subjects: %s", subjects.bunchMap));
+				dumpBunchMap(subjects.bunchMap);
+				
+				NodeToTriplesMapMem predicates = storemem.getPredicates();
+				logger.info(String.format("Predicates: %s", predicates.bunchMap));
+				dumpBunchMap(predicates.bunchMap);
+				
+				NodeToTriplesMapMem objects = storemem.getObjects();
+				logger.info(String.format("Objects: %s", objects.bunchMap));
+				dumpBunchMap(objects.bunchMap);
+			} else {
+				logger.error("Is not GraphTripleStoreMem instance...");
+			}
 		} else {
 			logger.error("Is not GraphMem instance, not support now");
 		}
