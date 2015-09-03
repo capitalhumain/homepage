@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>jena3</artifactId>
+    <groupId>org.greenrivers.ontology</groupId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>basic</artifactId>
+  <name>Apache Jena3 Lab - Basic</name>
+  <url>http://maven.apache.org</url>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jamm-version>0.3.0</jamm-version>
+  </properties>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <!-- copies java agent dependency into the target directory -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>2.8</version>
+            <executions>
+                <execution>
+                    <id>copy-dependencies</id>
+                    <phase>generate-test-resources</phase>
+                    <goals>
+                        <goal>copy</goal>
+                    </goals>
+                    <configuration>
+                        <artifactItems>
+                            <artifactItem>
+                                <groupId>com.github.jbellis</groupId>
+                                <artifactId>jamm</artifactId>
+                                <version>${jamm-version}</version>
+                                <type>jar</type>
+                                <outputDirectory>${project.build.directory}</outputDirectory>
+                                <destFileName>jamm.jar</destFileName>
+                            </artifactItem>
+                        </artifactItems>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+
+        <!-- executes test with java agent options of the JVM -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.14</version>
+            <configuration>
+                <argLine>-javaagent:${project.build.directory}/jamm.jar</argLine>
+            </configuration>
+        </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.github.jbellis</groupId>
+      <artifactId>jamm</artifactId>
+      <version>${jamm-version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

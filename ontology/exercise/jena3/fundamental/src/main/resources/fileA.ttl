@@ -1,0 +1,9 @@
+@prefix ex: <http://greenrivers.org/ex#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-sytax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:Jazz rdf:type owl:Class .
+
+ex:Blues rdf:type owl:Class ;
+         rdfs:label "Blues" .
