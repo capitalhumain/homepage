@@ -1,0 +1,27 @@
+@prefix d: <http://learningsparql.com/ns/data#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+ 
+d:Plantae
+  rdf:type rdfs:Class .
+
+d:Angiosperms
+  rdfs:subClassOf d:Plantae .
+
+d:Eudicots
+  rdfs:subClassOf d:Angiosperms .
+
+d:Rosids
+  rdfs:subClassOf d:Eudicots .
+
+d:Brassicales
+  rdfs:subClassOf d:Rosids .
+  
+d:Brassicaceae
+  rdfs:subClassOf d:Brassicales .
+  
+d:Brassica
+  rdfs:subClassOf d:Brassicaceae .
+ 
+d:broccoli
+  rdf:type d:Brassica .
