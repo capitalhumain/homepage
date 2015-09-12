@@ -24,4 +24,5 @@ d:Brassica
   rdfs:subClassOf d:Brassicaceae .
  
 d:broccoli
-  rdf:type d:Brassica .
+  rdf:type d:Brassica ;
+  rdfs:label "Brassica oleracea" .
