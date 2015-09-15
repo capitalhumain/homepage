@@ -2,7 +2,6 @@ package sparql;
 
 import java.io.InputStream;
 
-import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
