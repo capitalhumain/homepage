@@ -1,0 +1,36 @@
+@prefix d: <http://learningsparql.com/ns/data#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dbo: <http://dbpedia.org/ontology/> .
+
+d:flightTo rdf:type owl:ObjectProperty ;
+           rdfs:domain dbo:Place ;
+           rdfs:range dbo:Place .
+           
+d:NewYork rdf:type dbo:Place ;
+          d:flightTo d:Chicago ;
+          d:flightTo d:Torondo ;
+          d:flightTo d:Denver .
+          
+d:Torondo rdf:type dbo:Place ;
+          d:flightTo d:Calgary ;
+          d:flightTo d:LosAngeles .
+          
+d:Calgary rdf:type dbo:Place .
+
+d:Chicago rdf:type dbo:Place ;
+          d:flightTo d:Denver .
+
+d:Denver rdf:type dbo:Place ;
+         d:flightTo d:Houston ;
+         d:flightTo d:Urbana ;
+         d:flightTo d:LosAngeles .
+          
+d:LosAngeles rdf:type dbo:Place .
+
+d:Urbana rdf:type dbo:Place .
+
+d:Houston rdf:type dbo:Place ;
+          d:flightTo d:LosAngeles .
+

@@ -1,0 +1,28 @@
+@prefix d: <http://learningsparql.com/ns/data#> .
+@prefix ab: <http://learningsparql.com/ns/addressbook#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+ 
+ab:playInstrument
+  rdf:type owl:ObjectProperty ;
+  rdfs:comment "Identifies the instrument that someone plays" ;
+  rdfs:label "Play Instrument" ;
+  rdfs:domain ab:Musician ;
+  rdfs:range ab:MusicalInstrument ;
+  rdfs:range ab:Instrument .
+ 
+d:i0432
+  ab:firstName "Richard" ;
+  ab:lastName "Matt" ;
+  ab:homeTel "(229) 276-5135" ;
+  ab:email "richard49@hotmail.com" ;
+  ab:playInstrument ab:vacuumCleaner .
+
+  
+d:i0434
+  ab:firstName "Robert" ;
+  ab:lastName "De Niro" ;
+  ab:email "robertdeniro@hotmail.com" ;
+  ab:playInstrument ab:piano .
+  
