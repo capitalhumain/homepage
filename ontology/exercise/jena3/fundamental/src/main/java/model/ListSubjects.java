@@ -104,7 +104,7 @@ public class ListSubjects {
 		return vertices;
 	}
 	
-	public static AdjancyMatrix getAdjancyMatrix(Model model) {
+	public static AdjacencyMatrix getAdjancyMatrix(Model model) {
 		Set<String> vertices = new HashSet<String>();
 		
 		Graph graph = model.getGraph();
@@ -120,7 +120,7 @@ public class ListSubjects {
     	map = objects.bunchMap;
     	extractNodeURI(map, vertices);
     	
-    	AdjancyMatrix matrix = new AdjancyMatrix(vertices);
+    	AdjacencyMatrix matrix = new AdjacencyMatrix(vertices);
     	
     	Set<TripleBunch> edgedesc = extractEdge(map);
     	for(TripleBunch tripleBunch : edgedesc) {
@@ -134,7 +134,7 @@ public class ListSubjects {
 		return matrix;
 	}
 	
-	public static AdjancyList getAdjancyList(Model model) {
+	public static AdjacencyList getAdjancyList(Model model) {
 		Set<String> vertices = new HashSet<String>();
 		
 		Graph graph = model.getGraph();
@@ -150,7 +150,7 @@ public class ListSubjects {
     	map = objects.bunchMap;
     	extractNodeURI(map, vertices);
     	
-    	AdjancyList list = new AdjancyList(vertices);
+    	AdjacencyList list = new AdjacencyList(vertices);
     	
     	Set<TripleBunch> edgedesc = extractEdge(map);
     	for(TripleBunch tripleBunch : edgedesc) {
@@ -218,10 +218,10 @@ public class ListSubjects {
     	for(String vertice : vertices) {
     		log.info(vertice);
     	}
-    	AdjancyMatrix matrix = getAdjancyMatrix(resultModel);
+    	AdjacencyMatrix matrix = getAdjancyMatrix(resultModel);
     	matrix.inspect();
     	
-    	AdjancyList list = getAdjancyList(resultModel);
+    	AdjacencyList list = getAdjancyList(resultModel);
     	list.inspect();
     	
 //    	log.info("SPARQL Query");

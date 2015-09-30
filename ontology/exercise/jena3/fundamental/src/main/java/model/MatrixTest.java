@@ -12,7 +12,7 @@ public class MatrixTest {
 		vertices.add("just");
 		vertices.add("test");
 		
-		AdjancyMatrix matrix = new AdjancyMatrix(vertices);
+		AdjacencyMatrix matrix = new AdjacencyMatrix(vertices);
 		matrix.initMatrix();
 		matrix.inspect();
 		
