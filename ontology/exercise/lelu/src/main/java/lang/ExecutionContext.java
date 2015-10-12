@@ -17,7 +17,7 @@ public class ExecutionContext {
     public static final String GLOBAL = "global";
     public static final String LOCAL = "local";
     private boolean sytaxError = false;
-    private List<String> syntaxErrorMsgList = new ArrayList<String>();
+    private final List<String> syntaxErrorMsgList = new ArrayList<String>();
     
     private final Map<String, Model> symbolTable; 
     
