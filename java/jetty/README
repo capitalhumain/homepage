@@ -1,0 +1,23 @@
+comments
+==========================
+package說明
+--------------
+lab1: 來自jetty官方文件的照著打
+	http://www.eclipse.org/jetty/documentation/current/embedding-jetty.html#d0e19223
+
+connector: 有關connector練習
+handler: 有關handler練習
+
+dependencies
+-------------
+ServletHandler在artifactId: jetty-servlet這個package裡面
+
+OneWebApp需要artifactId: jetty-jmx, jetty-webapp, jetty-security
+
+folder說明
+--------------
+webapp: 
+    靜態web page base folder
+warapp: 
+    war base folder
+
