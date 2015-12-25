@@ -36,7 +36,7 @@ public class ReplaceGraphServlet extends HttpServlet {
         String named_graph_uri = request.getParameter("named_graph_uri");
         DataAccessPointRegistry registry = DataAccessPointRegistry.get();
         
-        if(null == sourceDbName || null == targetDbName) {
+        if(null == sourceDbName || null == targetDbName || null == named_graph_uri) {
             // 這是不行的
             responseHelper(response, HttpServletResponse.SC_NOT_ACCEPTABLE, "source, target and named_graph_uri are requied parameter(s)");
         } else {
