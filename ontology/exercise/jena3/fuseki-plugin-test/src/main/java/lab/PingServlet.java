@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.function.BiConsumer;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,35 +31,36 @@ public class PingServlet extends HttpServlet {
         
         DataAccessPointRegistry registry = DataAccessPointRegistry.get();
         
+        //registry.isRegistered("/tdb1")
         // registry tdb1
         // 1. load dataset config file to model
         // 2. create DataAccessPoint
         // 3. registry to DataAccessPointRegistry
-        try {
-            Model m = RDFDataMgr.loadModel("/Users/tzuyichao/local/apache-jena-fuseki-2.3.0/run/tdb1.ttl");
-            Method readConfiguration = FusekiConfig.class.getDeclaredMethod("readConfiguration", Model.class);
-            readConfiguration.setAccessible(true);
-            DataAccessPoint dataAccessPoint = (DataAccessPoint)readConfiguration.invoke(null, m);
-            registry.put("/tdb1", dataAccessPoint);
-        } catch(NoSuchMethodException e) {
-            // FIXME: just for test
-            e.printStackTrace();
-        } catch(IllegalAccessException e) {
-            // FIXME: just for test
-            e.printStackTrace();
-        } catch(InvocationTargetException e) {
-            // FIXME: just for test
-            e.printStackTrace();
-        }
+//        try {
+//            Model m = RDFDataMgr.loadModel("/Users/tzuyichao/local/apache-jena-fuseki-2.3.0/run/tdb1.ttl");
+//            Method readConfiguration = FusekiConfig.class.getDeclaredMethod("readConfiguration", Model.class);
+//            readConfiguration.setAccessible(true);
+//            DataAccessPoint dataAccessPoint = (DataAccessPoint)readConfiguration.invoke(null, m);
+//            registry.put("/tdb1", dataAccessPoint);
+//        } catch(NoSuchMethodException e) {
+//            // FIXME: just for test
+//            e.printStackTrace();
+//        } catch(IllegalAccessException e) {
+//            // FIXME: just for test
+//            e.printStackTrace();
+//        } catch(InvocationTargetException e) {
+//            // FIXME: just for test
+//            e.printStackTrace();
+//        }
         
         response.getWriter().println("<ul>");
         // list DataAccessPoint s
-        Collection<String> keys = registry.keys();
-        keys.stream().forEach( (String key) -> {
-            try {
-                response.getWriter().println( "<li>" + key + ":" + registry.get(key) + "</li>" );
-            } catch(IOException e) {}
-        });
+//        Collection<String> keys = registry.keys();
+//        keys.stream().forEach( (String key) -> {
+//            try {
+//                response.getWriter().println( "<li>" + key + ":" + registry.get(key) + "</li>" );
+//            } catch(IOException e) {}
+//        });
         
         /*
         Iterator<String> keyIter = keys.iterator();
@@ -67,21 +69,22 @@ public class PingServlet extends HttpServlet {
             response.getWriter().println( "<li>" + name + ":" + registry.get(name) + "</li>" );
         }
         */
-        /* 
+        
+        // Registry<K, T>#forEach(action: BinConsumer<K, T>) 2.3.1才有
         BiConsumer<String, DataAccessPoint> consumer = (x, y) -> {
             try {
                 response.getWriter().println( "<li>" + x + ":" + y + "</li>" );
             } catch(IOException e) {}
         };
         registry.forEach(consumer);
-        */
-        /*
-        registry.forEach( (String name, DataAccessPoint accessPt) -> { 
-            try {
-                response.getWriter().println( "<li>" + name + ":" + accessPt + "</li>" );
-            } catch(IOException e) {}
-        } );
-        */
+        
+        
+//        registry.forEach( (String name, DataAccessPoint accessPt) -> { 
+//            try {
+//                response.getWriter().println( "<li>" + name + ":" + accessPt + "</li>" );
+//            } catch(IOException e) {}
+//        } );
+        
         
         response.getWriter().println("</ul>");
     }
