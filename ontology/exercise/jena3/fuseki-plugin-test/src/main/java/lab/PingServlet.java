@@ -5,6 +5,7 @@ import java.util.Collection;
 //import java.util.Iterator;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.BiConsumer;
@@ -87,5 +88,12 @@ public class PingServlet extends HttpServlet {
         
         
         response.getWriter().println("</ul>");
+        
+        PrintWriter writer = response.getWriter();
+        
+        writer.print( "<p> FusekiEnv.FUSEKI_BASE: " + FusekiEnv.FUSEKI_BASE + "</p>");
+        writer.print( "<p> FusekiEnv.FUSEKI_HOME: " + FusekiEnv.FUSEKI_HOME + "</p>");
+        writer.print( "<p> FusekiEnv db1 configuration file: " + FusekiEnv.generateConfigurationFilename("db1") + "</p>");
+        
     }
 }
