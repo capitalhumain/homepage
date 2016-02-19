@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Standard Promise Lab4</title>
+</head>
+<body>
+  
+  <script>
+  var resources = ['html_babies.jpg', 'css_babies.jpg', 'webdesign_babies.jpg'];
+  var requests = resources.map(function(resource) {
+    return new Promise(
+      function resolver(resolve, reject) {
+        var img = new Image();
+        img.src = resource;
+        img.onload = function() {
+          resolve(img);
+        };
+        img.onerror = function(e) {
+          reject(e);
+        };
+      });
+  });
+
+  Promise.all(requests).then(function(values) {
+    values.map(function(val) {
+      document.body.appendChild(val);
+    });
+  }).catch(function(e) {
+    console.log('unable to load image');
+    console.dir(e);
+  });
+  </script>
+</body>
+</html>

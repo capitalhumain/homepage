@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>asynchronous javascript lab1</title>
+</head>
+<body>
+  <script>
+  function repositionElement() {
+    console.log('repositioning!');
+  }
+  // callback is invoked between browser repaint intervals
+  window.requestAnimationFrame(repositionElement);
+  console.log('i am the last line of the scrip!');
+  </script>
+</body>
+</html>

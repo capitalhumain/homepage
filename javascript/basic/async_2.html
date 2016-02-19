@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>async test 2</title>
+</head>
+<body>
+  <script>
+  var async = true;
+  var xhr = new XMLHttpRequest();
+  xhr.open('get', 'data.json', async);
+  xhr.send();
+
+  var timestamp = Date.now() + 3000;
+  while(Date.now() < timestamp);
+
+  function listener() {
+    console.log('greetings from listener');
+  }
+  xhr.addEventListener('load', listener);
+  xhr.addEventListener('error', listener);
+  </script>
+</body>
+</html>

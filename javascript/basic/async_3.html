@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>async lab 3</title>
+</head>
+<body>
+  <script>
+  var async = true;
+  var xhr = new XMLHttpRequest();
+  xhr.open('get', 'data.json', async);
+  xhr.send();
+
+  // race condition
+  setTimeout(function delayed() {
+    function listener() {
+      console.log('greetings from listener');
+    }
+    xhr.addEventListener('load', listener);
+    xhr.addEventListener('error', listener);
+  }, 3000);
+  </script>
+</body>
+</html>
