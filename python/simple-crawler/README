@@ -1,0 +1,19 @@
+需要的函式庫
+=================================
+BeautifulSoup4
+方便使用CSS Selector查詢web的內容
+
+Installation
+-----------------------
+sudo easy_install BeautifulSoup4
+
+程式
+=================================
+crawler.py 真正的程式，目前會把每一筆做成JSON格式，印在畫面。（前半段）
+simple-crawler.py 測試
+simple-parser.py 測試
+
+執行
+=================================
+在Terminal下，執行
+python crawler.py
