@@ -1,0 +1,7 @@
+{
+  "database": {
+    "host": "ratpack-mariadb.prod.internal",
+    "user": "app-user",
+    "password": "!QAZ@WSX"
+  }
+}
