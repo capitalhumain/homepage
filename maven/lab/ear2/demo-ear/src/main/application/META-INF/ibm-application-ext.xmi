@@ -1,0 +1,3 @@
+<applicationext:ApplicationExtension xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:applicationext="applicationext.xmi" xmi:id="ApplicationExtension_1250896346141" sharedSessionContext="true">
+<application href="META-INF/application.xml#Application_ID"/>
+</applicationext:ApplicationExtension>
