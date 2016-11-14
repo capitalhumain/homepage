@@ -6,6 +6,17 @@ import org.apache.jena.update.UpdateProcessor;
 import org.apache.jena.update.UpdateRequest;
 
 public class RemoteSPARQLUpdate {
+	
+	public static void execute(String remoteEndPoint, String sparql) {
+		UpdateRequest update = UpdateFactory.create(sparql);
+		UpdateProcessor updateProcessor = UpdateExecutionFactory.createRemote(update, remoteEndPoint);
+			
+		try {
+			updateProcessor.execute();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	public static void main(String[] args) {
 		// insert

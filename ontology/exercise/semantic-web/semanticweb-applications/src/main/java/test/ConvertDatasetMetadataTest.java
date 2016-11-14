@@ -10,16 +10,18 @@ import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 
 import model.DataSetMetadata;
+import model.OntologyModel;
 import model.Predicate;
 
 public class ConvertDatasetMetadataTest {
 	static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	public static final String Insert_Template = "insert data { %s }";
 	
 	private static String generateGetterName(String fieldName) {
 		return "get" + StringUtils.capitalize(fieldName);
 	}
 	
-	private static String getValue(DataSetMetadata obj, Field field) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	private static String getValue(OntologyModel obj, Field field) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		if(field.getType() == java.lang.String.class) {
 			Method method = obj.getClass().getDeclaredMethod(generateGetterName(field.getName()), new Class[0]);
 			Object result = method.invoke(obj, new Object[0]);
@@ -42,7 +44,7 @@ public class ConvertDatasetMetadataTest {
 		}
 	}
 	
-	private static String generateTriple(DataSetMetadata obj, Field field, Annotation ann) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	private static String generateTriple(OntologyModel obj, Field field, Annotation ann) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		StringBuilder triple = new StringBuilder();
 		String val = getValue(obj, field);
 		
@@ -60,6 +62,29 @@ public class ConvertDatasetMetadataTest {
 		
 		return triple.toString();
 	}
+	
+	private static String generateGraph(OntologyModel obj) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		StringBuilder graphStr = new StringBuilder();
+		Field[] fields = obj.getClass().getDeclaredFields();
+		for(Field field : fields) {
+			Annotation[] annotations = field.getDeclaredAnnotations();
+			for(Annotation ann : annotations) {
+				String triple = generateTriple(obj, field, ann);
+				if(!triple.equals("")) {
+					graphStr.append(triple).append("\n");
+				}
+			}
+		}
+		return graphStr.toString();
+	}
+	
+	private static String generateSPARQLUpdate_Insert(OntologyModel obj) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		return String.format(Insert_Template, generateGraph(obj));
+	}
+	
+	private static String generateSPARQLUpdate_Insert(String graph) {
+		return String.format(Insert_Template, graph);
+	}
 
 	public static void main(String[] args) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		DataSetMetadata test = new DataSetMetadata();
@@ -70,15 +95,14 @@ public class ConvertDatasetMetadataTest {
 		
 		System.out.println("Start");
 		
-		Field[] fields = test.getClass().getDeclaredFields();
-		//System.out.println("Fields: " + fields.length);
-		for(Field field : fields) {
-			Annotation[] annotations = field.getDeclaredAnnotations();
-			for(Annotation ann : annotations) {
-				String triple = generateTriple(test, field, ann);
-				System.out.println(triple);
-			}
-		}
+		String graph = generateGraph(test);
+		System.out.println(graph);
+		
+		String sparql = generateSPARQLUpdate_Insert(graph);
+		System.out.println(sparql);
+		
+		RemoteSPARQLUpdate.execute("http://localhost:3030/system/update", sparql);
+		
 		System.out.println("Done");
 	}
 
