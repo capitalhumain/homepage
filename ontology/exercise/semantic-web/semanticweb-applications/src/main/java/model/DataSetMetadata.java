@@ -1,11 +1,15 @@
 package model;
 
+import java.util.Date;
+
 public class DataSetMetadata implements OntologyModel {
 	private String id;
 	@Predicate(uri="http://dms.deltawww.com/ts/type")
 	private String type;
 	@Predicate(uri="http://www.w3.org/2000/01/rdf-schema#label")
 	private String label;
+	@Predicate(uri="http://dms.deltawww.com/ts/createdTime")
+	private Date createdTime;
 	
 	public DataSetMetadata() {}
 	
@@ -26,6 +30,12 @@ public class DataSetMetadata implements OntologyModel {
 	}
 	public String getLabel() {
 		return label;
+	}
+	public void setCreatedTime(Date createdTime) {
+		this.createdTime = createdTime;
+	}
+	public Date getCreatedTime() {
+		return createdTime;
 	}
 
 	@Override
