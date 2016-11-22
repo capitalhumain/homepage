@@ -17,6 +17,8 @@ public class DatasetMetadata implements OntologyModel {
 	private String id;
 	@Predicate(uri="http://dms.deltaww.com/metadata/librarySpace")
 	private String librarySpace;
+	@Predicate(uri="http://dms.deltaww.com/metadata/graphId")
+	private String graphId;
 	@Predicate(uri="http://www.w3.org/2000/01/rdf-schema#label")
 	private String label;
 	@Predicate(uri="http://www.w3.org/2000/01/rdf-schema#comment")
@@ -64,6 +66,12 @@ public class DatasetMetadata implements OntologyModel {
 	}
 	public Date getCreatedTimestamp() {
 		return createdTimestamp;
+	}
+	public String getGraphId() {
+		return graphId;
+	}
+	public void setGraphId(String graphId) {
+		this.graphId = graphId;
 	}
 
 	@Override
