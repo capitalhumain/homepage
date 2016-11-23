@@ -1,0 +1,10 @@
+Step
+=============================================
+1. cd $FUSEKI_HOME/webapp/WEB-INF
+2. mkdir lib
+3. cp $FUSEKI_ADDON/target/fuseki-addon-1.0.jar $FUSEKI_HOME/webapp/WEB-INF/lib
+4. backup $FUSEKI_HOME/webapp/WEB-INF/web.xml
+5. modify $FUSEKI_HOME/webapp/WEB-INF/web.xml, 把要掛上去的servlet設定上去
+   或者使用svn上的web.xml取代fuseki 2.3.1的web.xml
+6. cd $FUSEKI_HOME
+7. ./fuseki-server
