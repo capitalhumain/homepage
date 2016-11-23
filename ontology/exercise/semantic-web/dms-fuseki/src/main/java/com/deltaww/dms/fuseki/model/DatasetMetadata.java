@@ -15,6 +15,8 @@ public class DatasetMetadata implements OntologyModel {
 	public static final String DATASET_PREFIX = "http://dms.deltaww.com/dataset/";
 	@Predicate(uri="http://dms.deltaww.com/metadata/id")
 	private String id;
+	@Predicate(uri="http://dms.deltaww.com/metadata/type")
+	private String type;
 	@Predicate(uri="http://dms.deltaww.com/metadata/librarySpace")
 	private String librarySpace;
 	@Predicate(uri="http://dms.deltaww.com/metadata/graphId")
@@ -42,6 +44,12 @@ public class DatasetMetadata implements OntologyModel {
 	}
 	public String getLibrarySpace() {
 		return librarySpace;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
+	public String getType() {
+		return type;
 	}
 	public void setComment(String comment) {
 		this.comment = comment;

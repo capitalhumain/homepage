@@ -72,10 +72,12 @@ public class MetadataService {
 				
 				DatasetMetadata obj = new DatasetMetadata();
 				obj.setId(dsuuid);
+				obj.setType(clientIdSupport.getType());
 				obj.setLabel(clientIdSupport.getType());
 				obj.setLibrarySpace(clientIdSupport.getLibrarySpace());
 				obj.setGraphId(clientIdSupport.getGraphId());
 				obj.setCreatedTimestamp(new Date());
+				obj.setStatus("Accept");
 				String sparql = OntologyModelToSPARQLGraphConverter.generateSPARQL(OntologyModelToSPARQLGraphConverter.SPARQL_Insert_Template, obj);
 				
 				RemoteSPARQLUpdate.execute("http://localhost:3030/system/update", sparql);
@@ -106,5 +108,8 @@ public class MetadataService {
 		return result;
 	}
 	
+	public APIResult createKnowledgebaseMetadata(ClientIdSupport clientIdSupport) {
+		return createDatasetMetadata(clientIdSupport);
+	}
 	
 }

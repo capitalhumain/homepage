@@ -1,5 +1,6 @@
 package com.deltaww.dms.fuseki.controller;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -82,9 +83,37 @@ public class MetadataController {
 		return apiResult;
 	}
 	
+	/**
+	 * 
+	 * type = "KnowledgeBase"
+	 * librarySpace and graphId are required.
+	 * 
+	 * @param clientIdSupport
+	 * @return
+	 */
 	@RequestMapping(value="/knowledgebase", method=RequestMethod.PUT)
 	public APIResult createKB(@RequestBody ClientIdSupport clientIdSupport) {
-		return new APIResult();
+		log.info("Create Knowledgebase");
+		
+		log.info(clientIdSupport.toString());
+		if("KnowledgeBase".equalsIgnoreCase(clientIdSupport.getType())) {
+			clientIdSupport.setType("KnowledgeBase");
+			// check librarySpace and graphId
+			if(!StringUtils.isBlank(clientIdSupport.getLibrarySpace()) && 
+			   !StringUtils.isBlank(clientIdSupport.getGraphId())) {
+		        return metadataService.createKnowledgebaseMetadata(clientIdSupport);
+			} else {
+				APIResult apiResult = new APIResult();
+				apiResult.setStatus(false);
+				apiResult.setMessage("librarySpace and graphId are required for knowledgebase dataset");
+				return apiResult;
+			}
+		} else {
+			APIResult apiResult = new APIResult();
+			apiResult.setStatus(false);
+			apiResult.setMessage("Type 'KnowledgeBase' is required.");
+			return apiResult;
+		}
 	}
 	
 // not support update all metadata
