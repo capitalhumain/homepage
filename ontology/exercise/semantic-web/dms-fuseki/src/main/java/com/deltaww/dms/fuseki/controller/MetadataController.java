@@ -40,7 +40,7 @@ public class MetadataController {
 	 * 
 	 * @return
 	 */
-	@RequestMapping(value="/dataset", method=RequestMethod.PUT)
+	@RequestMapping(value="/dataset", method=RequestMethod.POST)
 	public APIResult createDataset(@RequestBody ClientIdSupport clientIdSupport) {
 		log.info("Create Dataset");
 		
@@ -91,7 +91,7 @@ public class MetadataController {
 	 * @param clientIdSupport
 	 * @return
 	 */
-	@RequestMapping(value="/knowledgebase", method=RequestMethod.PUT)
+	@RequestMapping(value="/knowledgebase", method=RequestMethod.POST)
 	public APIResult createKB(@RequestBody ClientIdSupport clientIdSupport) {
 		log.info("Create Knowledgebase");
 		
