@@ -14,6 +14,8 @@ public class RemoteSPARQLAccess {
 	
 	final static String resourceURI = "http://dbpedia.org/resource/Roger_Federer";
 	final static String DBPediaSPARQLEndpoint = "http://dbpedia.org/sparql";
+	
+	
 
 //	public static void main(String[] args) {
 //		String queryString = "SELECT ?propertyName ?propertyValue " + 

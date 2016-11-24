@@ -6,6 +6,7 @@ public class ClientIdSupport {
 	private String librarySpace;
 	private String graphId;
 	private String command;
+	private String comment;
 	private String dataset;
 	
 	public ClientIdSupport() {}
@@ -48,6 +49,14 @@ public class ClientIdSupport {
 
 	public void setCommand(String command) {
 		this.command = command;
+	}
+	
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
 	}
 	
 	public String getDataset() {

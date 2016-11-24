@@ -5,7 +5,9 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -16,6 +18,14 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Resource;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +39,14 @@ import com.deltaww.dms.fuseki.model.DatasetMetadata;
 public class MetadataService {
 	private static final Logger log = Logger.getLogger(MetadataService.class);
 	private static final String TEMPLATE_FUSEKI_ADDON_CREATE_DATASET = "{\"clientId\": \"%s\", \"type\": \"%s\", \"command\": \"create_dataset\"}";
+	private static final String TEMPLATE_FUSEKI_SYSTEM_SIMPLE_QUERY = "select ?dsid " +
+                                                                      "where { " +
+                                                                      "?s <http://dms.deltaww.com/metadata/id> ?dsid . " +
+                                                                      "?s <http://dms.deltaww.com/metadata/status> ?status . " +
+                                                                      "?s <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . " +
+                                                                      "filter regex (?comment, \"%s\", \"i\")  " +
+                                                                      "filter regex (?status, \"ACCEPT\", \"i\") " + 
+                                                                      "}";
 	
 	public String info() {
 		DatasetMetadata test = new DatasetMetadata();
@@ -77,6 +95,7 @@ public class MetadataService {
 				obj.setLibrarySpace(clientIdSupport.getLibrarySpace());
 				obj.setGraphId(clientIdSupport.getGraphId());
 				obj.setCreatedTimestamp(new Date());
+				obj.setComment(clientIdSupport.getComment());
 				obj.setStatus("Accept");
 				String sparql = OntologyModelToSPARQLGraphConverter.generateSPARQL(OntologyModelToSPARQLGraphConverter.SPARQL_Insert_Template, obj);
 				
@@ -110,6 +129,25 @@ public class MetadataService {
 	
 	public APIResult createKnowledgebaseMetadata(ClientIdSupport clientIdSupport) {
 		return createDatasetMetadata(clientIdSupport);
+	}
+	
+	public Set<String> searchDatasetIdAgainstComment(String keyword) {
+		String queryStr = String.format(TEMPLATE_FUSEKI_SYSTEM_SIMPLE_QUERY, keyword);
+		log.info(queryStr);
+		Set<String> dsSet = new HashSet<>();
+		Query query = QueryFactory.create(queryStr);
+		QueryExecution qe = QueryExecutionFactory.sparqlService("http://localhost:3030/system/query", query);
+		try {
+			ResultSet resultSet = qe.execSelect();
+			while(resultSet.hasNext()) {
+				QuerySolution solution = resultSet.nextSolution();
+				Literal literal = (Literal) solution.get("dsid");
+				dsSet.add(literal.getString());
+			}
+		} catch(Exception e) {
+			log.error("Exception", e);
+		}
+		return dsSet;
 	}
 	
 }
