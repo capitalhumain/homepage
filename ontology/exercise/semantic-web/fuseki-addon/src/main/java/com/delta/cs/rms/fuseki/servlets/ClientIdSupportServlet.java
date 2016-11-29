@@ -114,7 +114,7 @@ public class ClientIdSupportServlet extends HttpServlet {
                             }
                             break;
                         case CMD_LIST_DATASET:
-                            String[] datasetList = systemDatasetService.listDataset(vo.clientId, vo.type);
+                            String[] datasetList = systemDatasetService.listDatasetViaSPARQLEndpoint(vo.clientId, vo.type);
                             APIResult result = new APIResult();
                             result.status = true;
                             result.message = "success";

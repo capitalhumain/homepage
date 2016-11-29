@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -27,7 +26,14 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ReadWrite;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
@@ -117,7 +123,7 @@ public class SystemDatasetService {
      * @param type
      * @return
      */
-    public String[] listDataset(String clientId, String type) {
+    public synchronized String[] listDataset(String clientId, String type) {
         if (StringUtils.isBlank(clientId) || StringUtils.isBlank(type)) {
             throw new IllegalArgumentException("all arguments are required");
         }
@@ -147,6 +153,35 @@ public class SystemDatasetService {
         } finally {
             ds.finishTxn(ReadWrite.READ);
         }
+    }
+    
+    private static final String TEMPLATE_FUSEKI_SYSTEM_DATASET_QUERY = "select ?dsid " +
+            "where { " +
+            "<http://delta.com/it/kawari#%s> <http://delta.com/it/kawari#hasGraph> ?dsid . " + 
+            "}";
+    
+    /**
+     * 透過fuseki sparql http endpoint 查詢dataset
+     * @param clientId
+     * @param type
+     * @return
+     */
+    public synchronized String[] listDatasetViaSPARQLEndpoint(String clientId, String type) {
+    	Fuseki2Operator fuseki2Operator = new Fuseki2Operator();
+    	String systemQueryEndpoint = fuseki2Operator.getEndPoint(Fuseki2Operator.query_endpoint_pattern, "system");
+    	String queryStr = String.format(TEMPLATE_FUSEKI_SYSTEM_DATASET_QUERY, clientId);
+    	Set<String> dsSet = new HashSet<>();
+		Query query = QueryFactory.create(queryStr);
+		QueryExecution qe = QueryExecutionFactory.sparqlService(systemQueryEndpoint, query);
+		
+		ResultSet resultSet = qe.execSelect();
+		while(resultSet.hasNext()) {
+		    QuerySolution solution = resultSet.nextSolution();
+			Literal literal = (Literal) solution.get("dsid");
+			dsSet.add(literal.getString());
+		}
+		
+		return dsSet.toArray(new String[0]);
     }
 
     /**

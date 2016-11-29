@@ -46,6 +46,10 @@ public class Fuseki2Operator {
         this.port = port;
     }
     
+    public String getEndPoint(String template, String dataset) {
+    	return String.format(template, this.host, this.port, dataset);
+    }
+    
     public boolean createDataset(String id) {
         String url = String.format(DATASET_MGRT_PATTERN1, host, port);
         
