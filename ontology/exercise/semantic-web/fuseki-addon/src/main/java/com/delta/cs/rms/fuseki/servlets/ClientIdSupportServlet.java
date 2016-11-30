@@ -82,17 +82,14 @@ public class ClientIdSupportServlet extends HttpServlet {
                         case CMD_CREATE_DATASET:
                         	String dsid = null;
                         	serverLog.info(vo.type + "|" + "temp".equalsIgnoreCase(vo.type));
-                        	if("temp".equalsIgnoreCase(vo.type)) {
-                        		dsid = String.format("TEMP_%s", vo.clientId);
-                        	}
+                        	// remove temp dataset logic
+//                        	if("temp".equalsIgnoreCase(vo.type)) {
+//                        		dsid = String.format("TEMP_%s", vo.clientId);
+//                        	}
                         	if(null == dsid) {
                         		dsid = UUID.randomUUID().toString();
                         	}
-                            if ("temp".equalsIgnoreCase(vo.type) && registry.isRegistered("/" + dsid)) {
-                            	response.setStatus(HttpServletResponse.SC_OK);
-                                response.setContentType("text/plain");
-                                response.getWriter().println(dsid);
-                            } else if(registry.isRegistered("/" + dsid)) {
+                            if(registry.isRegistered("/" + dsid)) {
                                 serverLog.error("dsid conflict");
                                 serverLog.error(dsid);
                                 response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
