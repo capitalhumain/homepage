@@ -165,11 +165,13 @@ public class ClientIdSupportServlet extends HttpServlet {
                             response.setStatus(HttpServletResponse.SC_OK);
                             break;
                         case CMD_RETRIEVAL_NAMED_GRAPH:
+                        	// TODO: refactoring to 303 to http://fuseki:port/dataset/get?graph=named_graph
                             response.setStatus(HttpServletResponse.SC_OK);
                             response.setContentType("text/turtle;charset=UTF-8");
                             response.getWriter().print(systemDatasetService.retrievalNamedGraph(vo.dataset, vo.named, Lang.TURTLE));
                             break;
                         case CMD_RETRIEVAL_DEFAULT_GRAPH:
+                        	// TODO: refactoring to 303 to http://fuseki:port/dataset/get?graph=default
                             response.setStatus(HttpServletResponse.SC_OK);
                             response.setContentType("text/turtle;charset=UTF-8");
                             response.getWriter().print(systemDatasetService.retrievalDefaultGraph(vo.dataset, Lang.TURTLE));

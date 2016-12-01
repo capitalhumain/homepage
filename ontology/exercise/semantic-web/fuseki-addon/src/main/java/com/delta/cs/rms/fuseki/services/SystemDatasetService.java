@@ -251,6 +251,8 @@ public class SystemDatasetService {
                 } finally {
                     ds.finishTxn(ReadWrite.WRITE);
                 }
+            } else {
+            	serverLog.error("shutdown dataset failed: " + datasetId);
             }
         }
     }
