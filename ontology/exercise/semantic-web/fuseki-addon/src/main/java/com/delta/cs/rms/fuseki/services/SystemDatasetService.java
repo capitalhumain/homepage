@@ -173,12 +173,15 @@ public class SystemDatasetService {
     	Set<String> dsSet = new HashSet<>();
 		Query query = QueryFactory.create(queryStr);
 		QueryExecution qe = QueryExecutionFactory.sparqlService(systemQueryEndpoint, query);
-		
-		ResultSet resultSet = qe.execSelect();
-		while(resultSet.hasNext()) {
-		    QuerySolution solution = resultSet.nextSolution();
-			Literal literal = (Literal) solution.get("dsid");
-			dsSet.add(literal.getString());
+		try {
+			ResultSet resultSet = qe.execSelect();
+			while(resultSet.hasNext()) {
+			    QuerySolution solution = resultSet.nextSolution();
+				Literal literal = (Literal) solution.get("dsid");
+				dsSet.add(literal.getString());
+			}
+		} finally {
+			qe.close();
 		}
 		
 		return dsSet.toArray(new String[0]);
