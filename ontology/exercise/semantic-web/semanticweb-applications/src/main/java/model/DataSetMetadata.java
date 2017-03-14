@@ -3,12 +3,13 @@ package model;
 import java.util.Date;
 
 public class DataSetMetadata implements OntologyModel {
+	@Predicate(uri="http://dms.deltaww.com/dataset/id")
 	private String id;
-	@Predicate(uri="http://dms.deltawww.com/ts/type")
+	@Predicate(uri="http://dms.deltaww.com/dataset/type")
 	private String type;
 	@Predicate(uri="http://www.w3.org/2000/01/rdf-schema#label")
 	private String label;
-	@Predicate(uri="http://dms.deltawww.com/ts/createdTime")
+	@Predicate(uri="http://dms.deltaww.com/dataset/createdTime")
 	private Date createdTime;
 	
 	public DataSetMetadata() {}
@@ -45,6 +46,7 @@ public class DataSetMetadata implements OntologyModel {
 
 	@Override
 	public String getSubjectURI() {
-		return "<http://dms.deltawww.com/ts/" + id + ">";
+		// FIXME: really?
+		return "<http://dms.deltaww.com/ts/" + id + ">";
 	}
 }

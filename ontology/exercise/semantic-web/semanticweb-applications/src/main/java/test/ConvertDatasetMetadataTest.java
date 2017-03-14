@@ -13,9 +13,43 @@ import model.DataSetMetadata;
 import model.OntologyModel;
 import model.Predicate;
 
+/**
+ * 
+ * Delete all createdTime triples whose subject has rdfs:label equals to "Demo DataSet 1"
+ * <pre>
+delete { ?s <http://dms.deltawww.com/ts/createdTime> ?o }
+where {
+  ?s <http://www.w3.org/2000/01/rdf-schema#label> "Demo DataSet 1" .
+  ?s <http://dms.deltawww.com/ts/createdTime> ?o .
+}
+ * </pre>
+ * <pre>
+delete { <http://dms.deltaww.com/ts/testid-00001> ?p ?o . }
+where {
+  <http://dms.deltaww.com/ts/testid-00001> ?p ?o .
+}
+ * </pre>
+ * 
+ * <pre>
+delete { ?s ?p ?o . }
+where {
+  ?s ?p ?o .
+  ?s <http://dms.deltaww.com/metadata/id> "testid-00001" .
+}
+ * </pre>
+ * 
+ * @author tzuyichao
+ *
+ */
 public class ConvertDatasetMetadataTest {
 	static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	// Ignore Prefix for now create dataset use
 	public static final String Insert_Template = "insert data { %s }";
+	// Update dataset
+	public static final String Update_Dataset_Template_Pre0 = "delete { ?s <http://dms.deltawww.com/ts/createdTime> ?o } " +
+			"where { " +
+			"?s <http://www.w3.org/2000/01/rdf-schema#label> \"%s\" . " +
+			"?s <http://dms.deltawww.com/ts/createdTime> ?o . }";
 	
 	private static String generateGetterName(String fieldName) {
 		return "get" + StringUtils.capitalize(fieldName);
@@ -78,6 +112,7 @@ public class ConvertDatasetMetadataTest {
 		return graphStr.toString();
 	}
 	
+	@SuppressWarnings("unused")
 	private static String generateSPARQLUpdate_Insert(OntologyModel obj) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		return String.format(Insert_Template, generateGraph(obj));
 	}
@@ -90,7 +125,7 @@ public class ConvertDatasetMetadataTest {
 		DataSetMetadata test = new DataSetMetadata();
 		test.setId("testid-00001");
 		test.setType("General");
-		//test.setLabel("Demo DataSet 1");
+		test.setLabel("Demo DataSet 1");
 		test.setCreatedTime(new Date());
 		
 		System.out.println("Start");
@@ -101,8 +136,11 @@ public class ConvertDatasetMetadataTest {
 		String sparql = generateSPARQLUpdate_Insert(graph);
 		System.out.println(sparql);
 		
-		RemoteSPARQLUpdate.execute("http://localhost:3030/system/update", sparql);
-		
+		if(SPARQLServiceCheck.isRunning("http://localhost:3030/system/query")) {
+		    RemoteSPARQLUpdate.execute("http://localhost:3030/system/update", sparql);
+		} else {
+			System.out.println("Fuseki SPARQL HTTP Endpoint is not running");
+		}
 		System.out.println("Done");
 	}
 
