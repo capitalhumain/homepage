@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.jsondoc:jsondoc-springmvc:1.2.17">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jsondoc/jsondoc-springmvc/1.2.17/c436667208f7240123f8a0a03742adbf002cef4d/jsondoc-springmvc-1.2.17.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jsondoc/jsondoc-springmvc/1.2.17/60853a0e99e87b8864e47220c835aaf85d17d5af/jsondoc-springmvc-1.2.17-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

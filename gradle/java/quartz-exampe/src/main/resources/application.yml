@@ -11,3 +11,8 @@ job:
   repeatInterval: 60000
   description: Hello Job
   key: HelloJob
+
+jsondoc:
+  version: 1.0
+  basePath: http://localhost:8080
+  packages: ['hello']
