@@ -1,0 +1,15 @@
+Docker + nmap Installation
+=======================================
+docker run -it ubuntu /bin/bash
+apt-get update
+apt-get install subversion
+svn co https://svn.nmap.org/nmap
+apt-get install make g++ libssl-dev autoconf
+cd nmap
+./configure
+make
+make install
+
+Testing Installation
+=======================================
+nmap -sV -sC -O scanme.nmap.org
