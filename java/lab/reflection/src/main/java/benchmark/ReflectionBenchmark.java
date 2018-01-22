@@ -16,15 +16,15 @@ import java.util.concurrent.TimeUnit;
 public class ReflectionBenchmark {
     private Person person;
 
-    private PropertyAccessor myAccessor = new MyAccessor();
+    private PropertyReader myPropertyReader = new MyPropertyReader();
 
-    private PropertyAccessor myMethodHandleAccessor = new MyMethodHandleAccessor();
+    private PropertyReader myMethodHandlePropertyReader = new MyMethodHandlePropertyReader();
 
-    private PropertyAccessor myReflectionAccessor = new MyReflectionAccessor();
+    private PropertyReader myReflectionPropertyReader = new MyReflectionPropertyReader();
 
-    private PropertyAccessor myGenerateAccessor = new MyGenerateAccessor();
+    private PropertyReader myGeneratePropertyReader = new MyGeneratePropertyReader();
 
-    private PropertyAccessor lambdaMetafactoryAccessor = new LambdaMetafactoryAccessor();
+    private PropertyReader lambdaMetafactoryPropertyReader = new LambdaMetafactoryPropertyReader();
 
     @Setup
     public void setup() {
@@ -37,27 +37,27 @@ public class ReflectionBenchmark {
     }
 
     @Benchmark
-    public String __001_AccessorClass() {
-        return (String) myAccessor.executeGetter(person);
+    public String __001_MyPropertyReader() {
+        return (String) myPropertyReader.executeGetter(person);
     }
 
     @Benchmark
-    public String __002_MethodHandle() {
-        return (String) myMethodHandleAccessor.executeGetter(person);
+    public String __002_MethodHandlePropertyReader() {
+        return (String) myMethodHandlePropertyReader.executeGetter(person);
     }
 
     @Benchmark
-    public String __003_Reflection() {
-        return (String) myReflectionAccessor.executeGetter(person);
+    public String __003_ReflectionPropertyReader() {
+        return (String) myReflectionPropertyReader.executeGetter(person);
     }
 
     @Benchmark
-    public String __004_CompiledAccessor() {
-        return (String) myGenerateAccessor.executeGetter(person);
+    public String __004_CompiledPropertyReader() {
+        return (String) myGeneratePropertyReader.executeGetter(person);
     }
 
     @Benchmark
-    public String __005_LambdaAccessor() {
-        return (String) lambdaMetafactoryAccessor.executeGetter(person);
+    public String __005_LambdaMetafactoryPropertyReader() {
+        return (String) lambdaMetafactoryPropertyReader.executeGetter(person);
     }
 }
