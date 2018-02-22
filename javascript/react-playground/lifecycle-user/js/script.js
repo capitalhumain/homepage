@@ -1,0 +1,1 @@
+ReactDOM.render(React.createElement(User, { "data-url": "real-user-data.json" }), document.getElementById('content'));
