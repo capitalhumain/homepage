@@ -1,0 +1,22 @@
+{
+  "name": "domevent-clickcontent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "init-babel-cli": "npm i babel-cli@6.9.0 babel-preset-react@6.5.0 --save-dev",
+    "build": "./node_modules/.bin/babel jsx -d js"
+  },
+  "babel": {
+    "presets": [
+      "react"
+    ]
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.9.0",
+    "babel-preset-react": "^6.5.0"
+  }
+}

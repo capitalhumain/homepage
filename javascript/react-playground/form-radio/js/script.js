@@ -1,0 +1,1 @@
+ReactDOM.render(React.createElement(Radio, null), document.getElementById('content'));
